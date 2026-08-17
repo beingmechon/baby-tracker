@@ -5,6 +5,9 @@
   "type": "module",
   "description": "A private, offline-first baby tracker. Free forever, no account, no ads, no telemetry.",
   "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/beingmechon/baby-tracker.git"
