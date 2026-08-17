@@ -5,6 +5,7 @@ import { toCsv } from '@/data/csv'
 import { downloadTextFile, exportFilename, readTextFile } from '@/data/download'
 import { localDateKey } from '@/domain/time'
 import type { VolumeUnit } from '@/domain/types'
+import { RuleLabel } from './RuleLabel'
 import { BackIcon, CheckIcon, ShieldIcon } from './icons'
 
 interface SettingsScreenProps {
@@ -141,9 +142,7 @@ export function SettingsScreen({
 
         {activeBaby !== null && (
           <section className="section">
-            <div className="section-heading">
-              <h2>Baby</h2>
-            </div>
+            <RuleLabel>Baby</RuleLabel>
             <div className="settings-group">
               <div className="field">
                 <label className="field-label" htmlFor="settings-name">
@@ -181,9 +180,7 @@ export function SettingsScreen({
         )}
 
         <section className="section">
-          <div className="section-heading">
-            <h2>Display</h2>
-          </div>
+          <RuleLabel>Display</RuleLabel>
           <div className="settings-group">
             <div className="field">
               <span className="field-label" id="settings-unit-label">
@@ -223,7 +220,7 @@ export function SettingsScreen({
                   </button>
                 ))}
               </div>
-              <p className="settings-note">
+              <p className="field-note">
                 On auto, the app switches to a dim red-tinted night theme during
                 your night hours, and follows your system light or dark setting
                 the rest of the time.
@@ -278,7 +275,7 @@ export function SettingsScreen({
                 </select>
               </div>
             </div>
-            <p className="settings-note">
+            <p className="field-note">
               These hours also decide whether a new sleep is logged as a nap or as
               night sleep.
             </p>
@@ -293,7 +290,7 @@ export function SettingsScreen({
                 style={{ width: '1.5rem', height: '1.5rem' }}
               />
             </div>
-            <p className="settings-note">
+            <p className="field-note">
               Typical wake windows by age, shown for information only. Babies vary
               enormously — this is never advice.
             </p>
@@ -301,11 +298,9 @@ export function SettingsScreen({
         </section>
 
         <section className="section">
-          <div className="section-heading">
-            <h2>Your data</h2>
-          </div>
+          <RuleLabel>Your data</RuleLabel>
           <div className="settings-group">
-            <p className="settings-note">
+            <p className="field-note">
               <ShieldIcon size={16} /> Everything is stored on this device only.
               There is no account, no server and no analytics. Exports are yours to
               keep.
@@ -328,7 +323,7 @@ export function SettingsScreen({
                 Export CSV
               </button>
             </div>
-            <p className="settings-note">
+            <p className="field-note">
               JSON is a complete backup you can import again. CSV opens in any
               spreadsheet — useful to print for a doctor’s appointment.
             </p>
@@ -393,15 +388,13 @@ export function SettingsScreen({
         </section>
 
         <section className="section">
-          <div className="section-heading">
-            <h2>About</h2>
-          </div>
+          <RuleLabel>About</RuleLabel>
           <div className="settings-group">
-            <p className="settings-note">
+            <p className="field-note">
               Baby Tracker is free and open source, licensed under the AGPL-3.0.
               Built for parents, by parents — contributions welcome.
             </p>
-            <p className="settings-note">
+            <p className="field-note">
               <strong>Not a medical device.</strong> This app records what you tell
               it and shows you your own data. It does not diagnose anything and is
               no substitute for your paediatrician. If you are worried about your
@@ -420,7 +413,7 @@ export function SettingsScreen({
           </div>
         </section>
 
-        <p className="footer-note">Baby Tracker v0.1 · works offline · no telemetry</p>
+        <p className="footer-note">Baby Tracker v0.1.1 · works offline · no telemetry</p>
       </main>
     </>
   )

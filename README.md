@@ -10,8 +10,8 @@ to sign up to, because there is no server.
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
 <p align="center">
-  <img src="docs/screenshots/home-day.png" alt="The home screen in light mode: status cards for last feed and time awake, a large sleep timer button, nursing and bottle buttons, one-tap diaper buttons, a daily summary and a timeline." width="45%">
-  <img src="docs/screenshots/home-night.png" alt="The same home screen in night mode: a dim, warm, red-tinted theme for use in a dark room." width="45%">
+  <img src="docs/screenshots/home-day.png" alt="The home screen on warm off-white paper: a large serif numeral showing how long the baby has been awake, a rule labelled LOG, an ochre Start sleep button, and flush-left buttons for nursing, bottle and diapers." width="45%">
+  <img src="docs/screenshots/home-night.png" alt="The same screen in night mode: the identical layout in warm amber on a deep brown-black ground, with no blue light." width="45%">
 </p>
 
 ---
@@ -109,32 +109,62 @@ are "this wording confused me at 3am" and "this button is hard to hit one-handed
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to get set up and what to work on
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code is organised and why
+- [docs/DESIGN.md](docs/DESIGN.md) — the design contract; read it before changing the UI
 - [docs/ROADMAP.md](docs/ROADMAP.md) — the full feature plan, version by version
 - Good first issues are labelled [`good first issue`](https://github.com/beingmechon/baby-tracker/labels/good%20first%20issue)
 
 Translations, country-specific vaccination schedules and accessibility fixes are
 particularly wanted.
 
+## Design
+
+The look is not improvised. It has a written contract in
+[docs/DESIGN.md](docs/DESIGN.md): a named direction ("Herbarium Grid"), a stated
+grounding, and a rule for every choice.
+
+Warm natural materials on a strict module grid. Serif numerals as the protagonist —
+in a tracker the numbers *are* the content — with a quiet grotesque receding behind
+them. Hairline rules instead of cards. Everything flush-left. One ochre accent that
+appears only on a running timer and the primary action, and nowhere else. Section
+labels interrupt their own rule, like a legend on a map frame; that is the only
+ornament in the app.
+
+Three themes, because "dark mode" is not enough: light, dark, and a dim red-shifted
+**night** theme for the small hours, when the screen is inches from a sleeping
+baby's face. One warm hue family carries all three.
+
+It was derived using [ryanthedev/design-for-ai](https://github.com/ryanthedev/design-for-ai),
+whose AI-tell catalog ports rules from
+[pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
+from its seeded dealer rather than from anyone's taste, the colour ramps are
+generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
+the result is checked by its deterministic AI-tell detector: **0 findings across 7
+screens and 16 rules**, down from 13.
+
 ## Tech
 
-React + TypeScript + Vite, as an offline-first PWA. No UI framework and almost no
-runtime dependencies — the whole app is about 60 KB gzipped.
+React + TypeScript + Vite, as an offline-first PWA. No UI framework, and two
+runtime dependencies (React and React DOM). About 300 KB precached in total,
+fonts included — downloaded once, then it runs offline forever.
 
 ```
 src/domain/   Pure logic: units, time, sleep classification, summaries. No I/O.
 src/data/     Storage behind one Repository interface (IndexedDB today).
 src/app/      React state: settings, theme, the nursing timer, the store.
 src/ui/       Components.
+src/styles/   Tokens, base, components, and the two self-hosted fonts.
 ```
 
 The domain and data layers are deliberately free of React, so a native shell or a
 sync server can reuse them unchanged. 156 unit tests cover the logic, plus a
-browser smoke test that verifies the app still works with the network off.
+browser smoke test that verifies the app still works with the network off — and
+that its numerals are genuinely tabular, so a running timer cannot jitter.
 
 ```bash
 npm test          # unit tests
-npm run check     # lint, tests and a production build
+npm run check     # lint, typecheck, tests and a production build
 npm run smoke     # end-to-end run in a real browser (needs a built app)
+npm run fonts     # re-vendor the woff2 files from node_modules
 ```
 
 ## License

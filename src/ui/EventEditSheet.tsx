@@ -294,7 +294,7 @@ export function EventEditSheet({
               />
             </div>
           </div>
-          <p className="settings-note">
+          <p className="field-note">
             Leave the wake-up time blank to keep this sleep running.
           </p>
         </>

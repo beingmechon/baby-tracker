@@ -1,0 +1,204 @@
+/*
+ * Design tokens for "Herbarium Grid". See docs/DESIGN.md for the reasoning behind
+ * every value here; this file is the implementation, that file is the contract.
+ *
+ * The colour ramps are NOT hand-picked. They are the verbatim output of
+ * design-for-ai's `palette.mjs --seed 71.8 --chroma muted --harmony analogous`,
+ * an OKLCH generator that solves WCAG contrast by construction (16/16 pairs pass).
+ * Do not nudge a hex here by eye — change the seed and regenerate, or the contrast
+ * guarantees stop being guarantees.
+ */
+
+/* ── Colour: light ─────────────────────────────────────────────────────────── */
+
+:root {
+  --neutral-1: #fdfdfc;
+  --neutral-2: #f9f8f7;
+  --neutral-3: #f2f0ee;
+  --neutral-4: #eae7e4;
+  --neutral-5: #e1ddd8;
+  --neutral-6: #d6d1cb;
+  --neutral-7: #c9c2bb;
+  --neutral-8: #b1a9a1;
+  --neutral-9: #bfb6ab;
+  --neutral-10: #aca399;
+  --neutral-11: #67625d;
+  --neutral-12: #302d2a;
+  --accent-3: #f8efe5;
+  --accent-6: #e4ceb4;
+  --accent-9: #d6b081;
+  --accent-10: #c19e72;
+  --accent-11: #745f46;
+  --accent-12: #362c1f;
+  --accent-on-solid: #130c05;
+  --orange-3: #fdece6;
+  --orange-9: #cd886d;
+  --orange-11: #7f594a;
+  --yellow-3: #f3f1e4;
+  --yellow-9: #c2ba7c;
+  --yellow-11: #696443;
+  --error-3: #ffebe9;
+  --error-9: #c56c65;
+  --error-11: #86534f;
+
+  --background: var(--neutral-1);
+  --surface: var(--neutral-2);
+  --surface-hover: var(--neutral-3);
+  --surface-active: var(--neutral-4);
+  --border-subtle: var(--neutral-6);
+  --border: var(--neutral-7);
+  --border-strong: var(--neutral-8);
+  --text-secondary: var(--neutral-11);
+  --text: var(--neutral-12);
+  --accent-bg-subtle: var(--accent-3);
+  --accent-solid: var(--accent-9);
+  --accent-solid-hover: var(--accent-10);
+  --accent-text: var(--accent-11);
+
+  /* Categorical tints. Data rows only — never chrome. See DESIGN.md. */
+  --feed-tint: var(--orange-11);
+  --diaper-tint: var(--yellow-11);
+  --sleep-tint: var(--neutral-11);
+
+  /* Depth. Hue-shifted warm-dark, never a black overlay (ch09). */
+  --shadow-sheet: 0 -2px 24px rgb(48 45 42 / 22%);
+}
+
+/* ── Colour: dark ─────────────────────────────────────────────────────────── */
+
+:root[data-theme='dark'] {
+  --neutral-1: #131312;
+  --neutral-2: #1a1919;
+  --neutral-3: #232220;
+  --neutral-4: #2c2a27;
+  --neutral-5: #35322e;
+  --neutral-6: #3f3b36;
+  --neutral-7: #4d4842;
+  --neutral-8: #665f57;
+  --neutral-9: #bfb6ab;
+  --neutral-10: #d2c9bf;
+  --neutral-11: #bcb6b0;
+  --neutral-12: #eae7e3;
+  --accent-3: #272119;
+  --accent-6: #4a3822;
+  --accent-9: #d6b081;
+  --accent-10: #e9c397;
+  --accent-11: #cab398;
+  --accent-12: #f3e5d5;
+  --accent-on-solid: #130c05;
+  --orange-3: #2b1f1a;
+  --orange-9: #cd886d;
+  --orange-11: #d8ac9c;
+  --yellow-3: #242319;
+  --yellow-9: #c2ba7c;
+  --yellow-11: #bdb995;
+  --error-3: #2d1d1c;
+  --error-9: #c56c65;
+  --error-11: #e0a7a1;
+
+  --shadow-sheet: 0 -2px 24px rgb(0 0 0 / 55%);
+}
+
+/*
+ * ── Colour: night ────────────────────────────────────────────────────────────
+ *
+ * The app's most important surface, and the only block not machine-generated.
+ * Same hue family (71.8) pushed to very low lightness and shifted warm, so almost
+ * no blue channel remains: at 3am the screen is inches from a sleeping baby, and
+ * blue light is the thing to avoid.
+ *
+ * Because these are hand-built, their contrast is *measured in the browser* by
+ * scripts/smoke.mjs rather than asserted. Do not edit without re-running it.
+ */
+:root[data-theme='night'] {
+  --neutral-1: #140d07;
+  --neutral-2: #1b1209;
+  --neutral-3: #23180d;
+  --neutral-4: #2b1e11;
+  --neutral-5: #342415;
+  --neutral-6: #3f2c19;
+  --neutral-7: #4d371f;
+  --neutral-8: #66492a;
+  --neutral-9: #c0a175;
+  --neutral-10: #d2b183;
+  --neutral-11: #c39f74;
+  --neutral-12: #f0d5b2;
+  --accent-3: #2a1a0c;
+  --accent-6: #4c3117;
+  --accent-9: #e2a86e;
+  --accent-10: #efb87a;
+  --accent-11: #dfb184;
+  --accent-12: #f7e0c2;
+  --accent-on-solid: #150c04;
+  --orange-3: #2b160d;
+  --orange-9: #d08a63;
+  --orange-11: #dda98c;
+  --yellow-3: #241c0d;
+  --yellow-9: #c6b473;
+  --yellow-11: #c8b48a;
+  --error-3: #2f1610;
+  --error-9: #cc7059;
+  --error-11: #e5a68f;
+
+  --shadow-sheet: 0 -2px 24px rgb(0 0 0 / 70%);
+}
+
+/* ── Type ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Literata carries every numeral; Archivo carries every word. */
+  --font-display: 'Literata Variable', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-body: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* 1.25 major third from 16px. The grid uses -1/0/1; step 7 is the timer only. */
+  --text--1: 0.8rem;
+  --text-0: 1rem;
+  --text-1: 1.25rem;
+  --text-2: 1.5625rem;
+  --text-3: 1.953rem;
+  --text-4: 2.441rem;
+  --text-5: 3.052rem;
+  --text-6: 3.815rem;
+
+  --leading-body: 1.5;
+  --leading-display: 1.05;
+  --tracking-label: 0.08em;
+}
+
+/* ── Space ────────────────────────────────────────────────────────────────── */
+
+/*
+ * A 3:4 varied scale (×0.75 decay from 64px), not a uniform 4/8/16 grid.
+ * v0.1 used ~12px for 64% of its gaps and an AI-tell detector flagged it as
+ * `monotonous-spacing`. Tight within a group, generous between groups — white
+ * space is the primary hierarchy signal (ch07).
+ */
+:root {
+  --space-1: 0.3125rem; /* 5  */
+  --space-2: 0.375rem; /* 6  */
+  --space-3: 0.5rem; /* 8  */
+  --space-4: 0.6875rem; /* 11 */
+  --space-5: 0.9375rem; /* 15 */
+  --space-6: 1.25rem; /* 20 */
+  --space-7: 1.6875rem; /* 27 */
+  --space-8: 2.25rem; /* 36 */
+  --space-9: 3rem; /* 48 */
+  --space-10: 4rem; /* 64 */
+}
+
+/* ── Shape, measure, motion ───────────────────────────────────────────────── */
+
+:root {
+  /* A stamped form, not a stack of cards. The dealt composition rules shape. */
+  --radius: 3px;
+
+  /* Tap targets: 56px floor, 72px for anything pressed in the dark. */
+  --tap: 3.5rem;
+  --tap-lg: 4.5rem;
+
+  --measure: 34rem;
+
+  --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --dur-state: 120ms;
+  --dur-sheet: 200ms;
+}

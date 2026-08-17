@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { localDateKey } from '@/domain/time'
-import { NursingIcon, ShieldIcon } from './icons'
+import { RuleLabel } from './RuleLabel'
+import { ShieldIcon } from './icons'
 
 interface OnboardingProps {
   onCreate: (input: { name: string; birthDate: string | null }) => Promise<void>
@@ -34,12 +35,11 @@ export function Onboarding({ onCreate }: OnboardingProps) {
 
   return (
     <form className="onboarding" onSubmit={submit}>
-      <div className="onboarding-mark">
-        <NursingIcon size={30} />
-      </div>
-
+      {/* A rounded icon tile stacked above a heading is the catalogued
+          `icon-tile-stack` tell. The signature rule carries the mark instead. */}
       <div className="section">
-        <h1>Baby Tracker</h1>
+        <RuleLabel>Baby Tracker</RuleLabel>
+        <h1>A private record of your baby’s day.</h1>
         <p className="onboarding-lede">
           Feeds, sleep and diapers in one tap. Everything stays on this device.
         </p>
@@ -72,7 +72,7 @@ export function Onboarding({ onCreate }: OnboardingProps) {
           max={localDateKey(Date.now())}
           onChange={(event) => setBirthDate(event.target.value)}
         />
-        <p className="settings-note">
+        <p className="field-note">
           Used to show age and age-appropriate wake windows. You can add it later.
         </p>
       </div>

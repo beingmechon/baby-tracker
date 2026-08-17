@@ -8,6 +8,9 @@ test-results/
 playwright-report/
 /screenshots/
 
+# Rendered DOM snapshots for the external AI-tell detector
+/.design-audit/
+
 # tsc -b build info
 *.tsbuildinfo
 

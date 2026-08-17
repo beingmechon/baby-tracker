@@ -103,7 +103,7 @@ export function BottleSheet({
       </div>
 
       {lastAmountMl !== null && (
-        <p className="settings-note">
+        <p className="field-note">
           Last bottle was {formatVolume(lastAmountMl, unit)}.
         </p>
       )}

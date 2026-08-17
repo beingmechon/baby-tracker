@@ -107,7 +107,8 @@ try {
   check(
     'the daily diaper count updates',
     (await page
-      .locator('.summary-tile[data-category="diaper"] .summary-tile-value')
+      .locator('.ledger-row', { hasText: 'Diapers' })
+      .locator('.ledger-value')
       .innerText()) === '1',
   )
 
@@ -127,7 +128,8 @@ try {
   check(
     'the feed count updates',
     (await page
-      .locator('.summary-tile[data-category="feed"] .summary-tile-value')
+      .locator('.ledger-row', { hasText: 'Feeds' })
+      .locator('.ledger-value')
       .innerText()) === '1',
   )
 
@@ -158,8 +160,14 @@ try {
   await page.getByRole('button', { name: /Start sleep/ }).click()
   await page.getByText('Sleep started').waitFor()
   check(
-    'the status strip switches to Asleep',
-    await page.locator('.status-card[data-tone="asleep"]').isVisible(),
+    'the headline switches to a running Asleep timer',
+    await page.locator('.headline[data-running="true"]').isVisible(),
+  )
+  check(
+    'the headline reads as a live stopwatch',
+    /^\d{1,2}:\d{2}(:\d{2})?$/.test(
+      await page.locator('.headline-value').innerText(),
+    ),
   )
   check(
     'the timeline marks the sleep as live',
@@ -167,7 +175,7 @@ try {
   )
 
   await page.waitForTimeout(1500)
-  await page.locator('.action-sleep').click()
+  await page.getByRole('button', { name: 'Wake up' }).click()
   await page.getByText('Sleep ended').waitFor()
   // Nap or night sleep depending on the wall clock — the classification is what
   // is under test here, not which side of it we happen to land on.
@@ -214,7 +222,7 @@ try {
     (await page.locator('html').getAttribute('data-theme')) === 'day',
   )
   const dayBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
-  check(`the light background is warm paper, not pure white (${dayBg})`, dayBg === 'rgb(246, 244, 239)')
+  check(`the light background is warm paper, not pure white (${dayBg})`, dayBg === 'rgb(253, 253, 252)')
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await settle(page)
   await page.screenshot({ path: join(SHOTS, 'home-day.png') })
@@ -237,12 +245,39 @@ try {
   const nightBg = await page.evaluate(
     () => getComputedStyle(document.body).backgroundColor,
   )
-  check(`the night background is near-black and warm (${nightBg})`, nightBg === 'rgb(20, 10, 8)')
+  check(`the night background is near-black and warm (${nightBg})`, nightBg === 'rgb(20, 13, 7)')
   await settle(page)
   await page.screenshot({ path: join(SHOTS, 'settings-night.png') })
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await settle(page)
   await page.screenshot({ path: join(SHOTS, 'home-night.png') })
+
+  console.log('\n▸ Typography')
+  await page.evaluate(() => document.fonts.ready)
+  check(
+    'the display face is the bundled one, not a fallback',
+    await page.evaluate(() => document.fonts.check('600 64px "Literata Variable"')),
+  )
+  // Guards a real defect class: `font-variant-numeric: tabular-nums` silently does
+  // nothing on a font without a `tnum` feature, and a running stopwatch then
+  // visibly jitters as the digits change. Fraunces failed exactly this.
+  const figureDrift = await page.evaluate(() => {
+    const probe = (text) => {
+      const el = document.createElement('span')
+      el.className = 'num'
+      el.style.cssText = 'position:absolute;font-size:64px;font-weight:600;white-space:pre'
+      el.textContent = text
+      document.body.appendChild(el)
+      const width = el.getBoundingClientRect().width
+      el.remove()
+      return width
+    }
+    return Math.abs(probe('000000') - probe('111111'))
+  })
+  check(
+    `numerals are tabular, so a running timer cannot jitter (${figureDrift.toFixed(2)}px drift)`,
+    figureDrift < 0.5,
+  )
 
   console.log('\n▸ Data survives a reload')
   await page.reload()

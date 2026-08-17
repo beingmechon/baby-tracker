@@ -53,6 +53,17 @@ constraints that will otherwise seem arbitrary — particularly why the domain a
 data layers must not import React, and why timestamps are always UTC epoch
 milliseconds.
 
+If your change touches anything visual, also read [docs/DESIGN.md](docs/DESIGN.md).
+It is the design contract: the direction, the type and colour rules, the single
+signature move, and a list of things this project must never do. Two things there
+catch people out:
+
+- **Do not hand-pick a colour.** The ramps are generated OKLCH output with WCAG
+  contrast solved by construction. Nudging a hex by eye voids the guarantee.
+- **Do not add a second decorative device.** One signature move, applied
+  consistently, is the whole design. A new gradient, glow, or badge style is a
+  regression even if it looks nice on its own.
+
 ## The house rules
 
 These are not negotiable, because they are the reason the project exists:

@@ -41,9 +41,19 @@ jobs:
         # Icons are committed so a plain `npm ci && npm run build` needs no extra
         # step, but a stale commit would ship an icon the source no longer defines.
         run: |
-          node scripts/generate-icons.mjs
+          npm run icons
           git diff --exit-code -- public/ || {
-            echo "::error::Icons are stale. Run 'node scripts/generate-icons.mjs' and commit the result."
+            echo "::error::Icons are stale. Run 'npm run icons' and commit the result."
+            exit 1
+          }
+
+      - name: Check the vendored fonts match node_modules
+        # The woff2 files are committed so the offline payload is exactly
+        # auditable; drift would mean shipping a font nobody reviewed.
+        run: |
+          npm run fonts
+          git diff --exit-code -- src/styles/fonts/ || {
+            echo "::error::Vendored fonts are stale. Run 'npm run fonts' and commit the result."
             exit 1
           }
 

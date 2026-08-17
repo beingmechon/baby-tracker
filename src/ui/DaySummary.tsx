@@ -2,19 +2,25 @@ import { formatDuration } from '@/domain/time'
 import type { Summary } from '@/domain/summary'
 import type { VolumeUnit } from '@/domain/types'
 import { formatVolume } from '@/domain/units'
-import { BottleIcon, DiaperIcon, SleepIcon } from './icons'
 
 interface DaySummaryProps {
   summary: Summary
   unit: VolumeUnit
 }
 
-/** Today at a glance: the three numbers a paediatrician asks about first. */
+/**
+ * The day's three numbers, set as a ledger rather than three boxed tiles.
+ *
+ * Deliberately unruled: baseline alignment and the right-aligned tabular numeral
+ * column already separate the rows, and adding a rule on top of a separation that
+ * already works is Tufte's 1+1=3 (ch07, Critical). The timeline below *does* use
+ * rules, because with many rows a rule genuinely helps the eye track across.
+ */
 export function DaySummary({ summary, unit }: DaySummaryProps) {
   const { feeds, sleep, diapers } = summary
 
   const feedDetail = [
-    feeds.nursingMs > 0 ? formatDuration(feeds.nursingMs) : null,
+    feeds.nursingMs > 0 ? `${formatDuration(feeds.nursingMs)} nursing` : null,
     feeds.bottleMl > 0 ? formatVolume(feeds.bottleMl, unit) : null,
   ]
     .filter((part): part is string => part !== null)
@@ -27,38 +33,28 @@ export function DaySummary({ summary, unit }: DaySummaryProps) {
     .filter((part): part is string => part !== null)
     .join(' · ')
 
+  const rows = [
+    { term: 'Feeds', value: String(feeds.count), detail: feedDetail },
+    {
+      term: 'Sleep',
+      value: sleep.totalMs > 0 ? formatDuration(sleep.totalMs) : '—',
+      detail:
+        sleep.longestMs > 0
+          ? `longest stretch ${formatDuration(sleep.longestMs)}`
+          : '',
+    },
+    { term: 'Diapers', value: String(diapers.total), detail: diaperDetail },
+  ]
+
   return (
-    <div className="summary">
-      <div className="summary-tile" data-category="feed">
-        <span className="summary-tile-label">
-          <BottleIcon size={14} />
-          Feeds
-        </span>
-        <span className="summary-tile-value">{feeds.count}</span>
-        <span className="summary-tile-detail">{feedDetail || '—'}</span>
-      </div>
-
-      <div className="summary-tile" data-category="sleep">
-        <span className="summary-tile-label">
-          <SleepIcon size={14} />
-          Sleep
-        </span>
-        <span className="summary-tile-value">
-          {sleep.totalMs > 0 ? formatDuration(sleep.totalMs) : '—'}
-        </span>
-        <span className="summary-tile-detail">
-          {sleep.longestMs > 0 ? `longest ${formatDuration(sleep.longestMs)}` : '—'}
-        </span>
-      </div>
-
-      <div className="summary-tile" data-category="diaper">
-        <span className="summary-tile-label">
-          <DiaperIcon size={14} />
-          Diapers
-        </span>
-        <span className="summary-tile-value">{diapers.total}</span>
-        <span className="summary-tile-detail">{diaperDetail || '—'}</span>
-      </div>
-    </div>
+    <dl className="ledger">
+      {rows.map(({ term, value, detail }) => (
+        <div className="ledger-row" key={term}>
+          <dt className="ledger-term">{term}</dt>
+          <dd className="ledger-value">{value}</dd>
+          {detail !== '' && <dd className="ledger-detail">{detail}</dd>}
+        </div>
+      ))}
+    </dl>
   )
 }

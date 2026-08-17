@@ -69,7 +69,7 @@ export function App() {
           <p className="banner" data-tone="error" role="alert">
             {store.error ?? 'Could not open your data on this device.'}
           </p>
-          <p className="settings-note">
+          <p className="field-note">
             This usually means the browser is blocking local storage — private
             browsing mode is the most common cause. Your data has not been lost.
           </p>

@@ -70,7 +70,7 @@ export function NursingSheet({
           ))}
         </div>
         {!started && lastSide !== null && lastSide !== timer.side && (
-          <p className="settings-note">
+          <p className="field-note">
             Last feed was on the {SIDE_LABEL[lastSide].toLowerCase()}, so the{' '}
             {SIDE_LABEL[timer.side].toLowerCase()} is suggested.
           </p>
@@ -94,7 +94,7 @@ export function NursingSheet({
               : 'Ready'}
         </span>
         {timer.sessionStartedAt !== null && (
-          <span className="settings-note">
+          <span className="field-note">
             Started {formatClock(timer.sessionStartedAt)}
           </span>
         )}

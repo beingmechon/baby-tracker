@@ -11,8 +11,9 @@ src/
   data/      Persistence behind one interface. No React.
   app/       React state: settings, theme, the store, the nursing timer.
   ui/        Components.
+  styles/    Tokens, base, components, and the vendored fonts.
   test/      Shared test factories.
-scripts/     Icon generation, browser smoke test.
+scripts/     Icon generation, font vendoring, browser smoke test, DOM snapshots.
 ```
 
 Dependencies point strictly downwards: `ui` → `app` → `data` → `domain`. Nothing
@@ -94,21 +95,45 @@ One interface, `Repository`, describes every read and write the app performs.
 - `repositoryContext.ts` / `RepositoryProvider.tsx` — split so the context module
   exports no components, which keeps Fast Refresh working.
 
-### `ui/` — components
+### `ui/` and `styles/` — components and the design system
 
 Plain React with CSS custom properties. No component library, no CSS-in-JS.
+
+**The design has its own contract: [DESIGN.md](DESIGN.md). Read it before changing
+anything visual.** It names the direction, the type and colour rules, the one
+signature move, and an explicit list of things this project must never do. Drift
+from it is a defect, not a preference — and the same applies to the tokens: the
+colour ramps in `styles/tokens.css` are generated output with WCAG contrast solved
+by construction, so nudging a hex by eye silently voids the guarantee.
+
+```
+styles/fonts.css    @font-face for the two vendored, self-hosted faces
+styles/tokens.css   colour (light/dark/night), type scale, space scale, motion
+styles/base.css     reset and base elements
+styles/app.css      components
+styles/fonts/       the actual woff2 files, vendored by `npm run fonts`
+```
 
 Design constraints that drove the visible choices:
 
 - **Three themes, not two.** `dark` is an ordinary evening theme; `night` is a
-  separate, dimmer, red-tinted palette for the small hours, when the screen is
+  separate, dimmer, red-shifted palette for the small hours, when the screen is
   inches from a sleeping baby. Every colour is a token, so `night` is a palette
   swap rather than a second stylesheet.
+- **No boxed cards.** Hairline rules and white space are the structure. Wrapping
+  a bordered thing in another bordered thing is how v0.1 earned a `nested-cards`
+  finding from the AI-tell detector.
+- **Flush-left, rag-right.** Nothing is centred; centring is the absence of a
+  layout decision.
 - **Tap targets: 56px minimum, 72px for primary actions.** These buttons get
   pressed one-handed, half asleep, often while holding a baby.
 - **Sheets are bottom-anchored** so their controls sit in thumb reach.
 - **16px minimum font size on inputs**, which stops iOS Safari zooming the
   viewport on focus.
+- **Every numeral carries `.num`** — the display face plus tabular figures. A
+  timer that changes width as it ticks is a real defect, and the smoke test now
+  measures for it, because `tabular-nums` silently does nothing on a font with no
+  `tnum` feature.
 - **Copy lives in `describeEvent.ts`**, apart from the components, so the exact
   wording is unit-tested. It gets read hundreds of times a week.
 
@@ -125,6 +150,19 @@ Three layers, each for what it is actually good at:
    promise, so it is verified on every CI run rather than asserted in a README.
 3. **Screenshots** are produced by the same smoke run, which keeps the README
    honest about what the app currently looks like.
+
+A fourth, external check is worth running after any visual change: the
+deterministic AI-tell detector from
+[ryanthedev/design-for-ai](https://github.com/ryanthedev/design-for-ai). Because
+this is a React SPA, point it at rendered output rather than the build:
+
+```bash
+npm run build
+node scripts/snapshot.mjs .design-audit          # inlines CSS into static HTML
+node <path-to>/design-for-ai/scripts/detect.mjs .design-audit/*.html
+```
+
+The current design scores 0 findings across 7 screens and 16 rules.
 
 Test timestamps are always built from local calendar parts via the `at()` factory,
 so assertions about wall-clock behaviour hold in whatever timezone CI runs in.

@@ -15,7 +15,6 @@ import type { BabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { isToday, selectEventsForDay } from '@/domain/select'
-import { sleepDuration } from '@/domain/sleep'
 import { summarizeDay } from '@/domain/summary'
 import {
   addDays,
@@ -25,18 +24,19 @@ import {
   startOfLocalDay,
 } from '@/domain/time'
 import type { BabyEvent, BreastSide, DiaperKind, Timestamp } from '@/domain/types'
+import { formatVolume } from '@/domain/units'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
 import { NursingSheet } from './NursingSheet'
-import { StatusStrip } from './StatusStrip'
+import { RuleLabel } from './RuleLabel'
+import { StatusHeadline } from './StatusHeadline'
 import { Timeline } from './Timeline'
 import {
   BottleIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  DiaperIcon,
   NursingIcon,
   RepeatIcon,
   SettingsIcon,
@@ -64,10 +64,10 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
   const [dayAnchor, setDayAnchor] = useState<Timestamp>(() => startOfLocalDay(Date.now()))
   const [toast, setToast] = useState<string | null>(null)
 
-  // A running clock needs a second-by-second tick; otherwise a lazy 20s is
-  // plenty and spares the battery.
-  const somethingRunning = sleepInProgress !== null || isRunning(nursingTimer ?? idleTimer('left'))
-  const now = useNow(somethingRunning ? 1000 : 20_000)
+  // A running clock needs a second-by-second tick; otherwise a lazy 20s is plenty
+  // and spares the battery.
+  const nursingRunning = nursingTimer !== null && isRunning(nursingTimer)
+  const now = useNow(sleepInProgress !== null || nursingRunning ? 1000 : 20_000)
 
   // Restore a nursing timer left running when the app was last closed.
   useEffect(() => {
@@ -91,26 +91,31 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
     () => selectEventsForDay(events, dayAnchor, now),
     [events, dayAnchor, now],
   )
-  const summary = useMemo(() => summarizeDay(events, dayAnchor, now), [
-    events,
-    dayAnchor,
-    now,
-  ])
+  const summary = useMemo(
+    () => summarizeDay(events, dayAnchor, now),
+    [events, dayAnchor, now],
+  )
 
   const viewingToday = isToday(dayAnchor, now)
 
   if (activeBaby === null) return null
 
-  /** Point-in-time logs are stamped now, even while browsing an earlier day —
-   * the alternative silently backdates entries, which is worse than a nudge. */
+  /**
+   * Point-in-time logs are stamped now, even while browsing an earlier day — the
+   * alternative silently backdates entries, which is worse than jumping back.
+   */
   function logAt(): Timestamp {
     return Date.now()
+  }
+
+  function returnToToday() {
+    if (!viewingToday) setDayAnchor(startOfLocalDay(Date.now()))
   }
 
   async function quickDiaper(kind: DiaperKind) {
     await store.logDiaper({ kind, startedAt: logAt() })
     setToast(`${kind[0]?.toUpperCase()}${kind.slice(1)} diaper logged`)
-    if (!viewingToday) setDayAnchor(startOfLocalDay(Date.now()))
+    returnToToday()
   }
 
   async function toggleSleep() {
@@ -137,6 +142,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
     }
     setNursingTimer(null)
     setOpenSheet(null)
+    returnToToday()
   }
 
   async function handleSwitchSide() {
@@ -152,11 +158,18 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
   async function repeatLast() {
     await store.repeatLastFeed(logAt())
     setToast('Last feed repeated')
-    if (!viewingToday) setDayAnchor(startOfLocalDay(Date.now()))
+    returnToToday()
   }
 
   const nursingElapsed = nursingTimer === null ? 0 : elapsedMs(nursingTimer, now)
   const age = formatAge(activeBaby.birthDate, now)
+
+  const repeatLabel =
+    lastFeed === null
+      ? null
+      : lastFeed.type === 'bottle'
+        ? `Repeat last feed · ${formatVolume(lastFeed.amountMl, settings.volumeUnit)}`
+        : `Repeat last feed · ${lastFeed.side} side`
 
   return (
     <>
@@ -178,7 +191,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           </p>
         )}
 
-        <StatusStrip
+        <StatusHeadline
           events={events}
           sleepInProgress={sleepInProgress}
           birthDate={activeBaby.birthDate}
@@ -186,112 +199,101 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           showGuidance={settings.showWakeWindowGuidance}
         />
 
-        <section className="actions" aria-label="Log an entry">
-          <button
-            type="button"
-            className="action action-sleep"
-            data-category="sleep"
-            data-running={sleepInProgress !== null}
-            onClick={toggleSleep}
-          >
-            <SleepIcon size={24} />
-            {sleepInProgress === null ? (
-              <span>Start sleep</span>
-            ) : (
-              <>
-                <span className="action-sleep-timer">
-                  {formatStopwatch(sleepDuration(sleepInProgress, now))}
+        <section className="section" aria-label="Log an entry">
+          <RuleLabel>Log</RuleLabel>
+          <div className="actions">
+            <button
+              type="button"
+              className="action action-primary"
+              onClick={() => void toggleSleep()}
+            >
+              <SleepIcon size={20} className="action-icon" />
+              <span>{sleepInProgress === null ? 'Start sleep' : 'Wake up'}</span>
+            </button>
+
+            <div className="action-row">
+              <button type="button" className="action" onClick={openNursing}>
+                <NursingIcon size={18} className="action-icon" />
+                <span>
+                  Nursing
+                  {nursingElapsed > 0 && (
+                    <>
+                      {' '}
+                      <span className="num">{formatStopwatch(nursingElapsed)}</span>
+                    </>
+                  )}
                 </span>
-                <span className="action-sleep-hint">Tap to wake up</span>
-              </>
-            )}
-          </button>
-
-          <div className="action-row">
-            <button
-              type="button"
-              className="action"
-              data-category="feed"
-              onClick={openNursing}
-            >
-              <NursingIcon size={22} />
-              <span>
-                Nursing
-                {nursingTimer !== null && nursingElapsed > 0
-                  ? ` · ${formatStopwatch(nursingElapsed)}`
-                  : ''}
-              </span>
-            </button>
-            <button
-              type="button"
-              className="action"
-              data-category="feed"
-              onClick={() => setOpenSheet('bottle')}
-            >
-              <BottleIcon size={22} />
-              <span>Bottle</span>
-            </button>
-          </div>
-
-          <div className="action-diapers" role="group" aria-label="Log a diaper">
-            {QUICK_DIAPERS.map(({ kind, label }) => (
-              <button
-                key={kind}
-                type="button"
-                className="action action-compact"
-                data-category="diaper"
-                onClick={() => void quickDiaper(kind)}
-              >
-                <DiaperIcon size={20} />
-                <span>{label}</span>
               </button>
-            ))}
-          </div>
+              <button
+                type="button"
+                className="action"
+                onClick={() => setOpenSheet('bottle')}
+              >
+                <BottleIcon size={18} className="action-icon" />
+                <span>Bottle</span>
+              </button>
+            </div>
 
-          {lastFeed !== null && (
-            <button type="button" className="repeat-button" onClick={() => void repeatLast()}>
-              <RepeatIcon size={18} />
-              <span>
-                Repeat last feed
-                {lastFeed.type === 'bottle'
-                  ? ` · ${Math.round(lastFeed.amountMl)} ml`
-                  : ` · ${lastFeed.side} side`}
-              </span>
-            </button>
-          )}
+            {/* No icons here: three identical diaper glyphs would carry no
+                information the labels don't already carry — Tufte's 1+1=3. */}
+            <div className="action-row-3" role="group" aria-label="Log a diaper">
+              {QUICK_DIAPERS.map(({ kind, label }) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className="action"
+                  onClick={() => void quickDiaper(kind)}
+                >
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {repeatLabel !== null && (
+              <button
+                type="button"
+                className="action-repeat"
+                onClick={() => void repeatLast()}
+              >
+                <RepeatIcon size={16} />
+                <span>{repeatLabel}</span>
+              </button>
+            )}
+          </div>
         </section>
 
         <section className="section" aria-label="Daily summary">
-          <div className="day-nav">
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setDayAnchor((day) => addDays(day, -1))}
-            >
-              <ChevronLeftIcon />
-              <span className="sr-only">Previous day</span>
-            </button>
-            <span className="day-nav-label">
-              {viewingToday ? 'Today' : localDateKey(dayAnchor)}
-            </span>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setDayAnchor((day) => addDays(day, 1))}
-              disabled={viewingToday}
-            >
-              <ChevronRightIcon />
-              <span className="sr-only">Next day</span>
-            </button>
-          </div>
+          <RuleLabel
+            actions={
+              <>
+                <button
+                  type="button"
+                  className="icon-button"
+                  onClick={() => setDayAnchor((day) => addDays(day, -1))}
+                >
+                  <ChevronLeftIcon size={18} />
+                  <span className="sr-only">Previous day</span>
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  onClick={() => setDayAnchor((day) => addDays(day, 1))}
+                  disabled={viewingToday}
+                >
+                  <ChevronRightIcon size={18} />
+                  <span className="sr-only">Next day</span>
+                </button>
+              </>
+            }
+          >
+            {viewingToday ? 'Today' : localDateKey(dayAnchor)}
+          </RuleLabel>
 
           <DaySummary summary={summary} unit={settings.volumeUnit} />
         </section>
 
         <section className="section" aria-label="Timeline">
-          <div className="section-heading">
-            <h2>Timeline</h2>
-          </div>
+          <RuleLabel>Timeline</RuleLabel>
           <Timeline
             events={dayEvents}
             unit={settings.volumeUnit}
@@ -331,7 +333,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
             await store.logBottle({ contents, amountMl, startedAt: logAt() })
             setToast('Bottle saved')
             setOpenSheet(null)
-            if (!viewingToday) setDayAnchor(startOfLocalDay(Date.now()))
+            returnToToday()
           }}
           onClose={() => setOpenSheet(null)}
         />
@@ -357,7 +359,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
 
       {toast !== null && (
         <div className="toast" role="status" aria-live="polite">
-          <CheckIcon size={18} />
+          <CheckIcon size={16} />
           <span>{toast}</span>
         </div>
       )}

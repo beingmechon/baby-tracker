@@ -23,11 +23,14 @@ export function resolveTheme(
   return prefersDark ? 'dark' : 'day'
 }
 
-/** Keeps the browser chrome in step with the theme, so there is no bright bar. */
+/**
+ * Keeps the browser chrome in step with the theme, so there is no bright bar.
+ * These must stay equal to `--neutral-1` in each block of src/styles/tokens.css.
+ */
 const THEME_COLORS: Record<ResolvedTheme, string> = {
-  day: '#f7f5f1',
-  dark: '#12151c',
-  night: '#150a0a',
+  day: '#fdfdfc',
+  dark: '#131312',
+  night: '#140d07',
 }
 
 export function applyTheme(theme: ResolvedTheme): void {
