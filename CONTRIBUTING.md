@@ -23,7 +23,7 @@ on something bigger, open an issue first so nobody duplicates your effort.
 
 ## Getting set up
 
-You need Node 20 or newer.
+You need Node 20 or newer. CI runs Node 22, the active LTS.
 
 ```bash
 git clone https://github.com/beingmechon/baby-tracker.git
