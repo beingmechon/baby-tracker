@@ -7,13 +7,13 @@ import {
   addDays,
   ageInDays,
   ageInMonths,
-  formatAge,
-  formatAgo,
+  describeAge,
   formatClock,
-  formatDuration,
+  formatClock24,
   formatStopwatch,
   localDateKey,
   overlapMs,
+  splitDuration,
   startOfLocalDay,
 } from './time'
 
@@ -53,44 +53,11 @@ describe('formatClock', () => {
   })
 })
 
-describe('formatDuration', () => {
-  it('keeps seconds under a minute so a fresh timer visibly moves', () => {
-    expect(formatDuration(48_000)).toBe('48s')
-    expect(formatDuration(0)).toBe('0s')
-  })
-
-  it('shows minutes, then hours and minutes', () => {
-    expect(formatDuration(24 * MINUTE_MS)).toBe('24m')
-    expect(formatDuration(HOUR_MS + 24 * MINUTE_MS)).toBe('1h 24m')
-  })
-
-  it('omits a zero minute component', () => {
-    expect(formatDuration(2 * HOUR_MS)).toBe('2h')
-  })
-
-  it('never renders negative time from a clock skew', () => {
-    expect(formatDuration(-5000)).toBe('0s')
-  })
-})
-
 describe('formatStopwatch', () => {
   it('pads to mm:ss and grows to h:mm:ss', () => {
     expect(formatStopwatch(42_000)).toBe('00:42')
     expect(formatStopwatch(7 * MINUTE_MS + 3000)).toBe('07:03')
     expect(formatStopwatch(HOUR_MS + 7 * MINUTE_MS + 3000)).toBe('1:07:03')
-  })
-})
-
-describe('formatAgo', () => {
-  const now = at(2026, 1, 15, 12, 0)
-
-  it('collapses the last minute to "just now"', () => {
-    expect(formatAgo(now - 30_000, now)).toBe('just now')
-  })
-
-  it('reads as elapsed time otherwise', () => {
-    expect(formatAgo(now - 20 * MINUTE_MS, now)).toBe('20m ago')
-    expect(formatAgo(now - (3 * HOUR_MS + 5 * MINUTE_MS), now)).toBe('3h 5m ago')
   })
 })
 
@@ -135,27 +102,6 @@ describe('ageInMonths', () => {
   })
 })
 
-describe('formatAge', () => {
-  const now = at(2026, 6, 15, 9, 0)
-
-  it('uses the phrasing parents use at each stage', () => {
-    expect(formatAge('2026-06-15', now)).toBe('born today')
-    expect(formatAge('2026-06-14', now)).toBe('1 day old')
-    expect(formatAge('2026-06-10', now)).toBe('5 days old')
-    expect(formatAge('2026-05-15', now)).toBe('4 weeks old')
-    expect(formatAge('2025-06-15', now)).toBe('12 months old')
-  })
-
-  it('switches to years once months stop being useful', () => {
-    expect(formatAge('2024-06-15', now)).toBe('2 years old')
-    expect(formatAge('2024-03-15', now)).toBe('2y 3m old')
-  })
-
-  it('is null without a birth date', () => {
-    expect(formatAge(null, now)).toBeNull()
-  })
-})
-
 describe('overlapMs', () => {
   const dayStart = at(2026, 1, 15)
   const dayEnd = at(2026, 1, 16)
@@ -182,5 +128,59 @@ describe('overlapMs', () => {
     expect(overlapMs(dayStart - DAY_MS, dayEnd + DAY_MS, dayStart, dayEnd)).toBe(
       dayEnd - dayStart,
     )
+  })
+})
+
+describe('splitDuration', () => {
+  it('keeps seconds under a minute so a fresh timer visibly moves', () => {
+    expect(splitDuration(48_000)).toMatchObject({ subMinute: true, seconds: 48 })
+    expect(splitDuration(0)).toMatchObject({ subMinute: true, seconds: 0 })
+  })
+
+  it('splits into hours and minutes', () => {
+    expect(splitDuration(HOUR_MS + 24 * MINUTE_MS)).toMatchObject({
+      hours: 1,
+      minutes: 24,
+      subMinute: false,
+    })
+    expect(splitDuration(24 * MINUTE_MS)).toMatchObject({ hours: 0, minutes: 24 })
+    expect(splitDuration(2 * HOUR_MS)).toMatchObject({ hours: 2, minutes: 0 })
+  })
+
+  it('never reports negative time from a clock skew', () => {
+    expect(splitDuration(-5000)).toMatchObject({ hours: 0, minutes: 0, seconds: 0 })
+  })
+})
+
+describe('formatClock24', () => {
+  it('is zero-padded and unambiguous, for exports', () => {
+    expect(formatClock24(at(2026, 1, 15, 9, 5))).toBe('09:05')
+    expect(formatClock24(at(2026, 1, 15, 21, 5))).toBe('21:05')
+    expect(formatClock24(at(2026, 1, 15, 0, 0))).toBe('00:00')
+  })
+})
+
+describe('describeAge', () => {
+  const now = at(2026, 6, 15, 9, 0)
+
+  it('picks the granularity a parent would use', () => {
+    expect(describeAge('2026-06-15', now)).toEqual({ unit: 'bornToday' })
+    expect(describeAge('2026-06-14', now)).toEqual({ unit: 'days', count: 1 })
+    expect(describeAge('2026-06-10', now)).toEqual({ unit: 'days', count: 5 })
+    expect(describeAge('2026-05-15', now)).toEqual({ unit: 'weeks', count: 4 })
+    expect(describeAge('2025-06-15', now)).toEqual({ unit: 'months', count: 12 })
+  })
+
+  it('switches to years once months stop being useful', () => {
+    expect(describeAge('2024-06-15', now)).toEqual({ unit: 'years', count: 2 })
+    expect(describeAge('2024-03-15', now)).toEqual({
+      unit: 'yearsMonths',
+      years: 2,
+      months: 3,
+    })
+  })
+
+  it('is null without a birth date', () => {
+    expect(describeAge(null, now)).toBeNull()
   })
 })

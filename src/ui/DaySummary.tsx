@@ -1,7 +1,7 @@
-import { formatDuration } from '@/domain/time'
 import type { Summary } from '@/domain/summary'
 import type { VolumeUnit } from '@/domain/types'
-import { formatVolume } from '@/domain/units'
+import { useTranslator } from '@/i18n/context'
+import { formatDuration, formatVolume } from '@/i18n/format'
 
 interface DaySummaryProps {
   summary: Summary
@@ -17,33 +17,39 @@ interface DaySummaryProps {
  * rules, because with many rows a rule genuinely helps the eye track across.
  */
 export function DaySummary({ summary, unit }: DaySummaryProps) {
+  const t = useTranslator()
   const { feeds, sleep, diapers } = summary
 
   const feedDetail = [
-    feeds.nursingMs > 0 ? `${formatDuration(feeds.nursingMs)} nursing` : null,
-    feeds.bottleMl > 0 ? formatVolume(feeds.bottleMl, unit) : null,
+    feeds.nursingMs > 0
+      ? t.t('summary.nursingTotal', { duration: formatDuration(t, feeds.nursingMs) })
+      : null,
+    feeds.bottleMl > 0 ? formatVolume(t, feeds.bottleMl, unit) : null,
   ]
     .filter((part): part is string => part !== null)
     .join(' · ')
 
+  const dirty = diapers.dirty + diapers.mixed
   const diaperDetail = [
-    diapers.wet > 0 ? `${diapers.wet} wet` : null,
-    diapers.dirty + diapers.mixed > 0 ? `${diapers.dirty + diapers.mixed} dirty` : null,
+    diapers.wet > 0 ? t.plural('summary.diapersWet', diapers.wet) : null,
+    dirty > 0 ? t.plural('summary.diapersDirty', dirty) : null,
   ]
     .filter((part): part is string => part !== null)
     .join(' · ')
 
   const rows = [
-    { term: 'Feeds', value: String(feeds.count), detail: feedDetail },
+    { term: t.t('summary.feeds'), value: t.number(feeds.count), detail: feedDetail },
     {
-      term: 'Sleep',
-      value: sleep.totalMs > 0 ? formatDuration(sleep.totalMs) : '—',
+      term: t.t('summary.sleep'),
+      value: sleep.totalMs > 0 ? formatDuration(t, sleep.totalMs) : t.t('summary.none'),
       detail:
         sleep.longestMs > 0
-          ? `longest stretch ${formatDuration(sleep.longestMs)}`
+          ? t.t('summary.longestStretch', {
+              duration: formatDuration(t, sleep.longestMs),
+            })
           : '',
     },
-    { term: 'Diapers', value: String(diapers.total), detail: diaperDetail },
+    { term: t.t('summary.diapers'), value: t.number(diapers.total), detail: diaperDetail },
   ]
 
   return (

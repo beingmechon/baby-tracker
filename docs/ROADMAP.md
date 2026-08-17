@@ -25,8 +25,10 @@ to use it with a real baby at 4am.
 
 ## v0.2 — Growth and reminders
 
-- [ ] Weight, length/height, head circumference
-- [ ] WHO percentile charts (0–2y) and CDC (2y+) — both are public datasets
+- [ ] Weight, length/height, head circumference — *reference data already in
+      the repo; the event type, units and UI are what remain*
+- [ ] WHO percentile charts (0–2y) — *LMS tables shipped; z-score maths and the
+      chart remain*. CDC (2y+) still to source
 - [ ] Growth velocity view (gain per week), birth stats as the baseline
 - [ ] Premature baby support: corrected age and Fenton preterm charts
 - [ ] Interval reminders: next feed, pumping, custom (vitamin D drops, tummy time)
@@ -103,9 +105,24 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 - [ ] Pregnancy stage: contraction timer, kick counter, due-date countdown,
       checklists, belly journal
 
+## Shipped outside the version tracks
+
+- [x] **i18n foundation** — every string extracted to a catalogue, plurals via
+      `Intl.PluralRules`, locale-aware clocks and numbers, a language picker, and
+      a drift test that fails when a locale falls behind English. English and
+      Spanish ship; Spanish is flagged in-app as awaiting native review.
+- [x] **WHO growth reference data** — real LMS tables for weight-for-age (0–60
+      months) and length-for-age (0–24 months), both sexes, extracted from the
+      WHO's own spreadsheets by a committed, re-runnable script. Head
+      circumference is **not** included: it was absent from the source set, and
+      inventing reference numbers for a measurement parents show to doctors is
+      not something this project will do.
+
 ## Always
 
-- [ ] More translations — **help especially wanted**
+- [ ] More translations — **help especially wanted**. The plumbing is done; a new
+      language is one file in `src/i18n/messages/` plus an entry in `locales.ts`.
+- [ ] Native review of the Spanish catalogue, especially medical-adjacent copy
 - [ ] Accessibility improvements
 - [ ] Keeping the bundle small enough to be genuinely offline-first
 - [ ] Never adding an analytics SDK, an ad network, or a paywall

@@ -1,5 +1,7 @@
 import type { NightWindow } from '@/domain/sleep'
 import { DEFAULT_NIGHT_WINDOW } from '@/domain/sleep'
+import type { LocaleCode } from '@/i18n/locales'
+import { findLocale, negotiateLocale } from '@/i18n/locales'
 import type { Id, VolumeUnit } from '@/domain/types'
 
 export type ThemeMode = 'auto' | 'day' | 'dark' | 'night'
@@ -7,6 +9,8 @@ export type ThemeMode = 'auto' | 'day' | 'dark' | 'night'
 export interface Settings {
   /** Which baby the app opens on. */
   activeBabyId: Id | null
+  /** null means "follow the browser's languages". */
+  locale: LocaleCode | null
   volumeUnit: VolumeUnit
   themeMode: ThemeMode
   nightWindow: NightWindow
@@ -16,6 +20,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   activeBabyId: null,
+  locale: null,
   volumeUnit: 'ml',
   themeMode: 'auto',
   nightWindow: DEFAULT_NIGHT_WINDOW,
@@ -52,6 +57,10 @@ export function loadSettings(): Settings {
     return {
       activeBabyId:
         typeof value.activeBabyId === 'string' ? value.activeBabyId : null,
+      locale:
+        typeof value.locale === 'string' && findLocale(value.locale) !== undefined
+          ? (value.locale as LocaleCode)
+          : null,
       volumeUnit: value.volumeUnit === 'oz' ? 'oz' : 'ml',
       themeMode:
         value.themeMode === 'day' ||
@@ -89,4 +98,17 @@ export function clearSettings(): void {
   } catch {
     // Nothing useful to do; the caller is already deleting everything.
   }
+}
+
+/**
+ * The locale to actually use: the user's explicit choice, or the best match for
+ * the languages their browser reports.
+ */
+export function resolveLocale(settings: Settings): LocaleCode {
+  if (settings.locale !== null) return settings.locale
+  const preferred =
+    typeof navigator !== 'undefined' && navigator.languages !== undefined
+      ? navigator.languages
+      : []
+  return negotiateLocale(preferred)
 }

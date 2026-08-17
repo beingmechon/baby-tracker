@@ -4,6 +4,52 @@ All notable changes are recorded here. This project follows
 [semantic versioning](https://semver.org/) once it reaches 1.0; until then, minor
 versions may change behaviour.
 
+## Unreleased
+
+### Added — internationalisation
+
+- **Every string in the app is now translatable.** A dependency-free i18n core
+  (~60 lines) built on `Intl`: plurals via `Intl.PluralRules`, locale-aware
+  clocks and numbers, named `{placeholder}` interpolation, typed message keys so
+  a typo fails to compile.
+- **English and Spanish.** Spanish is labelled in the app as awaiting native
+  review rather than presented as finished.
+- **A pseudo-locale** (`Pseudo (testing)`, dev builds only) that accents and
+  expands every string, so anything left hardcoded is visible on screen and
+  English-only layouts show up immediately.
+- **A language picker** in Settings, defaulting to the browser's languages.
+  `lang` and `dir` are set on the document, so screen readers switch voice and a
+  right-to-left locale can flip the layout.
+- **Drift tests** that fail when a locale is missing keys, has stray keys,
+  disagrees with English on placeholders, or lacks a plural fallback.
+- **WHO growth reference data** — real LMS tables for weight-for-age (0–60
+  months) and length-for-age (0–24 months), both sexes, plus the re-runnable
+  extraction script. Groundwork for v0.2 percentiles.
+
+### Changed
+
+- `domain/` no longer contains a translatable string. `formatDuration`,
+  `formatAgo` and `formatAge` are replaced by `splitDuration` and `describeAge`,
+  which return numbers and structure; the words live in the message catalogue.
+  This is the seam that makes localisation possible at all.
+- `formatClock` takes a locale, so Spanish gets a 24-hour clock.
+- **CSV exports now use 24-hour times.** An export is read by spreadsheets and by
+  people in other countries, where "1:00" is ambiguous and "13:00" is not.
+- The Settings footer version comes from `package.json` instead of a second copy
+  that could go stale.
+
+### Fixed
+
+- The diaper toast read "Wet diaper diaper logged" once the label was
+  interpolated into a template that already said "diaper". Replaced with
+  whole-sentence messages per kind — interpolating nouns into sentences breaks
+  casing and grammatical agreement in other languages regardless.
+
+### Verified
+
+171 unit tests (up from 156), 36 browser smoke checks including a real
+language switch, and 0 AI-tell findings across 7 screens.
+
 ## [0.1.1] — 2026-08-17
 
 A full design pass. No feature changes; every change below is visual, plus one real

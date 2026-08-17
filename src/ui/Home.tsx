@@ -11,6 +11,7 @@ import {
   type NursingTimerState,
 } from '@/app/nursingTimer'
 import type { Settings } from '@/app/settings'
+import type { MessageKey } from '@/i18n/locales'
 import type { BabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
@@ -18,13 +19,14 @@ import { isToday, selectEventsForDay } from '@/domain/select'
 import { summarizeDay } from '@/domain/summary'
 import {
   addDays,
-  formatAge,
+  describeAge,
   formatStopwatch,
   localDateKey,
   startOfLocalDay,
 } from '@/domain/time'
 import type { BabyEvent, BreastSide, DiaperKind, Timestamp } from '@/domain/types'
-import { formatVolume } from '@/domain/units'
+import { useTranslator } from '@/i18n/context'
+import { formatAge, formatVolume } from '@/i18n/format'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
@@ -49,13 +51,18 @@ interface HomeProps {
   onOpenSettings: () => void
 }
 
-const QUICK_DIAPERS: { kind: DiaperKind; label: string }[] = [
-  { kind: 'wet', label: 'Wet' },
-  { kind: 'dirty', label: 'Dirty' },
-  { kind: 'mixed', label: 'Mixed' },
-]
+const QUICK_DIAPERS = [
+  { kind: 'wet', label: 'action.diaper.wet', toast: 'toast.diaperLogged.wet' },
+  { kind: 'dirty', label: 'action.diaper.dirty', toast: 'toast.diaperLogged.dirty' },
+  { kind: 'mixed', label: 'action.diaper.mixed', toast: 'toast.diaperLogged.mixed' },
+] as const satisfies readonly {
+  kind: DiaperKind
+  label: MessageKey
+  toast: MessageKey
+}[]
 
 export function Home({ store, settings, onOpenSettings }: HomeProps) {
+  const t = useTranslator()
   const { activeBaby, events, sleepInProgress } = store
 
   const [nursingTimer, setNursingTimer] = useState<NursingTimerState | null>(null)
@@ -112,20 +119,20 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
     if (!viewingToday) setDayAnchor(startOfLocalDay(Date.now()))
   }
 
-  async function quickDiaper(kind: DiaperKind) {
+  async function quickDiaper(kind: DiaperKind, toastKey: MessageKey) {
     await store.logDiaper({ kind, startedAt: logAt() })
-    setToast(`${kind[0]?.toUpperCase()}${kind.slice(1)} diaper logged`)
+    setToast(t.t(toastKey))
     returnToToday()
   }
 
   async function toggleSleep() {
     if (sleepInProgress !== null) {
       await store.endSleep(sleepInProgress.id, Date.now())
-      setToast('Sleep ended')
+      setToast(t.t('toast.sleepEnded'))
       return
     }
     await store.startSleep(Date.now())
-    setToast('Sleep started')
+    setToast(t.t('toast.sleepStarted'))
   }
 
   function openNursing() {
@@ -138,7 +145,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
     const completed = completeTimer(nursingTimer, Date.now())
     if (completed !== null) {
       await store.logNursing(completed)
-      setToast('Feed saved')
+      setToast(t.t('toast.feedSaved'))
     }
     setNursingTimer(null)
     setOpenSheet(null)
@@ -150,26 +157,32 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
     const { completed, next } = switchSide(nursingTimer, Date.now())
     if (completed !== null) {
       await store.logNursing(completed)
-      setToast(`${completed.side === 'left' ? 'Left' : 'Right'} side saved`)
+      setToast(
+        t.t('toast.sideSaved', {
+          side: t.t(
+            completed.side === 'left' ? 'nursing.side.left' : 'nursing.side.right',
+          ),
+        }),
+      )
     }
     setNursingTimer(next)
   }
 
   async function repeatLast() {
     await store.repeatLastFeed(logAt())
-    setToast('Last feed repeated')
+    setToast(t.t('toast.feedRepeated'))
     returnToToday()
   }
 
   const nursingElapsed = nursingTimer === null ? 0 : elapsedMs(nursingTimer, now)
-  const age = formatAge(activeBaby.birthDate, now)
+  const age = formatAge(t, describeAge(activeBaby.birthDate, now))
 
-  const repeatLabel =
+  const repeatDetail =
     lastFeed === null
       ? null
       : lastFeed.type === 'bottle'
-        ? `Repeat last feed · ${formatVolume(lastFeed.amountMl, settings.volumeUnit)}`
-        : `Repeat last feed · ${lastFeed.side} side`
+        ? formatVolume(t, lastFeed.amountMl, settings.volumeUnit)
+        : t.t(lastFeed.side === 'left' ? 'nursing.side.left' : 'nursing.side.right')
 
   return (
     <>
@@ -180,7 +193,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
         </div>
         <button type="button" className="icon-button" onClick={onOpenSettings}>
           <SettingsIcon />
-          <span className="sr-only">Settings</span>
+          <span className="sr-only">{t.t('action.settings')}</span>
         </button>
       </header>
 
@@ -199,8 +212,8 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           showGuidance={settings.showWakeWindowGuidance}
         />
 
-        <section className="section" aria-label="Log an entry">
-          <RuleLabel>Log</RuleLabel>
+        <section className="section" aria-label={t.t('section.log')}>
+          <RuleLabel>{t.t('section.log')}</RuleLabel>
           <div className="actions">
             <button
               type="button"
@@ -208,14 +221,16 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
               onClick={() => void toggleSleep()}
             >
               <SleepIcon size={20} className="action-icon" />
-              <span>{sleepInProgress === null ? 'Start sleep' : 'Wake up'}</span>
+              <span>
+                {t.t(sleepInProgress === null ? 'action.startSleep' : 'action.wakeUp')}
+              </span>
             </button>
 
             <div className="action-row">
               <button type="button" className="action" onClick={openNursing}>
                 <NursingIcon size={18} className="action-icon" />
                 <span>
-                  Nursing
+                  {t.t('action.nursing')}
                   {nursingElapsed > 0 && (
                     <>
                       {' '}
@@ -230,39 +245,39 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
                 onClick={() => setOpenSheet('bottle')}
               >
                 <BottleIcon size={18} className="action-icon" />
-                <span>Bottle</span>
+                <span>{t.t('action.bottle')}</span>
               </button>
             </div>
 
             {/* No icons here: three identical diaper glyphs would carry no
                 information the labels don't already carry — Tufte's 1+1=3. */}
-            <div className="action-row-3" role="group" aria-label="Log a diaper">
-              {QUICK_DIAPERS.map(({ kind, label }) => (
+            <div className="action-row-3" role="group" aria-label={t.t('summary.diapers')}>
+              {QUICK_DIAPERS.map(({ kind, label, toast }) => (
                 <button
                   key={kind}
                   type="button"
                   className="action"
-                  onClick={() => void quickDiaper(kind)}
+                  onClick={() => void quickDiaper(kind, toast)}
                 >
-                  <span>{label}</span>
+                  <span>{t.t(label)}</span>
                 </button>
               ))}
             </div>
 
-            {repeatLabel !== null && (
+            {repeatDetail !== null && (
               <button
                 type="button"
                 className="action-repeat"
                 onClick={() => void repeatLast()}
               >
                 <RepeatIcon size={16} />
-                <span>{repeatLabel}</span>
+                <span>{t.t('action.repeatFeed', { detail: repeatDetail })}</span>
               </button>
             )}
           </div>
         </section>
 
-        <section className="section" aria-label="Daily summary">
+        <section className="section" aria-label={t.t('section.today')}>
           <RuleLabel
             actions={
               <>
@@ -272,7 +287,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
                   onClick={() => setDayAnchor((day) => addDays(day, -1))}
                 >
                   <ChevronLeftIcon size={18} />
-                  <span className="sr-only">Previous day</span>
+                  <span className="sr-only">{t.t('action.previousDay')}</span>
                 </button>
                 <button
                   type="button"
@@ -281,19 +296,19 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
                   disabled={viewingToday}
                 >
                   <ChevronRightIcon size={18} />
-                  <span className="sr-only">Next day</span>
+                  <span className="sr-only">{t.t('action.nextDay')}</span>
                 </button>
               </>
             }
           >
-            {viewingToday ? 'Today' : localDateKey(dayAnchor)}
+            {viewingToday ? t.t('section.today') : localDateKey(dayAnchor)}
           </RuleLabel>
 
           <DaySummary summary={summary} unit={settings.volumeUnit} />
         </section>
 
-        <section className="section" aria-label="Timeline">
-          <RuleLabel>Timeline</RuleLabel>
+        <section className="section" aria-label={t.t('section.timeline')}>
+          <RuleLabel>{t.t('section.timeline')}</RuleLabel>
           <Timeline
             events={dayEvents}
             unit={settings.volumeUnit}
@@ -331,7 +346,7 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           lastAmountMl={lastFeed?.type === 'bottle' ? lastFeed.amountMl : null}
           onSave={async ({ contents, amountMl }) => {
             await store.logBottle({ contents, amountMl, startedAt: logAt() })
-            setToast('Bottle saved')
+            setToast(t.t('toast.bottleSaved'))
             setOpenSheet(null)
             returnToToday()
           }}
@@ -346,12 +361,12 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           onSave={async (patch) => {
             await store.updateEvent(editing.id, patch)
             setEditing(null)
-            setToast('Entry updated')
+            setToast(t.t('toast.entryUpdated'))
           }}
           onDelete={async () => {
             await store.deleteEvent(editing.id)
             setEditing(null)
-            setToast('Entry deleted')
+            setToast(t.t('toast.entryDeleted'))
           }}
           onClose={() => setEditing(null)}
         />

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useTranslator } from '@/i18n/context'
 import { CloseIcon } from './icons'
 
 interface SheetProps {
@@ -15,6 +16,7 @@ interface SheetProps {
  * restore, background scroll lock — rather than pulling in a modal library.
  */
 export function Sheet({ title, onClose, children }: SheetProps) {
+  const t = useTranslator()
   const headingId = useId()
   const sheetRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
@@ -70,7 +72,7 @@ export function Sheet({ title, onClose, children }: SheetProps) {
           <h2 id={headingId}>{title}</h2>
           <button type="button" className="icon-button" onClick={onClose}>
             <CloseIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t.t('action.close')}</span>
           </button>
         </div>
         <div className="sheet-body">{children}</div>

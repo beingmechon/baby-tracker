@@ -5,6 +5,8 @@ import { toCsv } from '@/data/csv'
 import { downloadTextFile, exportFilename, readTextFile } from '@/data/download'
 import { localDateKey } from '@/domain/time'
 import type { VolumeUnit } from '@/domain/types'
+import { useTranslator } from '@/i18n/context'
+import { LOCALES, findLocale, type LocaleCode, type MessageKey } from '@/i18n/locales'
 import { RuleLabel } from './RuleLabel'
 import { BackIcon, CheckIcon, ShieldIcon } from './icons'
 
@@ -15,20 +17,19 @@ interface SettingsScreenProps {
   onBack: () => void
 }
 
-const THEMES: { value: ThemeMode; label: string }[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'day', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'night', label: 'Night' },
-]
+const THEMES = [
+  { value: 'auto', label: 'settings.theme.auto' },
+  { value: 'day', label: 'settings.theme.day' },
+  { value: 'dark', label: 'settings.theme.dark' },
+  { value: 'night', label: 'settings.theme.night' },
+] as const satisfies readonly { value: ThemeMode; label: MessageKey }[]
+
+const VOLUME_UNITS = [
+  { value: 'ml', label: 'settings.volumeUnit.ml' },
+  { value: 'oz', label: 'settings.volumeUnit.oz' },
+] as const satisfies readonly { value: VolumeUnit; label: MessageKey }[]
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
-
-function hourLabel(hour: number): string {
-  const suffix = hour < 12 ? 'am' : 'pm'
-  const hour12 = hour % 12 === 0 ? 12 : hour % 12
-  return `${hour12}:00 ${suffix}`
-}
 
 export function SettingsScreen({
   store,
@@ -36,6 +37,7 @@ export function SettingsScreen({
   onChange,
   onBack,
 }: SettingsScreenProps) {
+  const t = useTranslator()
   const { activeBaby } = store
   const fileInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -43,6 +45,18 @@ export function SettingsScreen({
   const [confirmingWipe, setConfirmingWipe] = useState(false)
   const [name, setName] = useState(activeBaby?.name ?? '')
   const [birthDate, setBirthDate] = useState(activeBaby?.birthDate ?? '')
+
+  /** An hour label in the reader's locale, so es shows 21:00 rather than 9:00 pm. */
+  function hourLabel(hour: number): string {
+    const sample = new Date(2026, 0, 1, hour, 0)
+    return new Intl.DateTimeFormat(t.locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(sample)
+  }
+
+  const activeLocale = settings.locale ?? t.locale
+  const localeDefinition = findLocale(activeLocale)
 
   async function exportJson() {
     try {
@@ -52,9 +66,9 @@ export function SettingsScreen({
         JSON.stringify(bundle, null, 2),
         'application/json',
       )
-      setMessage('Exported a full JSON backup.')
+      setMessage(t.t('toast.exportedJson'))
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Export failed')
+      setError(cause instanceof Error ? cause.message : t.t('error.exportFailed'))
     }
   }
 
@@ -62,9 +76,9 @@ export function SettingsScreen({
     try {
       const bundle = await store.exportAll()
       downloadTextFile(exportFilename('csv'), toCsv(bundle), 'text/csv')
-      setMessage('Exported a CSV for spreadsheets and doctor visits.')
+      setMessage(t.t('toast.exportedCsv'))
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Export failed')
+      setError(cause instanceof Error ? cause.message : t.t('error.exportFailed'))
     }
   }
 
@@ -76,12 +90,15 @@ export function SettingsScreen({
       const result = await store.importBundle(bundle)
       const skipped = result.skipped.reduce((total, entry) => total + entry.count, 0)
       setMessage(
-        `Imported ${result.eventsImported} entries for ${result.babiesImported} ${
-          result.babiesImported === 1 ? 'baby' : 'babies'
-        }${skipped > 0 ? `. Skipped ${skipped} unreadable record${skipped === 1 ? '' : 's'}.` : '.'}`,
+        t.t('toast.imported', {
+          events: t.number(result.eventsImported),
+          babies: t.number(result.babiesImported),
+          skipped:
+            skipped > 0 ? t.t('toast.importedSkipped', { count: t.number(skipped) }) : '',
+        }),
       )
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'That file could not be imported')
+      setError(cause instanceof Error ? cause.message : t.t('error.importFailed'))
     }
   }
 
@@ -89,7 +106,7 @@ export function SettingsScreen({
     if (activeBaby === null) return
     const trimmed = name.trim()
     if (trimmed.length === 0) {
-      setError('A name is required.')
+      setError(t.t('error.nameRequired'))
       return
     }
     try {
@@ -97,9 +114,9 @@ export function SettingsScreen({
         name: trimmed,
         birthDate: birthDate === '' ? null : birthDate,
       })
-      setMessage('Details saved.')
+      setMessage(t.t('toast.detailsSaved'))
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save')
+      setError(cause instanceof Error ? cause.message : t.t('error.couldNotSave'))
     }
   }
 
@@ -109,9 +126,9 @@ export function SettingsScreen({
       // Settings hold the active baby id, which no longer exists.
       onChange({ activeBabyId: null })
       setConfirmingWipe(false)
-      setMessage('All data deleted from this device.')
+      setMessage(t.t('toast.dataDeleted'))
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not delete')
+      setError(cause instanceof Error ? cause.message : t.t('error.couldNotDelete'))
     }
   }
 
@@ -120,10 +137,10 @@ export function SettingsScreen({
       <header className="appbar">
         <button type="button" className="icon-button" onClick={onBack}>
           <BackIcon />
-          <span className="sr-only">Back</span>
+          <span className="sr-only">{t.t('action.back')}</span>
         </button>
         <div className="appbar-identity">
-          <span className="appbar-name">Settings</span>
+          <span className="appbar-name">{t.t('settings.title')}</span>
         </div>
       </header>
 
@@ -142,11 +159,11 @@ export function SettingsScreen({
 
         {activeBaby !== null && (
           <section className="section">
-            <RuleLabel>Baby</RuleLabel>
+            <RuleLabel>{t.t('settings.baby')}</RuleLabel>
             <div className="settings-group">
               <div className="field">
                 <label className="field-label" htmlFor="settings-name">
-                  Name
+                  {t.t('settings.name')}
                 </label>
                 <input
                   id="settings-name"
@@ -157,7 +174,7 @@ export function SettingsScreen({
               </div>
               <div className="field">
                 <label className="field-label" htmlFor="settings-birthdate">
-                  Date of birth
+                  {t.t('settings.birthDate')}
                 </label>
                 <input
                   id="settings-birthdate"
@@ -173,28 +190,52 @@ export function SettingsScreen({
                 data-variant="secondary"
                 onClick={() => void saveBaby()}
               >
-                Save details
+                {t.t('settings.saveDetails')}
               </button>
             </div>
           </section>
         )}
 
         <section className="section">
-          <RuleLabel>Display</RuleLabel>
+          <RuleLabel>{t.t('settings.display')}</RuleLabel>
           <div className="settings-group">
             <div className="field">
+              <label className="field-label" htmlFor="settings-language">
+                {t.t('settings.language')}
+              </label>
+              <select
+                id="settings-language"
+                value={activeLocale}
+                onChange={(e) => onChange({ locale: e.target.value as LocaleCode })}
+              >
+                {LOCALES.filter(
+                  // The pseudo-locale is a testing tool; it stays out of
+                  // production builds so nobody selects it by accident.
+                  (locale) => locale.development !== true || import.meta.env.DEV,
+                ).map((locale) => (
+                  <option key={locale.code} value={locale.code}>
+                    {locale.name}
+                  </option>
+                ))}
+              </select>
+              {localeDefinition?.reviewed === false && (
+                <p className="field-note">{t.t('settings.languageNeedsReview')}</p>
+              )}
+            </div>
+
+            <div className="field">
               <span className="field-label" id="settings-unit-label">
-                Volume unit
+                {t.t('settings.volumeUnit')}
               </span>
               <div className="segmented" role="group" aria-labelledby="settings-unit-label">
-                {(['ml', 'oz'] as VolumeUnit[]).map((unit) => (
+                {VOLUME_UNITS.map(({ value, label }) => (
                   <button
-                    key={unit}
+                    key={value}
                     type="button"
-                    aria-pressed={settings.volumeUnit === unit}
-                    onClick={() => onChange({ volumeUnit: unit })}
+                    aria-pressed={settings.volumeUnit === value}
+                    onClick={() => onChange({ volumeUnit: value })}
                   >
-                    {unit === 'ml' ? 'Millilitres' : 'Ounces'}
+                    {t.t(label)}
                   </button>
                 ))}
               </div>
@@ -202,7 +243,7 @@ export function SettingsScreen({
 
             <div className="field">
               <span className="field-label" id="settings-theme-label">
-                Theme
+                {t.t('settings.theme')}
               </span>
               <div
                 className="segmented"
@@ -216,21 +257,17 @@ export function SettingsScreen({
                     aria-pressed={settings.themeMode === value}
                     onClick={() => onChange({ themeMode: value })}
                   >
-                    {label}
+                    {t.t(label)}
                   </button>
                 ))}
               </div>
-              <p className="field-note">
-                On auto, the app switches to a dim red-tinted night theme during
-                your night hours, and follows your system light or dark setting
-                the rest of the time.
-              </p>
+              <p className="field-note">{t.t('settings.themeNote')}</p>
             </div>
 
             <div className="button-row">
               <div className="field">
                 <label className="field-label" htmlFor="settings-night-start">
-                  Night starts
+                  {t.t('settings.nightStarts')}
                 </label>
                 <select
                   id="settings-night-start"
@@ -253,7 +290,7 @@ export function SettingsScreen({
               </div>
               <div className="field">
                 <label className="field-label" htmlFor="settings-night-end">
-                  Night ends
+                  {t.t('settings.nightEnds')}
                 </label>
                 <select
                   id="settings-night-end"
@@ -275,35 +312,26 @@ export function SettingsScreen({
                 </select>
               </div>
             </div>
-            <p className="field-note">
-              These hours also decide whether a new sleep is logged as a nap or as
-              night sleep.
-            </p>
+            <p className="field-note">{t.t('settings.nightNote')}</p>
 
             <div className="switch-row">
-              <span className="switch-row-label">Show wake-window guidance</span>
+              <span className="switch-row-label">{t.t('settings.wakeGuidance')}</span>
               <input
                 type="checkbox"
                 checked={settings.showWakeWindowGuidance}
                 onChange={(e) => onChange({ showWakeWindowGuidance: e.target.checked })}
-                aria-label="Show wake-window guidance"
-                style={{ width: '1.5rem', height: '1.5rem' }}
+                aria-label={t.t('settings.wakeGuidance')}
               />
             </div>
-            <p className="field-note">
-              Typical wake windows by age, shown for information only. Babies vary
-              enormously — this is never advice.
-            </p>
+            <p className="field-note">{t.t('settings.wakeGuidanceNote')}</p>
           </div>
         </section>
 
         <section className="section">
-          <RuleLabel>Your data</RuleLabel>
+          <RuleLabel>{t.t('settings.data')}</RuleLabel>
           <div className="settings-group">
             <p className="field-note">
-              <ShieldIcon size={16} /> Everything is stored on this device only.
-              There is no account, no server and no analytics. Exports are yours to
-              keep.
+              <ShieldIcon size={16} /> {t.t('settings.dataNote')}
             </p>
             <div className="button-row">
               <button
@@ -312,7 +340,7 @@ export function SettingsScreen({
                 data-variant="secondary"
                 onClick={() => void exportJson()}
               >
-                Export JSON
+                {t.t('settings.exportJson')}
               </button>
               <button
                 type="button"
@@ -320,13 +348,10 @@ export function SettingsScreen({
                 data-variant="secondary"
                 onClick={() => void exportCsv()}
               >
-                Export CSV
+                {t.t('settings.exportCsv')}
               </button>
             </div>
-            <p className="field-note">
-              JSON is a complete backup you can import again. CSV opens in any
-              spreadsheet — useful to print for a doctor’s appointment.
-            </p>
+            <p className="field-note">{t.t('settings.exportNote')}</p>
 
             <button
               type="button"
@@ -334,7 +359,7 @@ export function SettingsScreen({
               data-variant="secondary"
               onClick={() => fileInput.current?.click()}
             >
-              Import a JSON backup
+              {t.t('settings.import')}
             </button>
             <input
               ref={fileInput}
@@ -352,8 +377,7 @@ export function SettingsScreen({
             {confirmingWipe ? (
               <>
                 <p className="banner" data-tone="error">
-                  This permanently deletes every baby and every entry on this
-                  device. If you have not exported a backup, it cannot be undone.
+                  {t.t('settings.deleteWarning')}
                 </p>
                 <div className="button-row">
                   <button
@@ -362,7 +386,7 @@ export function SettingsScreen({
                     data-variant="secondary"
                     onClick={() => setConfirmingWipe(false)}
                   >
-                    Cancel
+                    {t.t('settings.cancel')}
                   </button>
                   <button
                     type="button"
@@ -370,7 +394,7 @@ export function SettingsScreen({
                     data-variant="danger"
                     onClick={() => void wipeEverything()}
                   >
-                    Delete everything
+                    {t.t('settings.confirmDeleteAll')}
                   </button>
                 </div>
               </>
@@ -381,39 +405,33 @@ export function SettingsScreen({
                 data-variant="danger"
                 onClick={() => setConfirmingWipe(true)}
               >
-                Delete all my data
+                {t.t('settings.deleteAll')}
               </button>
             )}
           </div>
         </section>
 
         <section className="section">
-          <RuleLabel>About</RuleLabel>
+          <RuleLabel>{t.t('settings.about')}</RuleLabel>
           <div className="settings-group">
+            <p className="field-note">{t.t('settings.aboutNote')}</p>
             <p className="field-note">
-              Baby Tracker is free and open source, licensed under the AGPL-3.0.
-              Built for parents, by parents — contributions welcome.
-            </p>
-            <p className="field-note">
-              <strong>Not a medical device.</strong> This app records what you tell
-              it and shows you your own data. It does not diagnose anything and is
-              no substitute for your paediatrician. If you are worried about your
-              baby, call a doctor.
+              <strong>{t.t('settings.notMedical')}</strong> {t.t('settings.medicalNote')}
             </p>
             <a
-              className="button"
-              data-variant="secondary"
+              className="link-button"
               href="https://github.com/beingmechon/baby-tracker"
               target="_blank"
               rel="noreferrer"
-              style={{ textDecoration: 'none' }}
             >
-              Source code and issues
+              {t.t('settings.sourceCode')}
             </a>
           </div>
         </section>
 
-        <p className="footer-note">Baby Tracker v0.1.1 · works offline · no telemetry</p>
+        <p className="footer-note">
+          {t.t('settings.footer', { version: __APP_VERSION__ })}
+        </p>
       </main>
     </>
   )

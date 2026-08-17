@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 // vitest's defineConfig is vite's, widened to accept the `test` block.
 import { defineConfig } from 'vitest/config'
@@ -8,8 +9,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 // root during local development. BASE_PATH lets CI override it.
 const base = process.env.BASE_PATH ?? '/'
 
+const { version } = createRequire(import.meta.url)('./package.json') as {
+  version: string
+}
+
 export default defineConfig({
   base,
+  // Keeps the version shown in Settings tied to package.json rather than a
+  // second copy that quietly goes stale.
+  define: { __APP_VERSION__: JSON.stringify(version) },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
