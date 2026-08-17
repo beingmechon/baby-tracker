@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes an in-flight run redundant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the committed icons match the generator
+        # Icons are committed so a plain `npm ci && npm run build` needs no extra
+        # step, but a stale commit would ship an icon the source no longer defines.
+        run: |
+          node scripts/generate-icons.mjs
+          git diff --exit-code -- public/ || {
+            echo "::error::Icons are stale. Run 'node scripts/generate-icons.mjs' and commit the result."
+            exit 1
+          }
+
+  smoke:
+    name: Offline and end-to-end smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # Drives the real app in a real browser, then switches the network off and
+      # checks it still loads and logs. The offline promise is the whole point of
+      # this project, so it is tested rather than asserted in the README.
+      - name: Smoke test
+        run: npm run smoke
+        env:
+          SHOT_DIR: ${{ runner.temp }}/screenshots
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: warn

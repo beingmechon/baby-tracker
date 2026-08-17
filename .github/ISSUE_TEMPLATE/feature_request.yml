@@ -1,0 +1,68 @@
+name: Feature request
+description: Suggest something the app should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a look at the [roadmap](../blob/main/docs/ROADMAP.md) first — it may
+        already be planned, in which case comment there instead and we will know
+        people want it sooner.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is the problem?
+      description: >
+        Describe the situation you are actually in, rather than the solution. It
+        often turns out there is a simpler fix than the one we would have guessed.
+      placeholder: >
+        I pump at work and I never remember which bottles in the freezer are oldest.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would help?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Which part of the app is this about?
+      options:
+        - Feeding (nursing, bottles, pumping)
+        - Sleep
+        - Diapers
+        - Growth and charts
+        - Health (medication, vaccines, temperature)
+        - Solids and toddler
+        - Multiple caregivers and sync
+        - Reminders
+        - Charts, reports and export
+        - Accessibility
+        - Translation or a country-specific schedule
+        - Something else
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: house-rules
+    attributes:
+      label: House rules
+      description: >
+        These are the things this project will not do, whatever the feature. See
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+      options:
+        - label: This does not require an account, telemetry, or sending data off the device
+          required: true
+        - label: This does not give medical advice or diagnose anything
+          required: true
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else?
+      description: If another app does this well, saying which one is genuinely useful.

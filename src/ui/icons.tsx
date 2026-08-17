@@ -1,0 +1,128 @@
+/**
+ * A tiny hand-rolled icon set. Inline SVG rather than an icon font or package:
+ * it keeps the bundle small enough to precache comfortably for offline use, and
+ * every glyph here needs to stay legible at the large sizes this UI uses.
+ */
+
+interface IconProps {
+  size?: number
+  className?: string
+}
+
+function svgProps(size: number) {
+  return {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.75,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
+}
+
+export function NursingIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M12 20.5s-7.5-4.6-7.5-10a4.3 4.3 0 0 1 7.5-2.8 4.3 4.3 0 0 1 7.5 2.8c0 5.4-7.5 10-7.5 10Z" />
+    </svg>
+  )
+}
+
+export function BottleIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M10 2.5h4" />
+      <path d="M10.5 4.5h3l.6 2.2a3 3 0 0 0 .8 1.4l.7.7a3 3 0 0 1 .9 2.1v8.6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-8.6a3 3 0 0 1 .9-2.1l.7-.7a3 3 0 0 0 .8-1.4Z" />
+      <path d="M8 13h8" />
+      <path d="M8 16.5h8" />
+    </svg>
+  )
+}
+
+export function SleepIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+    </svg>
+  )
+}
+
+export function DiaperIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M4 5.5h16v4a10.5 10.5 0 0 1-4.2 8.4L12 21l-3.8-3.1A10.5 10.5 0 0 1 4 9.5Z" />
+      <path d="M4 9.5c2.7 1.3 5.4 2 8 2s5.3-.7 8-2" />
+    </svg>
+  )
+}
+
+export function SettingsIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+    </svg>
+  )
+}
+
+export function BackIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  )
+}
+
+export function CloseIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  )
+}
+
+export function ChevronLeftIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M14.5 5.5l-6 6.5 6 6.5" />
+    </svg>
+  )
+}
+
+export function ChevronRightIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M9.5 5.5l6 6.5-6 6.5" />
+    </svg>
+  )
+}
+
+export function RepeatIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M4 9.5A5.5 5.5 0 0 1 9.5 4h9" />
+      <path d="M15.5 1.5 18.5 4l-3 2.5" />
+      <path d="M20 14.5A5.5 5.5 0 0 1 14.5 20h-9" />
+      <path d="M8.5 17.5 5.5 20l3 2.5" />
+    </svg>
+  )
+}
+
+export function CheckIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  )
+}
+
+export function ShieldIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M12 2.5 20 5.5v6c0 5-3.4 8.9-8 10.5-4.6-1.6-8-5.5-8-10.5v-6Z" />
+    </svg>
+  )
+}

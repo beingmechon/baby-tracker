@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+
+# Playwright
+test-results/
+playwright-report/
+/screenshots/
+
+# tsc -b build info
+*.tsbuildinfo
+
+# Editor and OS noise
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+*.log
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local

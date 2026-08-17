@@ -1,0 +1,49 @@
+name: Translation or country schedule
+description: Offer a language, or your country's vaccination schedule
+labels: [i18n, help wanted]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is one of the most valuable things you can contribute. Most trackers
+        are US-only, and that leaves out most parents in the world.
+
+        You do not need to be a programmer for this.
+
+  - type: input
+    id: language
+    attributes:
+      label: Language or country
+      placeholder: Tamil (ta-IN) — or "India, IAP immunisation schedule"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you offering?
+      multiple: true
+      options:
+        - Translating the interface
+        - Reviewing an existing translation
+        - A national vaccination schedule
+        - Locale conventions (units, date formats, phrasing)
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: For a vaccination schedule, what is the source?
+      description: >
+        A link to the official schedule from the health ministry or paediatric
+        association. We only ship schedules that can be traced to a public,
+        citable source.
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything we should know?
+      description: >
+        Terms with no clean translation, right-to-left layout needs, or wording
+        that would read oddly to a parent in your language.

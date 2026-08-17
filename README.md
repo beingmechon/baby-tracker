@@ -1,0 +1,152 @@
+# Baby Tracker
+
+**A private, offline-first baby tracker. Free forever, no account, no ads, no telemetry.**
+
+Feeds, sleep and diapers in one tap — designed to be used one-handed, in the dark,
+while holding a baby. Everything is stored on your own device. There is no server
+to sign up to, because there is no server.
+
+[![CI](https://github.com/beingmechon/baby-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/beingmechon/baby-tracker/actions/workflows/ci.yml)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
+
+<p align="center">
+  <img src="docs/screenshots/home-day.png" alt="The home screen in light mode: status cards for last feed and time awake, a large sleep timer button, nursing and bottle buttons, one-tap diaper buttons, a daily summary and a timeline." width="45%">
+  <img src="docs/screenshots/home-night.png" alt="The same home screen in night mode: a dim, warm, red-tinted theme for use in a dark room." width="45%">
+</p>
+
+---
+
+## Why this exists
+
+Every good baby tracker paywalls the parts you need most. Sleep predictions cost
+$69/year in one popular app. Unlimited history, growth charts, extra caregivers —
+all behind subscriptions, in an app that also wants your account, your email and
+your baby's data on someone else's server.
+
+Meanwhile the best open-source option, [Baby Buddy](https://github.com/babybuddy/babybuddy),
+is excellent but web-first: it needs a server you host and maintain, which rules
+it out for most parents.
+
+So this project aims at the gap:
+
+1. **Free forever what others paywall** — sleep patterns, unlimited history,
+   unlimited caregivers, every chart.
+2. **Truly private** — no account, works fully offline, your data never leaves
+   your device unless you choose to sync it.
+3. **Global** — country-specific vaccination schedules and translations from the
+   start, not US-only.
+4. **Install and go** — a real app on your phone, with no server to run.
+
+## What works today (v0.1)
+
+This is an early release, deliberately small, and genuinely usable right now:
+
+- **Feeding** — nursing stopwatch with per-side timing that remembers the last
+  side used and suggests the other one; bottle logging with one-tap amounts in ml
+  or oz, breast milk or formula.
+- **Sleep** — one big start/stop timer, automatically classified as a nap or
+  night sleep based on your own night hours. The timer survives closing the app.
+- **Diapers** — wet, dirty and mixed in a single tap each.
+- **Repeat last feed** — one tap re-logs whatever you logged last.
+- **Unified timeline** — every event in one feed, per day, all of it editable.
+- **Daily summary** — feed count and volume, total and longest sleep, diaper
+  counts, all correct across midnight.
+- **Night mode** — a dim, red-tinted theme that switches on automatically during
+  your night hours. Huge tap targets throughout.
+- **Works offline** — install it to your home screen and it opens and logs with
+  no connection at all.
+- **Your data is yours** — full JSON backup, CSV export for the paediatrician,
+  JSON import, and one-tap deletion of everything.
+
+See the [roadmap](docs/ROADMAP.md) for what is coming and how to help.
+
+## Try it
+
+**On your phone (recommended):** open the app, then use *Add to Home Screen*
+(Share menu in Safari, or the install prompt in Chrome). It then behaves like any
+other app, works offline, and never asks you to sign in.
+
+**Run it locally:**
+
+```bash
+git clone https://github.com/beingmechon/baby-tracker.git
+cd baby-tracker
+npm install
+npm run dev
+```
+
+Then open the printed URL. That is the whole setup — no database, no API keys,
+no configuration.
+
+## Is my data safe?
+
+Yes, and you do not have to take our word for it — check the code.
+
+- Everything lives in IndexedDB on your device. There is no network call anywhere
+  in the app except loading the app itself.
+- No account, no analytics SDK, no crash reporting, no ad network, no third-party
+  scripts of any kind.
+- Export a complete backup whenever you like; delete everything in one tap.
+
+Read [PRIVACY.md](PRIVACY.md) for the specifics, and
+[SECURITY.md](SECURITY.md) to report a problem.
+
+Because everything is local, **your data is only as safe as your device**. Clearing
+your browser's site data deletes it, so export a backup now and then.
+
+## Not a medical device
+
+This app records what you tell it and shows you your own numbers back. It does not
+diagnose anything, and it is not a substitute for your paediatrician. If you are
+worried about your baby, call a doctor. See
+[MEDICAL_DISCLAIMER.md](docs/MEDICAL_DISCLAIMER.md).
+
+## Contributing
+
+Contributions are very welcome, especially from parents who will actually use
+this. You do not need to be an expert — some of the most valuable contributions
+are "this wording confused me at 3am" and "this button is hard to hit one-handed".
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to get set up and what to work on
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code is organised and why
+- [docs/ROADMAP.md](docs/ROADMAP.md) — the full feature plan, version by version
+- Good first issues are labelled [`good first issue`](https://github.com/beingmechon/baby-tracker/labels/good%20first%20issue)
+
+Translations, country-specific vaccination schedules and accessibility fixes are
+particularly wanted.
+
+## Tech
+
+React + TypeScript + Vite, as an offline-first PWA. No UI framework and almost no
+runtime dependencies — the whole app is about 60 KB gzipped.
+
+```
+src/domain/   Pure logic: units, time, sleep classification, summaries. No I/O.
+src/data/     Storage behind one Repository interface (IndexedDB today).
+src/app/      React state: settings, theme, the nursing timer, the store.
+src/ui/       Components.
+```
+
+The domain and data layers are deliberately free of React, so a native shell or a
+sync server can reuse them unchanged. 156 unit tests cover the logic, plus a
+browser smoke test that verifies the app still works with the network off.
+
+```bash
+npm test          # unit tests
+npm run check     # lint, tests and a production build
+npm run smoke     # end-to-end run in a real browser (needs a built app)
+```
+
+## License
+
+[AGPL-3.0-or-later](./LICENSE).
+
+Chosen deliberately: anyone may use, study, change and share this app, but any
+fork — including one offered to people over a network — has to stay open source
+too. This app exists because parents' basic tracking got locked behind
+subscriptions; the licence makes it hard for that to happen to this code.
+
+---
+
+Built for peer parents, by parents. If it helps you through a hard night, that
+was the whole point.
