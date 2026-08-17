@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Every branch, not just the default one. Pinning this to `main` meant CI never
+  # ran at all while the repository's default branch was named something else.
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 

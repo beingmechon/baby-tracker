@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Have a look at the [roadmap](../blob/main/docs/ROADMAP.md) first — it may
+        Have a look at the [roadmap](../blob/HEAD/docs/ROADMAP.md) first — it may
         already be planned, in which case comment there instead and we will know
         people want it sooner.
 
@@ -54,7 +54,7 @@ body:
       label: House rules
       description: >
         These are the things this project will not do, whatever the feature. See
-        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+        [CONTRIBUTING.md](../blob/HEAD/CONTRIBUTING.md).
       options:
         - label: This does not require an account, telemetry, or sending data off the device
           required: true

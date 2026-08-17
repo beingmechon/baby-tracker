@@ -3,9 +3,6 @@ contact_links:
   - name: Security or privacy vulnerability
     url: https://github.com/beingmechon/baby-tracker/security/advisories/new
     about: Please report these privately, not as a public issue.
-  - name: Question or idea to talk through
-    url: https://github.com/beingmechon/baby-tracker/discussions
-    about: For anything that is not yet a specific bug or feature request.
   - name: Worried about your baby?
-    url: https://github.com/beingmechon/baby-tracker/blob/main/docs/MEDICAL_DISCLAIMER.md
+    url: https://github.com/beingmechon/baby-tracker/blob/HEAD/docs/MEDICAL_DISCLAIMER.md
     about: Please contact a doctor. This app cannot help with a medical question.

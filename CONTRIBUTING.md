@@ -119,8 +119,8 @@ its lowest. That is the actual usage environment.
 
 ## Pull requests
 
-- Branch from `main`, keep the change focused, and describe what a user would
-  notice.
+- Branch from the default branch, keep the change focused, and describe what a
+  user would notice.
 - Include a screenshot for anything visual, in both light and night mode.
 - Make sure `npm run check` passes.
 - Small pull requests get reviewed faster than large ones. Splitting is welcome.
