@@ -2,6 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,12 +18,6 @@ concurrency:
 
 jobs:
   build:
-    # Deploy only from the default branch, whatever it happens to be named — a
-    # hardcoded `main` silently disabled this workflow entirely. Manual dispatch
-    # is allowed from any branch so a deploy can be forced when needed.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
