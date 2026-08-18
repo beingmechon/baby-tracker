@@ -177,11 +177,21 @@ try {
   await page.waitForTimeout(1500)
   await page.getByRole('button', { name: 'Wake up' }).click()
   await page.getByText('Sleep ended').waitFor()
-  // Nap or night sleep depending on the wall clock — the classification is what
-  // is under test here, not which side of it we happen to land on.
+  // Identify the sleep row by its category marker, not by its title. Matching on
+  // the title made this assertion depend on the wall clock: a sleep started
+  // before 19:00 is a nap and after it is night sleep, and `/^Nap|.../` could
+  // never match anyway because a row's text begins with the time, not the title.
+  // It passed only while CI happened to run in the evening.
+  const sleepRow = page
+    .locator('.timeline-row')
+    .filter({ has: page.locator('.timeline-mark[data-category="sleep"]') })
+    .first()
+  check('ending the sleep records it', await sleepRow.isVisible())
+
+  const sleepTitle = await sleepRow.locator('.timeline-title').innerText()
   check(
-    'ending the sleep records it',
-    await page.locator('.timeline-row', { hasText: /^Nap|Night sleep/ }).isVisible(),
+    `it is classified as a nap or night sleep (${sleepTitle})`,
+    ['Nap', 'Night sleep'].includes(sleepTitle),
   )
   check(
     'the live marker is gone once the sleep ends',
