@@ -1,6 +1,17 @@
 import { formatClock } from '@/domain/time'
-import type { BabyEvent, DiaperKind, Timestamp, VolumeUnit } from '@/domain/types'
-import { formatDuration, formatVolume } from '@/i18n/format'
+import type {
+  BabyEvent,
+  DiaperKind,
+  MeasureSystem,
+  Timestamp,
+  VolumeUnit,
+} from '@/domain/types'
+import {
+  formatDuration,
+  formatMeasure,
+  formatVolume,
+  measureName,
+} from '@/i18n/format'
 import type { MessageKey, Translator } from '@/i18n/locales'
 
 export type Category = 'feed' | 'sleep' | 'diaper' | 'growth'
@@ -20,19 +31,24 @@ const DIAPER_TITLES: Record<DiaperKind, MessageKey> = {
   dry: 'event.diaper.dry',
 }
 
+export interface DescribeContext {
+  volumeUnit: VolumeUnit
+  measureSystem: MeasureSystem
+  now: Timestamp
+  /** Passed in rather than read from context, so this stays a plain function. */
+  t: Translator
+}
+
 /**
  * Turns an event into the two lines a timeline row shows.
  *
  * Kept pure and apart from the components so the exact wording is testable — this
  * copy is read hundreds of times a week and small ambiguities get irritating fast.
- * Every string comes from the catalogue; the translator is passed in rather than
- * read from context so this stays a plain function.
+ * Every string comes from the catalogue.
  */
 export function describeEvent(
   event: BabyEvent,
-  unit: VolumeUnit,
-  now: Timestamp,
-  t: Translator,
+  { volumeUnit, measureSystem, now, t }: DescribeContext,
 ): EventDescription {
   switch (event.type) {
     case 'nursing':
@@ -51,7 +67,7 @@ export function describeEvent(
             ? 'event.bottle.breastMilk'
             : 'event.bottle.formula',
         ),
-        detail: formatVolume(t, event.amountMl, unit),
+        detail: formatVolume(t, event.amountMl, volumeUnit),
         live: false,
       }
 
@@ -79,6 +95,16 @@ export function describeEvent(
         category: 'diaper',
         title: t.t(DIAPER_TITLES[event.kind]),
         detail: '',
+        live: false,
+      }
+
+    case 'growth':
+      return {
+        category: 'growth',
+        title: measureName(t, event.measure),
+        // Deliberately just the measurement. The percentile belongs on the growth
+        // screen next to its disclaimer, not scrolling past in a day's timeline.
+        detail: formatMeasure(t, event.value, event.measure, measureSystem),
         live: false,
       }
   }

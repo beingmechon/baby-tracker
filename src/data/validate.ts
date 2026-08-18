@@ -4,6 +4,8 @@ import type {
   BottleContents,
   BreastSide,
   DiaperKind,
+  MeasureKind,
+  Sex,
   SleepKind,
 } from '@/domain/types'
 
@@ -41,6 +43,8 @@ const SIDES: readonly BreastSide[] = ['left', 'right']
 const CONTENTS: readonly BottleContents[] = ['breast_milk', 'formula']
 const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
+const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
+const SEXES: readonly Sex[] = ['male', 'female']
 
 /** ISO `YYYY-MM-DD`, or null. Anything else is dropped to null. */
 function isoDate(value: unknown): string | null {
@@ -58,6 +62,9 @@ export function parseBaby(value: unknown): Baby | null {
     id,
     name,
     birthDate: isoDate(value.birthDate),
+    // Absent in exports written before growth tracking existed, which must still
+    // import cleanly — the app simply hides percentiles until it is set.
+    sex: oneOf(value.sex, SEXES),
     createdAt: nonNegative(value.createdAt) ?? 0,
   }
 }
@@ -106,6 +113,14 @@ export function parseEvent(value: unknown): BabyEvent | null {
       const kind = oneOf(value.kind, DIAPER_KINDS)
       if (kind === null) return null
       return { ...base, type: 'diaper', kind }
+    }
+    case 'growth': {
+      const measure = oneOf(value.measure, MEASURES)
+      const measured = finiteNumber(value.value)
+      // A zero or negative weight is not a measurement, and it would produce a
+      // NaN z-score that then propagates into the chart.
+      if (measure === null || measured === null || measured <= 0) return null
+      return { ...base, type: 'growth', measure, value: measured }
     }
     default:
       return null

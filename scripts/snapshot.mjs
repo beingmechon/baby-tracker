@@ -114,6 +114,18 @@ try {
   await page.waitForTimeout(1200)
   await sheet.getByRole('button', { name: 'Save feed' }).click()
   await page.getByText('Feed saved').waitFor()
+
+  // A measurement, so the growth screen has a chart and a ledger to audit
+  // rather than an empty state.
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.settings-group').first().getByRole('button', { name: 'Girl' }).click()
+  await page.getByRole('button', { name: 'Save details' }).click()
+  await page.getByText('Details saved.').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  await page.locator('.sheet').getByLabel('Value (kg)').fill('5.6')
+  await page.locator('.sheet').getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
   await page.waitForTimeout(2400)
 
   for (const [label, theme] of [
@@ -127,6 +139,12 @@ try {
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
     writeFileSync(join(OUT, `home-${theme}.html`), await serialize(page))
+
+    await page.getByRole('button', { name: 'Growth', exact: true }).click()
+    await page.locator('.growth-headline').waitFor()
+    writeFileSync(join(OUT, `growth-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   }
 
   console.log(`Wrote snapshots to ${OUT}`)

@@ -15,6 +15,7 @@ import type { MessageKey } from '@/i18n/locales'
 import type { BabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
+import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
 import { isToday, selectEventsForDay } from '@/domain/select'
 import { summarizeDay } from '@/domain/summary'
 import {
@@ -26,10 +27,11 @@ import {
 } from '@/domain/time'
 import type { BabyEvent, BreastSide, DiaperKind, Timestamp } from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
-import { formatAge, formatVolume } from '@/i18n/format'
+import { formatAge, formatMeasure, formatVolume, measureName } from '@/i18n/format'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
+import { GrowthSheet } from './GrowthSheet'
 import { NursingSheet } from './NursingSheet'
 import { RuleLabel } from './RuleLabel'
 import { StatusHeadline } from './StatusHeadline'
@@ -39,6 +41,7 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  GrowthIcon,
   NursingIcon,
   RepeatIcon,
   SettingsIcon,
@@ -49,6 +52,7 @@ interface HomeProps {
   store: BabyStore
   settings: Settings
   onOpenSettings: () => void
+  onOpenGrowth: () => void
 }
 
 const QUICK_DIAPERS = [
@@ -61,12 +65,14 @@ const QUICK_DIAPERS = [
   toast: MessageKey
 }[]
 
-export function Home({ store, settings, onOpenSettings }: HomeProps) {
+export function Home({ store, settings, onOpenSettings, onOpenGrowth }: HomeProps) {
   const t = useTranslator()
   const { activeBaby, events, sleepInProgress } = store
 
   const [nursingTimer, setNursingTimer] = useState<NursingTimerState | null>(null)
-  const [openSheet, setOpenSheet] = useState<'nursing' | 'bottle' | null>(null)
+  const [openSheet, setOpenSheet] = useState<'nursing' | 'bottle' | 'growth' | null>(
+    null,
+  )
   const [editing, setEditing] = useState<BabyEvent | null>(null)
   const [dayAnchor, setDayAnchor] = useState<Timestamp>(() => startOfLocalDay(Date.now()))
   const [toast, setToast] = useState<string | null>(null)
@@ -93,6 +99,8 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
 
   const lastSide = useMemo(() => findLastNursingSide(events), [events])
   const lastFeed = useMemo(() => findLastFeed(events), [events])
+
+  const lastMeasurements = useMemo(() => latestMeasurements(events), [events])
 
   const dayEvents = useMemo(
     () => selectEventsForDay(events, dayAnchor, now),
@@ -307,11 +315,55 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
           <DaySummary summary={summary} unit={settings.volumeUnit} />
         </section>
 
+        <section className="section" aria-label={t.t('section.growth')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenGrowth}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('growth.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.growth')}
+          </RuleLabel>
+          {Object.keys(lastMeasurements).length === 0 ? (
+            <button
+              type="button"
+              className="action-repeat"
+              onClick={() => setOpenSheet('growth')}
+            >
+              <GrowthIcon size={16} />
+              <span>{t.t('growth.add')}</span>
+            </button>
+          ) : (
+            <dl className="ledger">
+              {MEASURE_KINDS.filter(
+                (measure) => lastMeasurements[measure] !== undefined,
+              ).map(
+                (measure) => (
+                  <div className="ledger-row" key={measure}>
+                    <dt className="ledger-term">{measureName(t, measure)}</dt>
+                    <dd className="ledger-value">
+                      {formatMeasure(
+                        t,
+                        lastMeasurements[measure] as number,
+                        measure,
+                        settings.measureSystem,
+                      )}
+                    </dd>
+                  </div>
+                ),
+              )}
+            </dl>
+          )}
+        </section>
+
         <section className="section" aria-label={t.t('section.timeline')}>
           <RuleLabel>{t.t('section.timeline')}</RuleLabel>
           <Timeline
             events={dayEvents}
             unit={settings.volumeUnit}
+            measureSystem={settings.measureSystem}
             now={now}
             onSelect={setEditing}
           />
@@ -354,10 +406,26 @@ export function Home({ store, settings, onOpenSettings }: HomeProps) {
         />
       )}
 
+      {openSheet === 'growth' && (
+        <GrowthSheet
+          system={settings.measureSystem}
+          initialMeasure="weight"
+          lastValues={lastMeasurements}
+          onSave={async ({ measure, value }) => {
+            await store.logGrowth({ measure, value, startedAt: logAt() })
+            setToast(t.t('toast.growthSaved'))
+            setOpenSheet(null)
+            returnToToday()
+          }}
+          onClose={() => setOpenSheet(null)}
+        />
+      )}
+
       {editing !== null && (
         <EventEditSheet
           event={editing}
           unit={settings.volumeUnit}
+          measureSystem={settings.measureSystem}
           onSave={async (patch) => {
             await store.updateEvent(editing.id, patch)
             setEditing(null)

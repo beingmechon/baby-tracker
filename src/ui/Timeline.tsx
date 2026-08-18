@@ -1,12 +1,18 @@
 import { formatClock } from '@/domain/time'
-import type { BabyEvent, Timestamp, VolumeUnit } from '@/domain/types'
+import type {
+  BabyEvent,
+  MeasureSystem,
+  Timestamp,
+  VolumeUnit,
+} from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
 import { describeEvent } from './describeEvent'
-import { BottleIcon, DiaperIcon, NursingIcon, SleepIcon } from './icons'
+import { BottleIcon, DiaperIcon, GrowthIcon, NursingIcon, SleepIcon } from './icons'
 
 interface TimelineProps {
   events: BabyEvent[]
   unit: VolumeUnit
+  measureSystem: MeasureSystem
   now: Timestamp
   onSelect: (event: BabyEvent) => void
 }
@@ -21,6 +27,8 @@ function iconFor(event: BabyEvent) {
       return <SleepIcon size={16} />
     case 'diaper':
       return <DiaperIcon size={16} />
+    case 'growth':
+      return <GrowthIcon size={16} />
   }
 }
 
@@ -33,7 +41,13 @@ function iconFor(event: BabyEvent) {
  * encodes a data row, and Data-Dense Professional's rule is that categorical
  * accents belong on data, never on chrome. The buttons above carry none.
  */
-export function Timeline({ events, unit, now, onSelect }: TimelineProps) {
+export function Timeline({
+  events,
+  unit,
+  measureSystem,
+  now,
+  onSelect,
+}: TimelineProps) {
   const t = useTranslator()
 
   if (events.length === 0) {
@@ -44,7 +58,12 @@ export function Timeline({ events, unit, now, onSelect }: TimelineProps) {
   return (
     <div className="timeline">
       {events.map((event) => {
-        const { category, title, detail, live } = describeEvent(event, unit, now, t)
+        const { category, title, detail, live } = describeEvent(event, {
+          volumeUnit: unit,
+          measureSystem,
+          now,
+          t,
+        })
         return (
           <button
             key={event.id}

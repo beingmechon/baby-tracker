@@ -6,6 +6,38 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — growth tracking with real WHO percentiles
+
+- **Weight, length and head circumference**, in metric or imperial. Imperial
+  weight is entered and shown as two units ("9 lb 15 oz"), because that is how a
+  scale reads and how a parent says it.
+- **A growth screen** with the measurement as its headline, the date it was taken,
+  the change since the previous reading as a per-week rate, and the WHO percentile
+  for age.
+- **A WHO percentile chart** — the baby's own readings plotted against the 3rd,
+  50th and 97th percentile curves, drawn from the World Health Organization's
+  published LMS parameters. Hand-drawn SVG; no charting dependency.
+- **Sex on the baby's profile**, optional, used only to pick the right WHO
+  reference. Percentiles are hidden rather than guessed when it is not set.
+- **Growth rows in the CSV export**, in both metric and imperial columns.
+- Measurements are editable and deletable like every other entry.
+
+Percentiles are computed at the age the measurement was *taken*, not today's age,
+so an old weigh-in does not appear to slide down the chart as the baby grows.
+
+**Head circumference is tracked but has no percentile.** The reference was not in
+the WHO source set this project extracted from, and inventing curves behind a
+number a parent shows to a doctor is not something this project will do. The app
+says so on screen.
+
+### Changed
+
+- Canonical storage for measurements is whole grams and whole millimetres — finer
+  than any home scale or tape — so switching between metric and imperial can never
+  drift a stored value.
+- `describeEvent` takes a context object rather than a growing positional
+  argument list.
+
 ### Added — internationalisation
 
 - **Every string in the app is now translatable.** A dependency-free i18n core
@@ -45,10 +77,17 @@ versions may change behaviour.
   whole-sentence messages per kind — interpolating nouns into sentences breaks
   casing and grammatical agreement in other languages regardless.
 
+### Fixed
+
+- `npm run smoke` wrote its screenshots into the committed `docs/screenshots/`, so
+  any local verification run dirtied the working tree. It now writes to a
+  gitignored directory; `npm run screenshots` refreshes the committed images.
+
 ### Verified
 
-171 unit tests (up from 156), 36 browser smoke checks including a real
-language switch, and 0 AI-tell findings across 7 screens.
+236 unit tests (up from 156) and 45 browser smoke checks, including the WHO
+percentile maths against the organization's own published −2SD and +2SD figures,
+a metric-to-imperial round trip through storage, and a real language switch.
 
 ## [0.1.1] — 2026-08-17
 

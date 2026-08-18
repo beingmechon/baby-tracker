@@ -9,6 +9,7 @@ import type {
   BreastSide,
   DiaperKind,
   Id,
+  MeasureKind,
   SleepEvent,
   Timestamp,
 } from '@/domain/types'
@@ -38,6 +39,12 @@ export interface BabyStore {
     startedAt: Timestamp
   }): Promise<void>
   logDiaper(input: { kind: DiaperKind; startedAt: Timestamp }): Promise<void>
+  /** `value` is canonical: grams for weight, millimetres for length and head. */
+  logGrowth(input: {
+    measure: MeasureKind
+    value: number
+    startedAt: Timestamp
+  }): Promise<void>
   startSleep(startedAt: Timestamp): Promise<void>
   endSleep(id: Id, endedAt: Timestamp): Promise<void>
   /** Re-logs the last feed as-is — the "one tap repeats" shortcut. */
@@ -152,6 +159,8 @@ export function useBabyStore(
     logBottle: ({ contents, amountMl, startedAt }) =>
       addEvent({ type: 'bottle', contents, amountMl, startedAt }),
     logDiaper: ({ kind, startedAt }) => addEvent({ type: 'diaper', kind, startedAt }),
+    logGrowth: ({ measure, value, startedAt }) =>
+      addEvent({ type: 'growth', measure, value, startedAt }),
 
     startSleep: async (startedAt) => {
       // Only ever one sleep runs at a time; the button that calls this is hidden

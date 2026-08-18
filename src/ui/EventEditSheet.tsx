@@ -1,15 +1,20 @@
 import { useState } from 'react'
+import { MEASURE_KINDS } from '@/domain/growth'
 import type {
   BabyEvent,
   BottleContents,
   BreastSide,
   DiaperKind,
+  MeasureKind,
+  MeasureSystem,
   SleepKind,
   VolumeUnit,
 } from '@/domain/types'
 import { fromMl, toMl } from '@/domain/units'
 import { useTranslator } from '@/i18n/context'
+import { measureShortName } from '@/i18n/format'
 import type { MessageKey } from '@/i18n/locales'
+import { MeasureValueInput } from './MeasureValueInput'
 import {
   fromDateTimeInputs,
   minutesInputToMs,
@@ -22,6 +27,7 @@ import { Sheet } from './Sheet'
 interface EventEditSheetProps {
   event: BabyEvent
   unit: VolumeUnit
+  measureSystem: MeasureSystem
   onSave: (patch: Partial<BabyEvent>) => Promise<void>
   onDelete: () => Promise<void>
   onClose: () => void
@@ -34,6 +40,7 @@ const DIAPER_KINDS = [
   { kind: 'dry', label: 'action.diaper.dry' },
 ] as const satisfies readonly { kind: DiaperKind; label: MessageKey }[]
 
+
 /**
  * Editing and deleting a logged event.
  *
@@ -44,6 +51,7 @@ const DIAPER_KINDS = [
 export function EventEditSheet({
   event,
   unit,
+  measureSystem,
   onSave,
   onDelete,
   onClose,
@@ -82,6 +90,12 @@ export function EventEditSheet({
   )
   const [diaperKind, setDiaperKind] = useState<DiaperKind>(
     event.type === 'diaper' ? event.kind : 'wet',
+  )
+  const [measure, setMeasure] = useState<MeasureKind>(
+    event.type === 'growth' ? event.measure : 'weight',
+  )
+  const [measureValue, setMeasureValue] = useState<number | null>(
+    event.type === 'growth' ? event.value : null,
   )
 
   async function save() {
@@ -134,6 +148,14 @@ export function EventEditSheet({
       case 'diaper':
         Object.assign(patch, { kind: diaperKind })
         break
+      case 'growth': {
+        if (measureValue === null) {
+          setError(t.t('error.enterValue'))
+          return
+        }
+        Object.assign(patch, { measure, value: measureValue })
+        break
+      }
     }
 
     setSaving(true)
@@ -303,6 +325,39 @@ export function EventEditSheet({
             </div>
           </div>
           <p className="field-note">{t.t('edit.stillRunning')}</p>
+        </>
+      )}
+
+      {event.type === 'growth' && (
+        <>
+          <div className="field">
+            <span className="field-label" id="edit-measure-label">
+              {t.t('growth.measure')}
+            </span>
+            <div className="segmented" role="group" aria-labelledby="edit-measure-label">
+              {MEASURE_KINDS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={measure === option}
+                  onClick={() => {
+                    setMeasure(option)
+                    setMeasureValue(null)
+                  }}
+                >
+                  {measureShortName(t, option)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <MeasureValueInput
+            key={measure}
+            measure={measure}
+            system={measureSystem}
+            idPrefix="edit-measure"
+            initialValue={event.measure === measure ? event.value : null}
+            onChange={setMeasureValue}
+          />
         </>
       )}
 

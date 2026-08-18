@@ -59,6 +59,7 @@ export const en = {
   'action.repeatFeed': 'Repeat last feed · {detail}',
   'action.previousDay': 'Previous day',
   'action.nextDay': 'Next day',
+  'action.growth': 'Growth',
   'action.settings': 'Settings',
   'action.back': 'Back',
   'action.close': 'Close',
@@ -124,26 +125,46 @@ export const en = {
   'bottle.save': 'Save bottle',
   'bottle.saving': 'Saving…',
 
-  // Growth. Staged ahead of the UI: the WHO reference data landed in this same
-  // change (src/domain/growth/), and writing the copy now keeps the Spanish
-  // catalogue complete in one pass rather than two.
+  // Growth
   'growth.title': 'Growth',
   'growth.measure': 'Measurement',
   'growth.measure.weight': 'Weight',
   'growth.measure.length': 'Length',
   'growth.measure.head': 'Head',
   'growth.value': 'Value ({unit})',
+  'growth.pounds': 'Pounds',
+  'growth.ounces': 'Ounces',
+  // Weight in imperial is spoken as two units, and the order is not universal.
+  'growth.poundsOunces': '{pounds} lb {ounces} oz',
   'growth.save': 'Save measurement',
+  'growth.add': 'Log a measurement',
   'growth.empty': 'No measurements yet.',
+  'growth.emptyHint':
+    'Weigh-ins from a check-up, or your own scale at home. Two readings are enough to see a trend.',
   'growth.latest': 'Latest',
   'growth.change': '{change} since {date}',
   'growth.perWeek': '{amount} per week',
+  'growth.percentileLabel': 'Percentile',
   'growth.percentile': '{percentile} percentile for age',
+  'growth.percentileBelowFirst': 'below the 1st percentile for age',
+  'growth.percentileAboveLast': 'above the 99th percentile for age',
   'growth.percentileUnavailable': 'Percentile needs a birth date and sex in settings.',
   'growth.percentileNoData':
     'No WHO reference data for this measurement and age yet.',
   'growth.referenceNote':
     'Percentiles come from the WHO Child Growth Standards. They describe populations, not your baby — worth discussing with your doctor, never a diagnosis.',
+  'growth.history': 'History',
+  'growth.chart': 'Against the WHO reference',
+  'growth.chartDescription':
+    '{measure} plotted against the WHO {low}, {mid} and {high} percentile curves, from birth to {months} months.',
+  'growth.chartNoReference':
+    'No reference curves for this measurement, so only your own readings are plotted.',
+  'growth.chartNeedsBirthDate':
+    'Add a date of birth in settings to plot measurements against age.',
+  'growth.axisAge': 'Age (months)',
+  'growth.curveLabel': 'WHO {percentile}',
+  'growth.measuredOn': 'Measured {date}',
+  'growth.atAge': 'at {age}',
 
   // Edit sheet
   'edit.title': 'Edit entry',
@@ -271,6 +292,14 @@ export const en = {
   'age.years.one': '{count} year old',
   'age.years.other': '{count} years old',
   'age.yearsMonths': '{years}y {months}m old',
+
+  // Ordinals, for percentiles. English needs four forms (1st, 2nd, 3rd, 4th);
+  // Intl.PluralRules picks between them with `type: 'ordinal'`. A language that
+  // does not inflect ordinals sets all four to the same pattern.
+  'ordinal.one': '{value}st',
+  'ordinal.two': '{value}nd',
+  'ordinal.few': '{value}rd',
+  'ordinal.other': '{value}th',
 
   // Durations. Kept as patterns so a locale can reorder or re-space them.
   'duration.seconds': '{seconds}s',

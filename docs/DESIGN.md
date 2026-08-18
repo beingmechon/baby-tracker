@@ -205,10 +205,17 @@ Data-Dense Professional: state-change only.
   looking like every other anti-slop pass is still a failure. The test is variance,
   not distance from a ban-list.
 
+## Resolved
+
+- **Percentile bands on the growth chart** were an open question: how to separate
+  three reference curves without either a second accent hue or a chart-only palette
+  extension. The answer turned out not to need colour at all. The reference curves
+  are *context*, not data — they belong to the frame, like the hairline rules — so
+  they are drawn in `--border-subtle`, with the median distinguished by a dash
+  pattern rather than a hue. The single accent stays on the one line that is
+  actually the baby's. No palette extension was needed.
+
 ## Open questions
 
-- WHO/Fenton growth charts (v0.2) need a categorical-but-not-chrome treatment for
-  percentile bands. The analogous ramps may not separate enough; a chart-only
-  palette extension may be justified.
 - `latin-ext` subsets are not bundled yet, so a name using glyphs outside `latin`
   falls back to the system serif for those characters. This lands with i18n.

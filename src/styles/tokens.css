@@ -59,6 +59,7 @@
   --feed-tint: var(--orange-11);
   --diaper-tint: var(--yellow-11);
   --sleep-tint: var(--neutral-11);
+  --growth-tint: var(--accent-11);
 
   /* Depth. Hue-shifted warm-dark, never a black overlay (ch09). */
   --shadow-sheet: 0 -2px 24px rgb(48 45 42 / 22%);

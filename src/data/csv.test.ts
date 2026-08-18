@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MINUTE_MS } from '@/domain/time'
-import { BABY_ID, at, bottle, diaper, nursing, sleep } from '@/test/factories'
+import { BABY_ID, at, bottle, diaper, growth, nursing, sleep } from '@/test/factories'
 import { escapeCsvField, toCsv } from './csv'
 import type { ExportBundle } from './repository'
 
@@ -10,7 +10,7 @@ function bundle(events: ExportBundle['events']): ExportBundle {
     version: 1,
     exportedAt: at(2026, 1, 15, 18, 0),
     babies: [
-      { id: BABY_ID, name: 'Mira', birthDate: '2026-01-01', createdAt: 0 },
+      { id: BABY_ID, name: 'Mira', birthDate: '2026-01-01', sex: 'female', createdAt: 0 },
     ],
     events,
   }
@@ -38,8 +38,28 @@ describe('toCsv', () => {
   it('writes a header row', () => {
     const csv = toCsv(bundle([]))
     expect(csv.split('\n')[0]).toBe(
-      'baby,date,time,type,detail,duration_minutes,amount_ml,amount_oz,note',
+      'baby,date,time,type,detail,duration_minutes,amount_ml,amount_oz,' +
+        'value_metric,unit_metric,value_imperial,unit_imperial,note',
     )
+  })
+
+  it('gives every row exactly as many cells as the header', () => {
+    // A row one cell short shifts every later column, which a spreadsheet shows
+    // as plausible-looking nonsense rather than an error. Cheap to guard.
+    const csv = toCsv(
+      bundle([
+        nursing(at(2026, 1, 15, 9, 0), 15 * MINUTE_MS),
+        bottle(at(2026, 1, 15, 10, 0), 120),
+        sleep(at(2026, 1, 15, 11, 0), at(2026, 1, 15, 12, 0)),
+        diaper(at(2026, 1, 15, 13, 0), 'wet'),
+        growth(at(2026, 1, 15, 14, 0), 'weight', 4500),
+      ]),
+    )
+    const rows = csv.trim().split('\n')
+    const columns = rows[0]!.split(',').length
+    for (const row of rows.slice(1)) {
+      expect(row.split(',')).toHaveLength(columns)
+    }
   })
 
   it('orders events oldest first regardless of input order', () => {
@@ -73,7 +93,25 @@ describe('toCsv', () => {
   it('leaves the duration blank for a sleep still in progress', () => {
     const csv = toCsv(bundle([sleep(at(2026, 1, 15, 13, 0), null, 'nap')]))
     const row = csv.trim().split('\n')[1] ?? ''
-    expect(row).toBe('"Mira","2026-01-15","13:00","sleep","nap","","","",""')
+    expect(row).toBe(
+      '"Mira","2026-01-15","13:00","sleep","nap","","","","","","","",""',
+    )
+  })
+
+  it('records a measurement in both systems', () => {
+    const csv = toCsv(bundle([growth(at(2026, 1, 15, 9, 0), 'weight', 4500)]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"growth"')
+    expect(row).toContain('"weight"')
+    expect(row).toContain('"4.5","kg"')
+    expect(row).toContain('"9.92","lb"')
+  })
+
+  it('records a length in centimetres and inches', () => {
+    const csv = toCsv(bundle([growth(at(2026, 1, 15, 9, 0), 'length', 625)]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"62.5","cm"')
+    expect(row).toContain('"24.61","in"')
   })
 
   it('labels an event whose baby is missing rather than dropping the row', () => {

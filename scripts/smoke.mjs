@@ -224,6 +224,96 @@ try {
     await page.getByText('checked with the midwife').isVisible(),
   )
 
+  console.log('\n▸ Growth')
+  // Percentiles need a sex to pick the right WHO reference; the app hides them
+  // rather than guessing, so set it first and check the guard both ways.
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const growthSettings = page.locator('.settings-group').first()
+  await growthSettings.getByRole('button', { name: 'Girl' }).click()
+  await page.getByRole('button', { name: 'Save details' }).click()
+  await page.getByText('Details saved.').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  const growthSheet = page.locator('.sheet')
+  await growthSheet.getByLabel('Value (kg)').fill('5.6')
+  await growthSheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  check(
+    'a weight reaches the timeline in the parent\u2019s own units',
+    await page
+      .locator('.timeline-row', { hasText: 'Weight' })
+      .locator('text=5.6 kg')
+      .isVisible(),
+  )
+  check(
+    'the home ledger shows the latest weight',
+    (await page
+      .locator('.ledger-row', { hasText: 'Weight' })
+      .locator('.ledger-value')
+      .innerText()) === '5.6 kg',
+  )
+
+  // The end-to-end unit path: stored canonically in grams, read back in pounds.
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Imperial' }).click()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  const imperialWeight = await page
+    .locator('.ledger-row', { hasText: 'Weight' })
+    .locator('.ledger-value')
+    .innerText()
+  check(
+    `the same weight reads in pounds and ounces (${imperialWeight})`,
+    /^\d+ lb \d+ oz$/.test(imperialWeight),
+  )
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Metric' }).click()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Growth', exact: true }).click()
+  await page.locator('.growth-headline').waitFor()
+  check(
+    'the growth screen leads with the measurement',
+    (await page.locator('.growth-headline').innerText()) === '5.6 kg',
+  )
+  const percentile = await page
+    .locator('.ledger-row', { hasText: 'Percentile' })
+    .locator('.ledger-note')
+    .innerText()
+  check(
+    `a WHO percentile is computed for the baby\u2019s age (${percentile})`,
+    /(\d+(st|nd|rd|th) percentile for age|below the 1st|above the 99th)/.test(percentile),
+  )
+  check(
+    'the chart draws the reference curves and the baby\u2019s own line',
+    (await page.locator('.chart-reference').count()) === 3 &&
+      (await page.locator('.chart-series').count()) === 1,
+  )
+  check(
+    'the chart is labelled for a screen reader',
+    /percentile curves/.test(
+      (await page.locator('.chart-svg').getAttribute('aria-label')) ?? '',
+    ),
+  )
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'growth.png') })
+
+  // Head circumference ships no WHO reference. The app must say so rather than
+  // invent a curve behind a number a parent shows to a doctor.
+  await page.getByRole('button', { name: 'Head', exact: true }).click()
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  await page.locator('.sheet').getByLabel('Value (cm)').fill('39')
+  await page.locator('.sheet').getByRole('button', { name: 'Save measurement' }).click()
+  await page.locator('.growth-headline').waitFor()
+  check(
+    'head circumference is tracked without a percentile',
+    (await page.locator('.growth-headline').innerText()) === '39 cm' &&
+      (await page.locator('.chart-reference').count()) === 0,
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions
   // and the screenshots do not depend on what time the suite happens to run.

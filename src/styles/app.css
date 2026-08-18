@@ -374,6 +374,10 @@
   color: var(--diaper-tint);
 }
 
+.timeline-mark[data-category='growth'] {
+  color: var(--growth-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -763,6 +767,94 @@
   width: 1.5rem;
   height: 1.5rem;
   accent-color: var(--accent-solid);
+}
+
+/* ── Growth ──────────────────────────────────────────────────────────────── */
+
+/*
+ * The measurement itself, set as the dominant element of its section — the same
+ * move the home screen makes with the current status. A parent opens this screen
+ * to read one number.
+ */
+.growth-headline {
+  margin-bottom: var(--space-6);
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.ledger-note {
+  font-size: var(--text-0);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.ledger-note.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.chart {
+  margin: 0;
+}
+
+/*
+ * The SVG carries its own aspect ratio through the viewBox, so height:auto keeps
+ * the text inside it undistorted at any width.
+ */
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-axis {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+/*
+ * The reference curves are context, not data: hairlines in the neutral border
+ * colour, with the median a touch stronger. Only the baby's own line gets the
+ * accent — the same rule the timeline follows, where colour marks data and never
+ * chrome.
+ */
+.chart-reference {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.chart-reference[data-emphasis='median'] {
+  stroke: var(--border-strong);
+  stroke-dasharray: 3 3;
+}
+
+.chart-series {
+  fill: none;
+  stroke: var(--accent-solid);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  fill: var(--accent-solid);
+}
+
+.chart-tick,
+.chart-curve-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-caption {
+  margin-top: var(--space-2);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
 }
 
 /* ── Misc ────────────────────────────────────────────────────────────────── */

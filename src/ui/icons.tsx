@@ -59,6 +59,17 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+/** A rising line over an axis: growth as a curve, not a scale or a ruler. */
+export function GrowthIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M4 20V4" />
+      <path d="M4 20h16" />
+      <path d="M7 16.5c2.6 0 3.4-3.2 5-6.2 1.1-2 2.6-3.3 5-3.3" />
+    </svg>
+  )
+}
+
 export function SettingsIcon({ size = 22, className }: IconProps) {
   return (
     <svg {...svgProps(size)} className={className}>

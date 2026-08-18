@@ -1,9 +1,9 @@
-import type { Baby, BabyEvent, Id, Timestamp } from '@/domain/types'
+import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 
 /**
  * `Omit` over a union collapses it to the shared keys, which would silently
  * throw away every type-specific field. Distributing over the members keeps
- * `NewEvent` a union of four precise shapes.
+ * `NewEvent` a union of one precise shape per event type.
  */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
@@ -47,7 +47,11 @@ export interface ImportResult {
  */
 export interface Repository {
   listBabies(): Promise<Baby[]>
-  createBaby(input: { name: string; birthDate: string | null }): Promise<Baby>
+  createBaby(input: {
+    name: string
+    birthDate: string | null
+    sex?: Sex | null
+  }): Promise<Baby>
   updateBaby(id: Id, patch: Partial<Omit<Baby, 'id' | 'createdAt'>>): Promise<Baby>
   deleteBaby(id: Id): Promise<void>
 

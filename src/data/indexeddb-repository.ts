@@ -1,4 +1,4 @@
-import type { Baby, BabyEvent, Id, Timestamp } from '@/domain/types'
+import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 import { newId } from './ids'
 import {
   DB_NAME,
@@ -67,10 +67,19 @@ export class IndexedDbRepository implements Repository {
 
   async listBabies(): Promise<Baby[]> {
     const babies = await this.readAll<Baby>(STORE_BABIES)
-    return babies.sort((a, b) => a.createdAt - b.createdAt)
+    return babies
+      // Records written before growth tracking existed have no `sex` key at all.
+      // Normalising on read means the rest of the app never has to distinguish
+      // "not recorded" from "written by an older version".
+      .map((baby) => ({ ...baby, sex: baby.sex ?? null }))
+      .sort((a, b) => a.createdAt - b.createdAt)
   }
 
-  async createBaby(input: { name: string; birthDate: string | null }): Promise<Baby> {
+  async createBaby(input: {
+    name: string
+    birthDate: string | null
+    sex?: Sex | null
+  }): Promise<Baby> {
     const name = input.name.trim()
     if (name.length === 0) throw new Error('A baby needs a name')
 
@@ -78,6 +87,7 @@ export class IndexedDbRepository implements Repository {
       id: this.generateId(),
       name,
       birthDate: input.birthDate,
+      sex: input.sex ?? null,
       createdAt: this.now(),
     }
     const db = await this.db()

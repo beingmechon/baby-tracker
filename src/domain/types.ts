@@ -14,13 +14,28 @@ export type BottleContents = 'breast_milk' | 'formula'
 export type DiaperKind = 'wet' | 'dirty' | 'mixed' | 'dry'
 export type SleepKind = 'nap' | 'night'
 export type VolumeUnit = 'ml' | 'oz'
-export type EventType = 'nursing' | 'bottle' | 'sleep' | 'diaper'
+export type EventType = 'nursing' | 'bottle' | 'sleep' | 'diaper' | 'growth'
+
+/**
+ * Recorded only because the WHO publishes separate growth references for boys
+ * and girls, and picking the wrong one shifts a percentile by several points.
+ * Optional everywhere: a parent who would rather not record it gets the rest of
+ * the app, minus percentiles.
+ */
+export type Sex = 'male' | 'female'
+
+export type MeasureKind = 'weight' | 'length' | 'head'
+
+/** Which units measurements are shown and entered in. */
+export type MeasureSystem = 'metric' | 'imperial'
 
 export interface Baby {
   id: Id
   name: string
   /** ISO `YYYY-MM-DD` in the baby's local calendar, or null if not given. */
   birthDate: string | null
+  /** null when not recorded; growth percentiles are hidden rather than guessed. */
+  sex: Sex | null
   createdAt: Timestamp
 }
 
@@ -58,7 +73,24 @@ export interface DiaperEvent extends EventBase {
   kind: DiaperKind
 }
 
-export type BabyEvent = NursingEvent | BottleEvent | SleepEvent | DiaperEvent
+export interface GrowthEvent extends EventBase {
+  type: 'growth'
+  measure: MeasureKind
+  /**
+   * Canonical storage is **grams** for weight and **millimetres** for length and
+   * head circumference — whole numbers at finer precision than any home scale or
+   * tape offers, so converting between metric and imperial for display can never
+   * drift the stored value.
+   */
+  value: number
+}
+
+export type BabyEvent =
+  | NursingEvent
+  | BottleEvent
+  | SleepEvent
+  | DiaperEvent
+  | GrowthEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -71,6 +103,10 @@ export function isSleep(event: BabyEvent): event is SleepEvent {
 
 export function isDiaper(event: BabyEvent): event is DiaperEvent {
   return event.type === 'diaper'
+}
+
+export function isGrowth(event: BabyEvent): event is GrowthEvent {
+  return event.type === 'growth'
 }
 
 /** A sleep with no end time is the one currently in progress. */

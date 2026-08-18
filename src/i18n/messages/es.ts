@@ -55,6 +55,7 @@ export const es: Messages = {
   'action.repeatFeed': 'Repetir última toma · {detail}',
   'action.previousDay': 'Día anterior',
   'action.nextDay': 'Día siguiente',
+  'action.growth': 'Crecimiento',
   'action.settings': 'Ajustes',
   'action.back': 'Atrás',
   'action.close': 'Cerrar',
@@ -122,18 +123,39 @@ export const es: Messages = {
   'growth.measure.length': 'Longitud',
   'growth.measure.head': 'Cabeza',
   'growth.value': 'Valor ({unit})',
+  'growth.pounds': 'Libras',
+  'growth.ounces': 'Onzas',
+  'growth.poundsOunces': '{pounds} lb {ounces} oz',
   'growth.save': 'Guardar medida',
+  'growth.add': 'Registrar una medida',
   'growth.empty': 'Aún no hay medidas.',
+  'growth.emptyHint':
+    'Pesos de una revisión, o de tu propia balanza en casa. Con dos medidas ya se ve una tendencia.',
   'growth.latest': 'Última',
   'growth.change': '{change} desde {date}',
   'growth.perWeek': '{amount} por semana',
+  'growth.percentileLabel': 'Percentil',
   'growth.percentile': 'percentil {percentile} para la edad',
+  'growth.percentileBelowFirst': 'por debajo del percentil 1 para la edad',
+  'growth.percentileAboveLast': 'por encima del percentil 99 para la edad',
   'growth.percentileUnavailable':
     'El percentil necesita una fecha de nacimiento y el sexo en los ajustes.',
   'growth.percentileNoData':
     'Todavía no hay datos de referencia de la OMS para esta medida y edad.',
   'growth.referenceNote':
     'Los percentiles provienen de los Patrones de Crecimiento Infantil de la OMS. Describen poblaciones, no a tu bebé: conviene comentarlo con tu médico, nunca es un diagnóstico.',
+  'growth.history': 'Historial',
+  'growth.chart': 'Frente a la referencia de la OMS',
+  'growth.chartDescription':
+    '{measure} representado frente a las curvas de los percentiles {low}, {mid} y {high} de la OMS, desde el nacimiento hasta los {months} meses.',
+  'growth.chartNoReference':
+    'No hay curvas de referencia para esta medida, así que solo se representan tus propias medidas.',
+  'growth.chartNeedsBirthDate':
+    'Añade una fecha de nacimiento en los ajustes para representar las medidas según la edad.',
+  'growth.axisAge': 'Edad (meses)',
+  'growth.curveLabel': 'OMS {percentile}',
+  'growth.measuredOn': 'Medido el {date}',
+  'growth.atAge': 'a los {age}',
 
   'edit.title': 'Editar entrada',
   'edit.date': 'Fecha',
@@ -255,6 +277,13 @@ export const es: Messages = {
   'age.years.one': '{count} año',
   'age.years.other': '{count} años',
   'age.yearsMonths': '{years} a {months} m',
+
+  // El español no flexiona el ordinal en este contexto: «percentil 42», no
+  // «percentil 42.º». Las cuatro formas son iguales a propósito.
+  'ordinal.one': '{value}',
+  'ordinal.two': '{value}',
+  'ordinal.few': '{value}',
+  'ordinal.other': '{value}',
 
   'duration.seconds': '{seconds} s',
   'duration.minutes': '{minutes} min',
