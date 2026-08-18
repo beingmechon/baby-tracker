@@ -1,8 +1,9 @@
-import { formatClock, formatDuration } from '@/domain/time'
+import { formatClock } from '@/domain/time'
 import type { BabyEvent, DiaperKind, Timestamp, VolumeUnit } from '@/domain/types'
-import { formatVolume } from '@/domain/units'
+import { formatDuration, formatVolume } from '@/i18n/format'
+import type { MessageKey, Translator } from '@/i18n/locales'
 
-export type Category = 'feed' | 'sleep' | 'diaper'
+export type Category = 'feed' | 'sleep' | 'diaper' | 'growth'
 
 export interface EventDescription {
   category: Category
@@ -12,49 +13,63 @@ export interface EventDescription {
   live: boolean
 }
 
-const DIAPER_TITLES: Record<DiaperKind, string> = {
-  wet: 'Wet diaper',
-  dirty: 'Dirty diaper',
-  mixed: 'Mixed diaper',
-  dry: 'Dry diaper',
+const DIAPER_TITLES: Record<DiaperKind, MessageKey> = {
+  wet: 'event.diaper.wet',
+  dirty: 'event.diaper.dirty',
+  mixed: 'event.diaper.mixed',
+  dry: 'event.diaper.dry',
 }
 
 /**
- * Turns an event into the two lines a timeline row shows. Kept pure and apart
- * from the components so the exact wording is testable — this copy is read
- * hundreds of times a week and small ambiguities get irritating fast.
+ * Turns an event into the two lines a timeline row shows.
+ *
+ * Kept pure and apart from the components so the exact wording is testable — this
+ * copy is read hundreds of times a week and small ambiguities get irritating fast.
+ * Every string comes from the catalogue; the translator is passed in rather than
+ * read from context so this stays a plain function.
  */
 export function describeEvent(
   event: BabyEvent,
   unit: VolumeUnit,
   now: Timestamp,
+  t: Translator,
 ): EventDescription {
   switch (event.type) {
     case 'nursing':
       return {
         category: 'feed',
-        title: event.side === 'left' ? 'Nursed left' : 'Nursed right',
-        detail: formatDuration(event.durationMs),
+        title: t.t(event.side === 'left' ? 'event.nursed.left' : 'event.nursed.right'),
+        detail: formatDuration(t, event.durationMs),
         live: false,
       }
 
     case 'bottle':
       return {
         category: 'feed',
-        title: event.contents === 'breast_milk' ? 'Bottle, breast milk' : 'Bottle, formula',
-        detail: formatVolume(event.amountMl, unit),
+        title: t.t(
+          event.contents === 'breast_milk'
+            ? 'event.bottle.breastMilk'
+            : 'event.bottle.formula',
+        ),
+        detail: formatVolume(t, event.amountMl, unit),
         live: false,
       }
 
     case 'sleep': {
       const running = event.endedAt === null
-      const duration = formatDuration((event.endedAt ?? now) - event.startedAt)
+      const duration = formatDuration(t, (event.endedAt ?? now) - event.startedAt)
       return {
         category: 'sleep',
-        title: event.kind === 'night' ? 'Night sleep' : 'Nap',
+        title: t.t(event.kind === 'night' ? 'event.sleep.night' : 'event.sleep.nap'),
         detail: running
-          ? `since ${formatClock(event.startedAt)} · ${duration}`
-          : `${duration} · woke ${formatClock(event.endedAt as Timestamp)}`,
+          ? t.t('event.sleepRunning', {
+              time: formatClock(event.startedAt, t.locale),
+              duration,
+            })
+          : t.t('event.sleepEnded', {
+              duration,
+              time: formatClock(event.endedAt as Timestamp, t.locale),
+            }),
         live: running,
       }
     }
@@ -62,7 +77,7 @@ export function describeEvent(
     case 'diaper':
       return {
         category: 'diaper',
-        title: DIAPER_TITLES[event.kind],
+        title: t.t(DIAPER_TITLES[event.kind]),
         detail: '',
         live: false,
       }

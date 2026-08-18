@@ -8,6 +8,8 @@ import type {
   VolumeUnit,
 } from '@/domain/types'
 import { fromMl, toMl } from '@/domain/units'
+import { useTranslator } from '@/i18n/context'
+import type { MessageKey } from '@/i18n/locales'
 import {
   fromDateTimeInputs,
   minutesInputToMs,
@@ -25,7 +27,12 @@ interface EventEditSheetProps {
   onClose: () => void
 }
 
-const DIAPER_KINDS: DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
+const DIAPER_KINDS = [
+  { kind: 'wet', label: 'action.diaper.wet' },
+  { kind: 'dirty', label: 'action.diaper.dirty' },
+  { kind: 'mixed', label: 'action.diaper.mixed' },
+  { kind: 'dry', label: 'action.diaper.dry' },
+] as const satisfies readonly { kind: DiaperKind; label: MessageKey }[]
 
 /**
  * Editing and deleting a logged event.
@@ -41,6 +48,7 @@ export function EventEditSheet({
   onDelete,
   onClose,
 }: EventEditSheetProps) {
+  const t = useTranslator()
   const [date, setDate] = useState(toDateInputValue(event.startedAt))
   const [time, setTime] = useState(toTimeInputValue(event.startedAt))
   const [note, setNote] = useState(event.note ?? '')
@@ -82,7 +90,7 @@ export function EventEditSheet({
 
     const startedAt = fromDateTimeInputs(date, time)
     if (startedAt === null) {
-      setError('That start time is not valid.')
+      setError(t.t('error.invalidStart'))
       return
     }
 
@@ -94,7 +102,7 @@ export function EventEditSheet({
       case 'nursing': {
         const durationMs = minutesInputToMs(durationMinutes)
         if (durationMs === null) {
-          setError('Enter the length of the feed in minutes.')
+          setError(t.t('error.enterDuration'))
           return
         }
         Object.assign(patch, { side, durationMs })
@@ -103,7 +111,7 @@ export function EventEditSheet({
       case 'bottle': {
         const parsed = Number.parseFloat(amount)
         if (!Number.isFinite(parsed) || parsed <= 0) {
-          setError('Enter how much was in the bottle.')
+          setError(t.t('error.enterAmount'))
           return
         }
         Object.assign(patch, { contents, amountMl: toMl(parsed, unit) })
@@ -113,11 +121,11 @@ export function EventEditSheet({
         // A blank end time means the sleep is still running.
         const endedAt = endTime === '' ? null : fromDateTimeInputs(endDate, endTime)
         if (endTime !== '' && endedAt === null) {
-          setError('That wake-up time is not valid.')
+          setError(t.t('error.invalidWake'))
           return
         }
         if (endedAt !== null && endedAt < startedAt) {
-          setError('The wake-up time is before the sleep started.')
+          setError(t.t('error.wakeBeforeStart'))
           return
         }
         Object.assign(patch, { kind: sleepKind, endedAt })
@@ -132,17 +140,17 @@ export function EventEditSheet({
     try {
       await onSave(patch)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save')
+      setError(cause instanceof Error ? cause.message : t.t('error.couldNotSave'))
       setSaving(false)
     }
   }
 
   return (
-    <Sheet title="Edit entry" onClose={onClose}>
+    <Sheet title={t.t('edit.title')} onClose={onClose}>
       <div className="button-row">
         <div className="field">
           <label className="field-label" htmlFor="event-date">
-            Date
+            {t.t('edit.date')}
           </label>
           <input
             id="event-date"
@@ -153,7 +161,7 @@ export function EventEditSheet({
         </div>
         <div className="field">
           <label className="field-label" htmlFor="event-time">
-            Time
+            {t.t('edit.time')}
           </label>
           <input
             id="event-time"
@@ -168,7 +176,7 @@ export function EventEditSheet({
         <>
           <div className="field">
             <span className="field-label" id="edit-side-label">
-              Side
+              {t.t('nursing.side')}
             </span>
             <div className="segmented" role="group" aria-labelledby="edit-side-label">
               <button
@@ -176,20 +184,20 @@ export function EventEditSheet({
                 aria-pressed={side === 'left'}
                 onClick={() => setSide('left')}
               >
-                Left
+                {t.t('nursing.side.left')}
               </button>
               <button
                 type="button"
                 aria-pressed={side === 'right'}
                 onClick={() => setSide('right')}
               >
-                Right
+                {t.t('nursing.side.right')}
               </button>
             </div>
           </div>
           <div className="field">
             <label className="field-label" htmlFor="edit-duration">
-              Length (minutes)
+              {t.t('edit.duration')}
             </label>
             <input
               id="edit-duration"
@@ -207,7 +215,7 @@ export function EventEditSheet({
         <>
           <div className="field">
             <span className="field-label" id="edit-contents-label">
-              Contents
+              {t.t('bottle.contents')}
             </span>
             <div className="segmented" role="group" aria-labelledby="edit-contents-label">
               <button
@@ -215,20 +223,20 @@ export function EventEditSheet({
                 aria-pressed={contents === 'breast_milk'}
                 onClick={() => setContents('breast_milk')}
               >
-                Breast milk
+                {t.t('bottle.contents.breastMilk')}
               </button>
               <button
                 type="button"
                 aria-pressed={contents === 'formula'}
                 onClick={() => setContents('formula')}
               >
-                Formula
+                {t.t('bottle.contents.formula')}
               </button>
             </div>
           </div>
           <div className="field">
             <label className="field-label" htmlFor="edit-amount">
-              Amount ({unit})
+              {t.t('bottle.amount', { unit })}
             </label>
             <input
               id="edit-amount"
@@ -247,7 +255,7 @@ export function EventEditSheet({
         <>
           <div className="field">
             <span className="field-label" id="edit-sleepkind-label">
-              Kind
+              {t.t('edit.kind')}
             </span>
             <div
               className="segmented"
@@ -259,21 +267,21 @@ export function EventEditSheet({
                 aria-pressed={sleepKind === 'nap'}
                 onClick={() => setSleepKind('nap')}
               >
-                Nap
+                {t.t('event.sleep.nap')}
               </button>
               <button
                 type="button"
                 aria-pressed={sleepKind === 'night'}
                 onClick={() => setSleepKind('night')}
               >
-                Night
+                {t.t('event.sleep.night')}
               </button>
             </div>
           </div>
           <div className="button-row">
             <div className="field">
               <label className="field-label" htmlFor="edit-end-date">
-                Woke — date
+                {t.t('edit.wokeDate')}
               </label>
               <input
                 id="edit-end-date"
@@ -284,7 +292,7 @@ export function EventEditSheet({
             </div>
             <div className="field">
               <label className="field-label" htmlFor="edit-end-time">
-                Woke — time
+                {t.t('edit.wokeTime')}
               </label>
               <input
                 id="edit-end-time"
@@ -294,27 +302,24 @@ export function EventEditSheet({
               />
             </div>
           </div>
-          <p className="field-note">
-            Leave the wake-up time blank to keep this sleep running.
-          </p>
+          <p className="field-note">{t.t('edit.stillRunning')}</p>
         </>
       )}
 
       {event.type === 'diaper' && (
         <div className="field">
           <span className="field-label" id="edit-diaper-label">
-            Kind
+            {t.t('edit.kind')}
           </span>
           <div className="segmented" role="group" aria-labelledby="edit-diaper-label">
-            {DIAPER_KINDS.map((kind) => (
+            {DIAPER_KINDS.map(({ kind, label }) => (
               <button
                 key={kind}
                 type="button"
                 aria-pressed={diaperKind === kind}
                 onClick={() => setDiaperKind(kind)}
               >
-                {kind[0]?.toUpperCase()}
-                {kind.slice(1)}
+                {t.t(label)}
               </button>
             ))}
           </div>
@@ -323,13 +328,13 @@ export function EventEditSheet({
 
       <div className="field">
         <label className="field-label" htmlFor="edit-note">
-          Note
+          {t.t('edit.note')}
         </label>
         <textarea
           id="edit-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Anything worth remembering"
+          placeholder={t.t('edit.notePlaceholder')}
         />
       </div>
 
@@ -346,7 +351,7 @@ export function EventEditSheet({
         onClick={save}
         disabled={saving}
       >
-        {saving ? 'Saving…' : 'Save changes'}
+        {t.t(saving ? 'edit.saving' : 'edit.save')}
       </button>
 
       {confirmingDelete ? (
@@ -357,10 +362,10 @@ export function EventEditSheet({
             data-variant="secondary"
             onClick={() => setConfirmingDelete(false)}
           >
-            Keep it
+            {t.t('edit.keep')}
           </button>
           <button type="button" className="button" data-variant="danger" onClick={onDelete}>
-            Delete for good
+            {t.t('edit.confirmDelete')}
           </button>
         </div>
       ) : (
@@ -370,7 +375,7 @@ export function EventEditSheet({
           data-variant="ghost"
           onClick={() => setConfirmingDelete(true)}
         >
-          Delete entry
+          {t.t('edit.delete')}
         </button>
       )}
     </Sheet>

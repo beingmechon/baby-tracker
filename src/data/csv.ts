@@ -1,4 +1,4 @@
-import { formatClock, localDateKey } from '@/domain/time'
+import { formatClock24, localDateKey } from '@/domain/time'
 import type { Baby, BabyEvent } from '@/domain/types'
 import { mlToOz } from '@/domain/units'
 import type { ExportBundle } from './repository'
@@ -7,6 +7,10 @@ import type { ExportBundle } from './repository'
  * One flat row per event, which is what a spreadsheet — or a paediatrician
  * glancing at a printout — actually wants. Unit columns are duplicated (ml and
  * oz, minutes) so the file is readable without any conversion.
+ *
+ * Times are 24-hour and locale-independent on purpose: an export is read by
+ * spreadsheets and by people in other countries, and "1:00" is ambiguous in a
+ * way "13:00" is not.
  */
 const COLUMNS = [
   'baby',
@@ -38,7 +42,7 @@ function minutes(ms: number): string {
 }
 
 function rowFor(event: BabyEvent, babyName: string): string[] {
-  const base = [babyName, localDateKey(event.startedAt), formatClock(event.startedAt)]
+  const base = [babyName, localDateKey(event.startedAt), formatClock24(event.startedAt)]
   const note = event.note ?? ''
 
   switch (event.type) {

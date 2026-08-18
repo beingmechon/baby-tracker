@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { loadSettings, saveSettings, type Settings } from '@/app/settings'
+import {
+  loadSettings,
+  resolveLocale,
+  saveSettings,
+  type Settings,
+} from '@/app/settings'
+import { useTranslator } from '@/i18n/context'
+import { I18nProvider } from '@/i18n/I18nProvider'
 import { applyTheme, resolveTheme } from '@/app/theme'
 import { useBabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
@@ -24,16 +31,12 @@ function usePrefersDark(): boolean {
   return prefersDark
 }
 
+/**
+ * The shell owns settings and provides the translator, so everything below it —
+ * including the storage-error screen — can be localized.
+ */
 export function App() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
-  const [screen, setScreen] = useState<'home' | 'settings'>('home')
-  const prefersDark = usePrefersDark()
-
-  // A minute is fine for theme switching; the home screen keeps its own faster
-  // clock for running timers.
-  const now = useNow(60_000)
-
-  const store = useBabyStore(settings.activeBabyId, settings.nightWindow)
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => {
@@ -42,6 +45,30 @@ export function App() {
       return next
     })
   }, [])
+
+  return (
+    <I18nProvider locale={resolveLocale(settings)}>
+      <AppContent settings={settings} updateSettings={updateSettings} />
+    </I18nProvider>
+  )
+}
+
+function AppContent({
+  settings,
+  updateSettings,
+}: {
+  settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
+}) {
+  const t = useTranslator()
+  const [screen, setScreen] = useState<'home' | 'settings'>('home')
+  const prefersDark = usePrefersDark()
+
+  // A minute is fine for theme switching; the home screen keeps its own faster
+  // clock for running timers.
+  const now = useNow(60_000)
+
+  const store = useBabyStore(settings.activeBabyId, settings.nightWindow)
 
   useEffect(() => {
     applyTheme(
@@ -67,19 +94,16 @@ export function App() {
       <div className="app">
         <main className="page">
           <p className="banner" data-tone="error" role="alert">
-            {store.error ?? 'Could not open your data on this device.'}
+            {store.error ?? t.t('error.storageBlocked')}
           </p>
-          <p className="field-note">
-            This usually means the browser is blocking local storage — private
-            browsing mode is the most common cause. Your data has not been lost.
-          </p>
+          <p className="field-note">{t.t('error.storageBlockedNote')}</p>
           <button
             type="button"
             className="button"
             data-variant="primary"
             onClick={() => void store.reload()}
           >
-            Try again
+            {t.t('error.tryAgain')}
           </button>
         </main>
       </div>

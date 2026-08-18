@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { localDateKey } from '@/domain/time'
+import { useTranslator } from '@/i18n/context'
 import { RuleLabel } from './RuleLabel'
 import { ShieldIcon } from './icons'
 
@@ -13,6 +14,7 @@ interface OnboardingProps {
  * trust or spends it.
  */
 export function Onboarding({ onCreate }: OnboardingProps) {
+  const t = useTranslator()
   const [name, setName] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [saving, setSaving] = useState(false)
@@ -28,7 +30,7 @@ export function Onboarding({ onCreate }: OnboardingProps) {
     try {
       await onCreate({ name: trimmed, birthDate: birthDate === '' ? null : birthDate })
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save')
+      setError(cause instanceof Error ? cause.message : t.t('error.couldNotSave'))
       setSaving(false)
     }
   }
@@ -38,23 +40,21 @@ export function Onboarding({ onCreate }: OnboardingProps) {
       {/* A rounded icon tile stacked above a heading is the catalogued
           `icon-tile-stack` tell. The signature rule carries the mark instead. */}
       <div className="section">
-        <RuleLabel>Baby Tracker</RuleLabel>
-        <h1>A private record of your baby’s day.</h1>
-        <p className="onboarding-lede">
-          Feeds, sleep and diapers in one tap. Everything stays on this device.
-        </p>
+        <RuleLabel>{t.t('app.name')}</RuleLabel>
+        <h1>{t.t('onboarding.tagline')}</h1>
+        <p className="onboarding-lede">{t.t('onboarding.lede')}</p>
       </div>
 
       <div className="field">
         <label className="field-label" htmlFor="baby-name">
-          Baby’s name
+          {t.t('onboarding.name.label')}
         </label>
         <input
           id="baby-name"
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="e.g. Mira"
+          placeholder={t.t('onboarding.name.placeholder')}
           autoComplete="off"
           autoFocus
           required
@@ -63,7 +63,8 @@ export function Onboarding({ onCreate }: OnboardingProps) {
 
       <div className="field">
         <label className="field-label" htmlFor="baby-birthdate">
-          Date of birth <span style={{ fontWeight: 400 }}>— optional</span>
+          {t.t('onboarding.birthDate.label')}{' '}
+          <span style={{ fontWeight: 400 }}>{t.t('onboarding.birthDate.optional')}</span>
         </label>
         <input
           id="baby-birthdate"
@@ -72,9 +73,7 @@ export function Onboarding({ onCreate }: OnboardingProps) {
           max={localDateKey(Date.now())}
           onChange={(event) => setBirthDate(event.target.value)}
         />
-        <p className="field-note">
-          Used to show age and age-appropriate wake windows. You can add it later.
-        </p>
+        <p className="field-note">{t.t('onboarding.birthDate.note')}</p>
       </div>
 
       {error !== null && (
@@ -89,22 +88,22 @@ export function Onboarding({ onCreate }: OnboardingProps) {
         data-variant="primary"
         disabled={trimmed.length === 0 || saving}
       >
-        {saving ? 'Setting up…' : 'Start tracking'}
+        {t.t(saving ? 'onboarding.submitting' : 'onboarding.submit')}
       </button>
 
       <div className="onboarding-promise">
         <ul>
           <li>
             <ShieldIcon size={18} />
-            <span>No account, no sign-up, no ads, no analytics.</span>
+            <span>{t.t('onboarding.promise.noAccount')}</span>
           </li>
           <li>
             <ShieldIcon size={18} />
-            <span>Works fully offline. Your data never leaves this device.</span>
+            <span>{t.t('onboarding.promise.offline')}</span>
           </li>
           <li>
             <ShieldIcon size={18} />
-            <span>Export or delete everything at any time.</span>
+            <span>{t.t('onboarding.promise.export')}</span>
           </li>
         </ul>
       </div>

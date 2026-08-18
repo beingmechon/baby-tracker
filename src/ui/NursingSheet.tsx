@@ -1,10 +1,12 @@
 import { formatClock, formatStopwatch } from '@/domain/time'
+import { useTranslator } from '@/i18n/context'
 import type { BreastSide, Timestamp } from '@/domain/types'
 import {
   elapsedMs,
   isRunning,
   type NursingTimerState,
 } from '@/app/nursingTimer'
+import type { MessageKey } from '@/i18n/locales'
 import { Sheet } from './Sheet'
 
 interface NursingSheetProps {
@@ -19,7 +21,10 @@ interface NursingSheetProps {
   onClose: () => void
 }
 
-const SIDE_LABEL: Record<BreastSide, string> = { left: 'Left', right: 'Right' }
+const SIDE_KEY = {
+  left: 'nursing.side.left',
+  right: 'nursing.side.right',
+} as const satisfies Record<BreastSide, MessageKey>
 
 /**
  * The nursing stopwatch.
@@ -39,16 +44,17 @@ export function NursingSheet({
   onDiscard,
   onClose,
 }: NursingSheetProps) {
+  const t = useTranslator()
   const running = isRunning(timer)
   const elapsed = elapsedMs(timer, now)
   const started = timer.sessionStartedAt !== null
   const other: BreastSide = timer.side === 'left' ? 'right' : 'left'
 
   return (
-    <Sheet title="Nursing" onClose={onClose}>
+    <Sheet title={t.t('nursing.title')} onClose={onClose}>
       <div className="field">
         <span className="field-label" id="nursing-side-label">
-          Side
+          {t.t('nursing.side')}
         </span>
         <div className="segmented" role="group" aria-labelledby="nursing-side-label">
           {(['left', 'right'] as const).map((side) => (
@@ -64,15 +70,17 @@ export function NursingSheet({
                 else onSelectSide(side)
               }}
             >
-              {SIDE_LABEL[side]}
-              {lastSide === side && !started ? ' · last used' : ''}
+              {t.t(SIDE_KEY[side])}
+              {lastSide === side && !started ? ` ${t.t('nursing.side.lastUsed')}` : ''}
             </button>
           ))}
         </div>
         {!started && lastSide !== null && lastSide !== timer.side && (
           <p className="field-note">
-            Last feed was on the {SIDE_LABEL[lastSide].toLowerCase()}, so the{' '}
-            {SIDE_LABEL[timer.side].toLowerCase()} is suggested.
+            {t.t('nursing.suggestion', {
+              last: t.t(SIDE_KEY[lastSide]).toLowerCase(),
+              suggested: t.t(SIDE_KEY[timer.side]).toLowerCase(),
+            })}
           </p>
         )}
       </div>
@@ -82,20 +90,20 @@ export function NursingSheet({
           className="stopwatch-time"
           role="timer"
           aria-live="off"
-          aria-label={`Elapsed ${formatStopwatch(elapsed)}`}
+          aria-label={formatStopwatch(elapsed)}
         >
           {formatStopwatch(elapsed)}
         </span>
         <span className="stopwatch-state">
           {running
-            ? `Running · ${SIDE_LABEL[timer.side].toLowerCase()} side`
-            : started
-              ? 'Paused'
-              : 'Ready'}
+            ? t.t('nursing.running', { side: t.t(SIDE_KEY[timer.side]).toLowerCase() })
+            : t.t(started ? 'nursing.paused' : 'nursing.ready')}
         </span>
         {timer.sessionStartedAt !== null && (
           <span className="field-note">
-            Started {formatClock(timer.sessionStartedAt)}
+            {t.t('nursing.startedAt', {
+              time: formatClock(timer.sessionStartedAt, t.locale),
+            })}
           </span>
         )}
       </div>
@@ -106,12 +114,12 @@ export function NursingSheet({
         data-variant={running ? 'secondary' : 'primary'}
         onClick={onToggle}
       >
-        {running ? 'Pause' : started ? 'Resume' : 'Start'}
+        {t.t(running ? 'nursing.pause' : started ? 'nursing.resume' : 'nursing.start')}
       </button>
 
       {started && (
         <button type="button" className="button" data-variant="secondary" onClick={onSwitchSide}>
-          Switch to {SIDE_LABEL[other].toLowerCase()} side
+          {t.t('nursing.switchSide', { side: t.t(SIDE_KEY[other]).toLowerCase() })}
         </button>
       )}
 
@@ -123,7 +131,7 @@ export function NursingSheet({
           onClick={onDiscard}
           disabled={!started}
         >
-          Discard
+          {t.t('nursing.discard')}
         </button>
         <button
           type="button"
@@ -132,7 +140,7 @@ export function NursingSheet({
           onClick={onSave}
           disabled={elapsed <= 0}
         >
-          Save feed
+          {t.t('nursing.save')}
         </button>
       </div>
     </Sheet>

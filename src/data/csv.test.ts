@@ -50,8 +50,8 @@ describe('toCsv', () => {
       ]),
     )
     const rows = csv.trim().split('\n').slice(1)
-    expect(rows[0]).toContain('8:00 am')
-    expect(rows[1]).toContain('4:00 pm')
+    expect(rows[0]).toContain('08:00')
+    expect(rows[1]).toContain('16:00')
   })
 
   it('records nursing with its side and duration in minutes', () => {
@@ -73,7 +73,7 @@ describe('toCsv', () => {
   it('leaves the duration blank for a sleep still in progress', () => {
     const csv = toCsv(bundle([sleep(at(2026, 1, 15, 13, 0), null, 'nap')]))
     const row = csv.trim().split('\n')[1] ?? ''
-    expect(row).toBe('"Mira","2026-01-15","1:00 pm","sleep","nap","","","",""')
+    expect(row).toBe('"Mira","2026-01-15","13:00","sleep","nap","","","",""')
   })
 
   it('labels an event whose baby is missing rather than dropping the row', () => {

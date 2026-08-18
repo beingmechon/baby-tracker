@@ -27,29 +27,51 @@ export function localDateKey(ts: Timestamp): string {
   return `${d.getFullYear()}-${month}-${day}`
 }
 
-/** `9:05 pm` — a 12-hour clock, lowercase, because it is easier to skim. */
-export function formatClock(ts: Timestamp): string {
+/**
+ * A wall-clock time in the given locale — `9:05 pm` in en, `21:05` in es.
+ *
+ * The locale is an explicit argument rather than read from the environment, so
+ * this stays deterministic under test and so CSV export can ask for something
+ * unambiguous regardless of what the user reads the app in.
+ */
+export function formatClock(ts: Timestamp, locale = 'en'): string {
+  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })
+    .format(new Date(ts))
+    // Intl yields "9:05 PM"; lowercase skims better and matches the app's register.
+    .replace(/(AM|PM)$/i, (meridiem) => meridiem.toLowerCase())
+}
+
+/** 24-hour `21:05`, for exports and anywhere a machine may read it back. */
+export function formatClock24(ts: Timestamp): string {
   const d = new Date(ts)
-  const hours = d.getHours()
-  const suffix = hours < 12 ? 'am' : 'pm'
-  const hour12 = hours % 12 === 0 ? 12 : hours % 12
-  return `${hour12}:${`${d.getMinutes()}`.padStart(2, '0')} ${suffix}`
+  return `${`${d.getHours()}`.padStart(2, '0')}:${`${d.getMinutes()}`.padStart(2, '0')}`
+}
+
+export interface DurationParts {
+  hours: number
+  minutes: number
+  seconds: number
+  /** True when the whole duration is under a minute. */
+  subMinute: boolean
 }
 
 /**
- * `1h 24m`, `24m`, `48s`. Durations under a minute keep seconds so a running
- * timer visibly moves the moment you start it.
+ * Decomposes a duration into the numbers a caller needs in order to render it.
+ *
+ * The *words* live in the message catalogue, not here: "1h 24m" is English, and
+ * another locale may space, order or abbreviate it differently. Keeping this
+ * numeric is what lets `domain/` stay free of language.
  */
-export function formatDuration(ms: number): string {
+export function splitDuration(ms: number): DurationParts {
   const safe = Math.max(0, ms)
   const totalMinutes = Math.floor(safe / MINUTE_MS)
-  if (totalMinutes < 1) return `${Math.floor(safe / 1000)}s`
-
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  if (hours === 0) return `${minutes}m`
-  if (minutes === 0) return `${hours}h`
-  return `${hours}h ${minutes}m`
+  return {
+    hours: Math.floor(totalMinutes / 60),
+    minutes: totalMinutes % 60,
+    // Under a minute we show seconds, so a fresh timer visibly moves.
+    seconds: Math.floor(safe / 1000),
+    subMinute: totalMinutes < 1,
+  }
 }
 
 /** `00:42` / `1:07:03` — a monospace-friendly form for live timers. */
@@ -62,13 +84,6 @@ export function formatStopwatch(ms: number): string {
   const mm = `${minutes}`.padStart(2, '0')
   const ss = `${seconds}`.padStart(2, '0')
   return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`
-}
-
-/** `just now`, `20m ago`, `3h 5m ago`. */
-export function formatAgo(ts: Timestamp, now: Timestamp): string {
-  const delta = now - ts
-  if (delta < MINUTE_MS) return 'just now'
-  return `${formatDuration(delta)} ago`
 }
 
 /**
@@ -127,23 +142,31 @@ export function ageInMonths(birthDate: string | null, now: Timestamp): number | 
   return months < 0 ? null : months
 }
 
-/** `6 days old`, `7 weeks old`, `14 months old`, `2 years old`. */
-export function formatAge(birthDate: string | null, now: Timestamp): string | null {
+/** A structured age, for the i18n layer to render into words. */
+export type AgeDescription =
+  | { unit: 'bornToday' }
+  | { unit: 'days' | 'weeks' | 'months' | 'years'; count: number }
+  | { unit: 'yearsMonths'; years: number; months: number }
+
+/**
+ * Chooses the granularity a parent would actually use: days for a newborn, then
+ * weeks, then months, then years. Returns data, not a sentence.
+ */
+export function describeAge(
+  birthDate: string | null,
+  now: Timestamp,
+): AgeDescription | null {
   const days = ageInDays(birthDate, now)
   if (days === null) return null
-  if (days === 0) return 'born today'
-  if (days === 1) return '1 day old'
-  if (days < 14) return `${days} days old`
-  if (days < 60) {
-    const weeks = Math.floor(days / 7)
-    return `${weeks} weeks old`
-  }
+  if (days === 0) return { unit: 'bornToday' }
+  if (days < 14) return { unit: 'days', count: days }
+  if (days < 60) return { unit: 'weeks', count: Math.floor(days / 7) }
 
   const months = ageInMonths(birthDate, now) ?? 0
-  if (months < 24) return `${months} months old`
+  if (months < 24) return { unit: 'months', count: months }
 
   const years = Math.floor(months / 12)
   const remainder = months % 12
-  if (remainder === 0) return `${years} years old`
-  return `${years}y ${remainder}m old`
+  if (remainder === 0) return { unit: 'years', count: years }
+  return { unit: 'yearsMonths', years, months: remainder }
 }

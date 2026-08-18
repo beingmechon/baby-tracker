@@ -13,7 +13,7 @@ the app with a real baby, you know something the code does not.
 | If you have… | You could… |
 | --- | --- |
 | 10 minutes | Report a bug, or tell us what confused you |
-| An hour | Translate the interface into your language |
+| An hour | Translate the interface into your language — see below |
 | Local knowledge | Add your country's vaccination schedule (v0.4) |
 | A screen reader | Tell us what breaks — accessibility reports are gold |
 | A weekend | Pick up something from the [roadmap](docs/ROADMAP.md) |
@@ -63,6 +63,35 @@ catch people out:
 - **Do not add a second decorative device.** One signature move, applied
   consistently, is the whole design. A new gradient, glow, or badge style is a
   regression even if it looks nice on its own.
+
+## Adding or fixing a translation
+
+This is the highest-value non-code contribution, and it needs no build tooling
+knowledge.
+
+1. Copy `src/i18n/messages/en.ts` to `src/i18n/messages/<code>.ts` and translate
+   the values. Leave the keys alone.
+2. Add an entry to `LOCALES` in `src/i18n/locales.ts`. Set `reviewed: false`
+   until a native speaker has been through it — the app tells users when a
+   translation is unreviewed, and that honesty matters more than looking finished.
+3. Run `npm test`. `drift.test.ts` will tell you exactly which keys are missing,
+   which have stray placeholders, and which plural forms are absent.
+
+Notes that save time:
+
+- **Keep every `{placeholder}`.** A dropped one means a number vanishes from the
+  UI. The test catches this.
+- **Plurals** use CLDR categories (`.one`, `.other`, and `.few` / `.many` where
+  your language needs them). `.other` is the required fallback.
+- **Do not translate by interpolating nouns into sentences.** If a phrase needs
+  grammatical agreement, ask for separate keys instead — we did exactly that for
+  the diaper toasts after "{kind} diaper logged" produced nonsense.
+- **The medical-adjacent strings matter most.** Anything about growth,
+  percentiles or wake windows must not sound like advice or a diagnosis in your
+  language either. See docs/MEDICAL_DISCLAIMER.md.
+- `npm run dev` and pick **Pseudo (testing)** in Settings → Language to see which
+  strings are still hardcoded and where a longer translation would break the
+  layout.
 
 ## The house rules
 

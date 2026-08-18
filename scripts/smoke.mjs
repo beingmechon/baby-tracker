@@ -252,6 +252,36 @@ try {
   await settle(page)
   await page.screenshot({ path: join(SHOTS, 'home-night.png') })
 
+  console.log('\n▸ Language')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByLabel('Language').selectOption('es')
+  check(
+    'switching language translates the interface',
+    (await page.locator('.appbar-name').innerText()) === 'Ajustes',
+  )
+  check(
+    'an unreviewed translation says so, rather than passing itself off',
+    await page.getByText(/hablante nativo/).isVisible(),
+  )
+  check(
+    'the document lang attribute follows, so screen readers switch voice',
+    (await page.locator('html').getAttribute('lang')) === 'es',
+  )
+  await page.getByRole('button', { name: /Atrás|Back/ }).first().click()
+  await page.getByRole('button', { name: /Empezar sueño/ }).waitFor()
+  check('the home screen is translated too', true)
+  check(
+    'times follow the locale — Spanish uses a 24-hour clock',
+    /\d{1,2}:\d{2}(?!\s?[ap]m)/.test(
+      await page.locator('.timeline-time').first().innerText(),
+    ),
+  )
+  // Back to English so the remaining checks and screenshots stay comparable.
+  await page.getByRole('button', { name: 'Ajustes' }).click()
+  await page.getByLabel('Idioma').selectOption('en')
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Typography')
   await page.evaluate(() => document.fonts.ready)
   check(

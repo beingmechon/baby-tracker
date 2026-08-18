@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { BottleContents, VolumeUnit } from '@/domain/types'
-import { formatVolume, quickAmounts, toMl } from '@/domain/units'
+import { quickAmounts, toMl } from '@/domain/units'
+import { useTranslator } from '@/i18n/context'
+import { formatVolume } from '@/i18n/format'
 import { Sheet } from './Sheet'
 
 interface BottleSheetProps {
@@ -25,6 +27,7 @@ export function BottleSheet({
   onSave,
   onClose,
 }: BottleSheetProps) {
+  const t = useTranslator()
   const [contents, setContents] = useState<BottleContents>(lastContents ?? 'formula')
   const [amount, setAmount] = useState<string>('')
   const [saving, setSaving] = useState(false)
@@ -44,10 +47,10 @@ export function BottleSheet({
   }
 
   return (
-    <Sheet title="Bottle" onClose={onClose}>
+    <Sheet title={t.t('bottle.title')} onClose={onClose}>
       <div className="field">
         <span className="field-label" id="bottle-contents-label">
-          Contents
+          {t.t('bottle.contents')}
         </span>
         <div className="segmented" role="group" aria-labelledby="bottle-contents-label">
           <button
@@ -55,21 +58,21 @@ export function BottleSheet({
             aria-pressed={contents === 'breast_milk'}
             onClick={() => setContents('breast_milk')}
           >
-            Breast milk
+            {t.t('bottle.contents.breastMilk')}
           </button>
           <button
             type="button"
             aria-pressed={contents === 'formula'}
             onClick={() => setContents('formula')}
           >
-            Formula
+            {t.t('bottle.contents.formula')}
           </button>
         </div>
       </div>
 
       <div className="field">
         <span className="field-label" id="bottle-amount-label">
-          Amount ({unit})
+          {t.t('bottle.amount', { unit })}
         </span>
         <div className="chip-row" role="group" aria-labelledby="bottle-amount-label">
           {amounts.map((value) => (
@@ -88,7 +91,7 @@ export function BottleSheet({
 
       <div className="field">
         <label className="field-label" htmlFor="bottle-amount">
-          Or enter an exact amount
+          {t.t('bottle.exactAmount')}
         </label>
         <input
           id="bottle-amount"
@@ -104,7 +107,7 @@ export function BottleSheet({
 
       {lastAmountMl !== null && (
         <p className="field-note">
-          Last bottle was {formatVolume(lastAmountMl, unit)}.
+          {t.t('bottle.lastBottle', { amount: formatVolume(t, lastAmountMl, unit) })}
         </p>
       )}
 
@@ -115,7 +118,7 @@ export function BottleSheet({
         onClick={save}
         disabled={!valid || saving}
       >
-        {saving ? 'Saving…' : 'Save bottle'}
+        {t.t(saving ? 'bottle.saving' : 'bottle.save')}
       </button>
     </Sheet>
   )
