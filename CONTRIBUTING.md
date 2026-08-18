@@ -41,7 +41,12 @@ npm run lint       # eslint
 npm run typecheck  # tsc
 npm run check      # lint + tests + production build, the same as CI
 npm run build && npm run smoke   # end-to-end run in a real browser
+npm run screenshots              # refresh the README images (only when they changed)
 ```
+
+`npm run smoke` writes its screenshots to the gitignored `screenshots/`, so running it
+never dirties your working tree. Use `npm run screenshots` when you deliberately want to
+update the committed images in `docs/screenshots/`.
 
 `npm run check` is what CI runs. If it passes locally, your pull request should be
 green.

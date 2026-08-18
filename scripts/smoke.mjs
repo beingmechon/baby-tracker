@@ -16,7 +16,10 @@ import { join } from 'node:path'
 
 const PORT = 4317
 const BASE = `http://localhost:${PORT}`
-const SHOTS = process.env.SHOT_DIR ?? join(process.cwd(), 'docs', 'screenshots')
+// Default to the gitignored scratch directory: a routine verification run must not
+// dirty the working tree. `npm run screenshots` opts in to refreshing the committed
+// README images, and CI sets SHOT_DIR to a temp path.
+const SHOTS = process.env.SHOT_DIR ?? join(process.cwd(), 'screenshots')
 
 let failures = 0
 
