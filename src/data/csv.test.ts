@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { MINUTE_MS } from '@/domain/time'
-import { BABY_ID, at, bottle, diaper, growth, nursing, sleep } from '@/test/factories'
+import {
+  BABY_ID,
+  at,
+  bottle,
+  diaper,
+  growth,
+  nursing,
+  pumping,
+  sleep,
+} from '@/test/factories'
 import { escapeCsvField, toCsv } from './csv'
 import type { ExportBundle } from './repository'
 
@@ -53,6 +62,7 @@ describe('toCsv', () => {
         sleep(at(2026, 1, 15, 11, 0), at(2026, 1, 15, 12, 0)),
         diaper(at(2026, 1, 15, 13, 0), 'wet'),
         growth(at(2026, 1, 15, 14, 0), 'weight', 4500),
+        pumping(at(2026, 1, 15, 15, 0), 60, 80),
       ]),
     )
     const rows = csv.trim().split('\n')
@@ -112,6 +122,16 @@ describe('toCsv', () => {
     const row = csv.trim().split('\n')[1] ?? ''
     expect(row).toContain('"62.5","cm"')
     expect(row).toContain('"24.61","in"')
+  })
+
+  it('records a pumping session with its total and its split', () => {
+    const csv = toCsv(bundle([pumping(at(2026, 1, 15, 9, 0), 60, 80)]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"pumping"')
+    // The total lands in the same columns as a bottle, so a spreadsheet can sum
+    // feeds and output without special-casing the row type.
+    expect(row).toContain('"140"')
+    expect(row).toContain('"left 60 / right 80"')
   })
 
   it('labels an event whose baby is missing rather than dropping the row', () => {

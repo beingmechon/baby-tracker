@@ -11,6 +11,7 @@ import { applyTheme, resolveTheme } from '@/app/theme'
 import { useBabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
 import { useReminders } from '@/app/useReminders'
+import { useStash } from '@/app/useStash'
 import { showLocalNotification } from '@/app/notifications'
 import type { ReminderStatus } from '@/domain/reminders'
 import { reminderName } from '@/i18n/format'
@@ -18,6 +19,7 @@ import { GrowthScreen } from './GrowthScreen'
 import { Home } from './Home'
 import { Onboarding } from './Onboarding'
 import { RemindersScreen } from './RemindersScreen'
+import { StashScreen } from './StashScreen'
 import { SettingsScreen } from './SettingsScreen'
 
 /** Tracks the OS light/dark preference so `auto` can follow it. */
@@ -67,9 +69,9 @@ function AppContent({
   updateSettings: (patch: Partial<Settings>) => void
 }) {
   const t = useTranslator()
-  const [screen, setScreen] = useState<'home' | 'growth' | 'reminders' | 'settings'>(
-    'home',
-  )
+  const [screen, setScreen] = useState<
+    'home' | 'growth' | 'reminders' | 'stash' | 'settings'
+  >('home')
   const prefersDark = usePrefersDark()
 
   // Drives theme switching and the reminder check. Twenty seconds rather than a
@@ -99,6 +101,7 @@ function AppContent({
   )
 
   const reminders = useReminders(store.activeBaby?.id ?? null, store.events, now, alert)
+  const stash = useStash(store.activeBaby?.id ?? null, now)
 
   useEffect(() => {
     applyTheme(
@@ -174,6 +177,19 @@ function AppContent({
     )
   }
 
+  if (screen === 'stash') {
+    return (
+      <div className="app">
+        <StashScreen
+          stash={stash}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
   if (screen === 'growth') {
     return (
       <div className="app">
@@ -196,6 +212,7 @@ function AppContent({
         onOpenSettings={() => setScreen('settings')}
         onOpenGrowth={() => setScreen('growth')}
         onOpenReminders={() => setScreen('reminders')}
+        onOpenStash={() => setScreen('stash')}
         onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>

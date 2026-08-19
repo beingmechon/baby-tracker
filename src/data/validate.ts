@@ -1,4 +1,10 @@
 import { isValidInterval, type Reminder, type ReminderKind } from '@/domain/reminders'
+import {
+  STASH_LOCATIONS,
+  isValidStashAmount,
+  type StashEntry,
+  type StashLocation,
+} from '@/domain/stash'
 import type {
   Baby,
   BabyEvent,
@@ -121,6 +127,13 @@ export function parseEvent(value: unknown): BabyEvent | null {
       if (kind === null) return null
       return { ...base, type: 'diaper', kind }
     }
+    case 'pumping': {
+      const leftMl = nonNegative(value.leftMl)
+      const rightMl = nonNegative(value.rightMl)
+      const durationMs = nonNegative(value.durationMs)
+      if (leftMl === null || rightMl === null || durationMs === null) return null
+      return { ...base, type: 'pumping', leftMl, rightMl, durationMs }
+    }
     case 'growth': {
       const measure = oneOf(value.measure, MEASURES)
       const measured = finiteNumber(value.value)
@@ -167,6 +180,32 @@ export function parseReminder(value: unknown): Reminder | null {
     lastDoneAt: optionalTime(value.lastDoneAt),
     lastAlertedAt: optionalTime(value.lastAlertedAt),
     snoozedUntil: optionalTime(value.snoozedUntil),
+    createdAt,
+    updatedAt: nonNegative(value.updatedAt) ?? createdAt,
+  }
+}
+
+/** A milk-stash entry from an export file. */
+export function parseStashEntry(value: unknown): StashEntry | null {
+  if (!isObject(value)) return null
+
+  const id = str(value.id)
+  const babyId = str(value.babyId)
+  const location = oneOf<StashLocation>(value.location, STASH_LOCATIONS)
+  const amountMl = finiteNumber(value.amountMl)
+  const expressedAt = nonNegative(value.expressedAt)
+  if (id === null || babyId === null || location === null) return null
+  if (amountMl === null || !isValidStashAmount(amountMl)) return null
+  // Without a time of expression there is no age, and the age is the point.
+  if (expressedAt === null) return null
+
+  const createdAt = nonNegative(value.createdAt) ?? expressedAt
+  return {
+    id,
+    babyId,
+    amountMl,
+    location,
+    expressedAt,
     createdAt,
     updatedAt: nonNegative(value.updatedAt) ?? createdAt,
   }

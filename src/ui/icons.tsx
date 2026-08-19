@@ -59,6 +59,17 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+/** A bottle under a funnel: expressing into a container, not a machine. */
+export function PumpIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M7 3.5h10l-3 5h-4Z" />
+      <path d="M12 8.5v2.5" />
+      <path d="M8.5 11h7a1.5 1.5 0 0 1 1.5 1.5v6A2 2 0 0 1 15 20.5H9a2 2 0 0 1-2-2v-6A1.5 1.5 0 0 1 8.5 11Z" />
+    </svg>
+  )
+}
+
 export function BellIcon({ size = 22, className }: IconProps) {
   return (
     <svg {...svgProps(size)} className={className}>

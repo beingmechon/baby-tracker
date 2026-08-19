@@ -81,20 +81,24 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
               onToggle={(reminder, enabled) => {
                 void reminders.update(reminder.id, { enabled })
               }}
+              // Awaited before the toast: a message saying it was snoozed when
+              // the write failed is worse than no message.
               onSnooze={(reminder) => {
-                void reminders.snooze(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderSnoozed', {
-                    duration: formatDuration(t, SNOOZE_MS),
-                  }),
+                void reminders.snooze(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderSnoozed', {
+                      duration: formatDuration(t, SNOOZE_MS),
+                    }),
+                  ),
                 )
               }}
               onDone={(reminder) => {
-                void reminders.markDone(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderDone', {
-                    duration: formatDuration(t, reminder.intervalMs),
-                  }),
+                void reminders.markDone(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderDone', {
+                      duration: formatDuration(t, reminder.intervalMs),
+                    }),
+                  ),
                 )
               }}
             />

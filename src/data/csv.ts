@@ -115,6 +115,24 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         ...growthColumns(event),
         note,
       ]
+    case 'pumping': {
+      const total = event.leftMl + event.rightMl
+      // The total goes in the same amount columns as a bottle so a spreadsheet can
+      // sum feeds and output without special-casing; the split goes in `detail`.
+      return [
+        ...base,
+        'pumping',
+        `left ${round(event.leftMl, 0)} / right ${round(event.rightMl, 0)}`,
+        minutes(event.durationMs),
+        round(total, 0),
+        round(mlToOz(total), 1),
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    }
   }
 }
 

@@ -6,6 +6,38 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — pumping and the milk stash
+
+- **Pumping sessions** with a clock and per-side output. Both sides are recorded
+  even when one is zero: a persistent difference between sides is something parents
+  watch, and one total would throw it away. There is no per-side timing, because a
+  double pump runs both at once.
+- **A milk stash** for the fridge and freezer, listed in the order to use it.
+  Add, use some, use it all, throw away. Totals per shelf.
+- **Ordering by urgency, not by age.** Each container is compared against its own
+  storage guideline, so a fridge bottle with hours left outranks a frozen bag
+  months older. Sorting by raw age would put the old frozen bag first and quietly
+  waste the fridge — that ordering is the whole point of the feature.
+- **The time expressed is editable and separate from when it was logged.** Milk
+  gets logged when a hand is free; the storage clock started when the pump
+  stopped, and a few hours is the difference between "use today" and "past it".
+- **The pumping reminder now anchors to the pumping log**, which it could not do
+  before — it had no log to anchor to and could only count from itself.
+
+Storage guidelines are the US CDC's published figures for freshly expressed milk,
+4 days chilled and 6 months frozen. The screen says so, and tells the reader to
+follow their own health service. The app describes dates; it does not tell anyone
+what to do with their milk.
+
+### Fixed
+
+- **Six months of freezer life displayed as "4319h 59m".** The duration format was
+  built for feeds and naps and topped out at hours. Long spans now read in days,
+  weeks or months — the units a person would say out loud.
+- **Three toasts claimed success before the write finished.** Snoozing a reminder,
+  marking one done, and throwing milk away all announced the result without
+  awaiting it, so a failed write would still have said it worked.
+
 ### Added — more than one baby
 
 - **A switcher on the app bar.** The baby's name is the control; tapping it lists
@@ -136,11 +168,11 @@ says so on screen.
 
 ### Verified
 
-276 unit tests (up from 156) and 65 browser smoke checks, including the WHO
+309 unit tests (up from 156) and 73 browser smoke checks, including the WHO
 percentile maths against the organization's own published −2SD and +2SD figures, a
 metric-to-imperial round trip through storage, the v1-to-v2 schema migration
 against a genuine version-1 database, and a real language switch. 0 AI-tell
-findings across 16 rendered screens.
+findings across 19 rendered screens.
 
 ## [0.1.1] — 2026-08-17
 

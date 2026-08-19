@@ -42,6 +42,7 @@ import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
 import { GrowthSheet } from './GrowthSheet'
 import { NursingSheet } from './NursingSheet'
+import { PumpingSheet } from './PumpingSheet'
 import { ReminderList } from './ReminderList'
 import { RuleLabel } from './RuleLabel'
 import { StatusHeadline } from './StatusHeadline'
@@ -54,6 +55,7 @@ import {
   ChevronRightIcon,
   GrowthIcon,
   NursingIcon,
+  PumpIcon,
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
@@ -66,6 +68,7 @@ interface HomeProps {
   onOpenSettings: () => void
   onOpenGrowth: () => void
   onOpenReminders: () => void
+  onOpenStash: () => void
   onSwitchBaby: (babyId: string) => void
 }
 
@@ -86,6 +89,7 @@ export function Home({
   onOpenSettings,
   onOpenGrowth,
   onOpenReminders,
+  onOpenStash,
   onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
@@ -93,7 +97,7 @@ export function Home({
 
   const [nursingTimer, setNursingTimer] = useState<NursingTimerState | null>(null)
   const [openSheet, setOpenSheet] = useState<
-    'nursing' | 'bottle' | 'growth' | 'babies' | null
+    'nursing' | 'bottle' | 'growth' | 'babies' | 'pumping' | null
   >(null)
   const [editing, setEditing] = useState<BabyEvent | null>(null)
   const [dayAnchor, setDayAnchor] = useState<Timestamp>(() => startOfLocalDay(Date.now()))
@@ -317,6 +321,15 @@ export function Home({
               ))}
             </div>
 
+            <button
+              type="button"
+              className="action"
+              onClick={() => setOpenSheet('pumping')}
+            >
+              <PumpIcon size={18} className="action-icon" />
+              <span>{t.t('pumping.log')}</span>
+            </button>
+
             {repeatDetail !== null && (
               <button
                 type="button"
@@ -356,19 +369,21 @@ export function Home({
               // open an editor. Managing them is one deliberate tap away.
               statuses={reminders.statuses}
               onSnooze={(reminder) => {
-                void reminders.snooze(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderSnoozed', {
-                    duration: formatDuration(t, SNOOZE_MS),
-                  }),
+                void reminders.snooze(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderSnoozed', {
+                      duration: formatDuration(t, SNOOZE_MS),
+                    }),
+                  ),
                 )
               }}
               onDone={(reminder) => {
-                void reminders.markDone(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderDone', {
-                    duration: formatDuration(t, reminder.intervalMs),
-                  }),
+                void reminders.markDone(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderDone', {
+                      duration: formatDuration(t, reminder.intervalMs),
+                    }),
+                  ),
                 )
               }}
             />
@@ -448,6 +463,23 @@ export function Home({
           )}
         </section>
 
+        <section className="section" aria-label={t.t('section.stash')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenStash}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('stash.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.stash')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenStash}>
+            <PumpIcon size={16} />
+            <span>{t.t('stash.title')}</span>
+          </button>
+        </section>
+
         <section className="section" aria-label={t.t('section.timeline')}>
           <RuleLabel>{t.t('section.timeline')}</RuleLabel>
           <Timeline
@@ -504,6 +536,20 @@ export function Home({
           onSave={async ({ measure, value }) => {
             await store.logGrowth({ measure, value, startedAt: logAt() })
             setToast(t.t('toast.growthSaved'))
+            setOpenSheet(null)
+            returnToToday()
+          }}
+          onClose={() => setOpenSheet(null)}
+        />
+      )}
+
+      {openSheet === 'pumping' && (
+        <PumpingSheet
+          unit={settings.volumeUnit}
+          now={now}
+          onSave={async (input) => {
+            await store.logPumping({ ...input, startedAt: logAt() })
+            setToast(t.t('toast.pumpingSaved'))
             setOpenSheet(null)
             returnToToday()
           }}

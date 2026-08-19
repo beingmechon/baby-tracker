@@ -45,6 +45,12 @@ export interface BabyStore {
     value: number
     startedAt: Timestamp
   }): Promise<void>
+  logPumping(input: {
+    leftMl: number
+    rightMl: number
+    durationMs: number
+    startedAt: Timestamp
+  }): Promise<void>
   startSleep(startedAt: Timestamp): Promise<void>
   endSleep(id: Id, endedAt: Timestamp): Promise<void>
   /** Re-logs the last feed as-is — the "one tap repeats" shortcut. */
@@ -181,6 +187,8 @@ export function useBabyStore(
     logDiaper: ({ kind, startedAt }) => addEvent({ type: 'diaper', kind, startedAt }),
     logGrowth: ({ measure, value, startedAt }) =>
       addEvent({ type: 'growth', measure, value, startedAt }),
+    logPumping: ({ leftMl, rightMl, durationMs, startedAt }) =>
+      addEvent({ type: 'pumping', leftMl, rightMl, durationMs, startedAt }),
 
     startSleep: async (startedAt) => {
       // Only ever one sleep runs at a time; the button that calls this is hidden

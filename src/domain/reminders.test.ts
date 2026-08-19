@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { at, bottle, diaper, nursing } from '@/test/factories'
+import { at, bottle, diaper, nursing, pumping } from '@/test/factories'
 import { HOUR_MS, MINUTE_MS } from './time'
 import {
   alertedPatch,
@@ -114,6 +114,27 @@ describe('reminderStatus', () => {
       at(2026, 1, 15, 10, 11),
     )
     expect(status.state).toBe('due')
+  })
+})
+
+describe('the pumping anchor', () => {
+  it('counts from the last pumping session', () => {
+    // Wired up when pumping gained a log of its own; before that a pumping
+    // reminder could only count from itself.
+    const events = [pumping(at(2026, 1, 15, 9, 0), 60, 80)]
+    const status = reminderStatus(
+      reminder({ kind: 'pumping' }),
+      events,
+      at(2026, 1, 15, 10, 0),
+    )
+    expect(status.dueAt).toBe(at(2026, 1, 15, 12, 0))
+  })
+
+  it('is not moved by a feed', () => {
+    const events = [nursing(at(2026, 1, 15, 11, 0), 15 * MINUTE_MS)]
+    expect(
+      reminderStatus(reminder({ kind: 'pumping' }), events, at(2026, 1, 15, 11, 30)).dueAt,
+    ).toBe(CREATED + 3 * HOUR_MS)
   })
 })
 

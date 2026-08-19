@@ -1,6 +1,12 @@
 import { G_PER_OZ, gramsToPoundsOunces, mmToInches } from '@/domain/measure'
 import type { ReminderKind, ReminderStatus } from '@/domain/reminders'
-import { MINUTE_MS, splitDuration, type AgeDescription } from '@/domain/time'
+import type { StashLocation, StashStatus } from '@/domain/stash'
+import {
+  MINUTE_MS,
+  describeSpan,
+  splitDuration,
+  type AgeDescription,
+} from '@/domain/time'
 import type {
   MeasureKind,
   MeasureSystem,
@@ -26,6 +32,29 @@ export function formatDuration(t: Translator, ms: number): string {
   if (hours === 0) return t.t('duration.minutes', { minutes })
   if (minutes === 0) return t.t('duration.hours', { hours })
   return t.t('duration.hoursMinutes', { hours, minutes })
+}
+
+/**
+ * A long span in words: `3 days`, `6 months`.
+ *
+ * Distinct from `formatDuration`, which is the compact `1h 24m` form built for
+ * feeds and naps. Storage life and anything else measured in days needs units a
+ * person would say out loud.
+ */
+export function formatSpan(t: Translator, ms: number): string {
+  const { unit, count } = describeSpan(ms)
+  switch (unit) {
+    case 'minutes':
+      return t.plural('span.minutes', count)
+    case 'hours':
+      return t.plural('span.hours', count)
+    case 'days':
+      return t.plural('span.days', count)
+    case 'weeks':
+      return t.plural('span.weeks', count)
+    case 'months':
+      return t.plural('span.months', count)
+  }
 }
 
 /** `just now`, `20m ago`, `3h 5m ago`. */
@@ -220,5 +249,34 @@ export function formatReminderState(t: Translator, status: ReminderStatus): stri
         ? t.t('reminders.due')
         : t.t('reminders.overdue', { duration: formatDuration(t, overdueMs) })
     }
+  }
+}
+
+const STASH_LOCATION_NAMES: Record<StashLocation, MessageKey> = {
+  fridge: 'stash.location.fridge',
+  freezer: 'stash.location.freezer',
+}
+
+export function stashLocationName(t: Translator, location: StashLocation): string {
+  return t.t(STASH_LOCATION_NAMES[location])
+}
+
+/**
+ * A stash entry's standing against its storage guideline, in words.
+ *
+ * Phrased as a description of a date rather than an instruction about a baby:
+ * "past the 4 days guideline", not "throw this away". The distinction is the whole
+ * reason this project can show the figure at all.
+ */
+export function formatStashState(t: Translator, status: StashStatus): string {
+  switch (status.state) {
+    case 'fresh':
+      return t.t('stash.fresh', { duration: formatSpan(t, status.remainingMs) })
+    case 'useSoon':
+      return t.t('stash.useSoon', { duration: formatSpan(t, status.remainingMs) })
+    case 'pastGuideline':
+      return t.t('stash.pastGuideline', {
+        guideline: formatSpan(t, status.guidelineMs),
+      })
   }
 }

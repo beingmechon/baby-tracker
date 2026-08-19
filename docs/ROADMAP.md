@@ -72,8 +72,8 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 - [ ] Sleep predictions ("next nap likely around 2:15pm"), pattern-based and
       computed on-device. Paywalled elsewhere; free here, permanently.
-- [ ] Pumping: per-side output, session timer
-- [ ] Milk storage inventory: fridge/freezer stock, expiry warnings, oldest-first
+- [x] Pumping: per-side output, session timer
+- [x] Milk storage inventory: fridge/freezer stock, expiry warnings, oldest-first
 - [ ] Cluster-feeding support: rapid consecutive logs with no friction
 - [ ] 24-hour circular "day wheel" visualisation
 - [ ] Weekly and monthly pattern charts

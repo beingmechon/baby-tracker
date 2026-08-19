@@ -8,6 +8,7 @@ import {
   ageInDays,
   ageInMonths,
   describeAge,
+  describeSpan,
   formatClock,
   formatClock24,
   formatStopwatch,
@@ -182,5 +183,34 @@ describe('describeAge', () => {
 
   it('is null without a birth date', () => {
     expect(describeAge(null, now)).toBeNull()
+  })
+})
+
+describe('describeSpan', () => {
+  it('says minutes under an hour', () => {
+    expect(describeSpan(0)).toEqual({ unit: 'minutes', count: 0 })
+    expect(describeSpan(25 * MINUTE_MS)).toEqual({ unit: 'minutes', count: 25 })
+  })
+
+  it('says hours up to a couple of days', () => {
+    expect(describeSpan(3 * HOUR_MS)).toEqual({ unit: 'hours', count: 3 })
+    expect(describeSpan(47 * HOUR_MS)).toEqual({ unit: 'hours', count: 47 })
+  })
+
+  it('says days, weeks and months as the span grows', () => {
+    expect(describeSpan(3 * DAY_MS)).toEqual({ unit: 'days', count: 3 })
+    expect(describeSpan(21 * DAY_MS)).toEqual({ unit: 'weeks', count: 3 })
+    // The case that prompted this: six months of freezer life used to render as
+    // "4319h 59m", which is not a thing anyone says.
+    expect(describeSpan(180 * DAY_MS)).toEqual({ unit: 'months', count: 6 })
+  })
+
+  it('rounds to the nearest unit rather than flooring', () => {
+    // Four hours short of four days is "4 days", not "3 days".
+    expect(describeSpan(4 * DAY_MS - 4 * HOUR_MS)).toEqual({ unit: 'days', count: 4 })
+  })
+
+  it('never reports a negative span', () => {
+    expect(describeSpan(-DAY_MS)).toEqual({ unit: 'minutes', count: 0 })
   })
 })

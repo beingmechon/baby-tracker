@@ -14,7 +14,13 @@ export type BottleContents = 'breast_milk' | 'formula'
 export type DiaperKind = 'wet' | 'dirty' | 'mixed' | 'dry'
 export type SleepKind = 'nap' | 'night'
 export type VolumeUnit = 'ml' | 'oz'
-export type EventType = 'nursing' | 'bottle' | 'sleep' | 'diaper' | 'growth'
+export type EventType =
+  | 'nursing'
+  | 'bottle'
+  | 'sleep'
+  | 'diaper'
+  | 'growth'
+  | 'pumping'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -85,12 +91,25 @@ export interface GrowthEvent extends EventBase {
   value: number
 }
 
+export interface PumpingEvent extends EventBase {
+  type: 'pumping'
+  /**
+   * Output per side in canonical millilitres. Both are recorded even when one is
+   * zero: a persistent difference between sides is a thing parents watch for, and
+   * a single total would throw that away.
+   */
+  leftMl: number
+  rightMl: number
+  durationMs: number
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
   | SleepEvent
   | DiaperEvent
   | GrowthEvent
+  | PumpingEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -107,6 +126,15 @@ export function isDiaper(event: BabyEvent): event is DiaperEvent {
 
 export function isGrowth(event: BabyEvent): event is GrowthEvent {
   return event.type === 'growth'
+}
+
+export function isPumping(event: BabyEvent): event is PumpingEvent {
+  return event.type === 'pumping'
+}
+
+/** Total output of a pumping session. */
+export function pumpedMl(event: PumpingEvent): number {
+  return event.leftMl + event.rightMl
 }
 
 /** A sleep with no end time is the one currently in progress. */

@@ -409,6 +409,88 @@ try {
     (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
   )
 
+  console.log('\n▸ Pumping and the milk stash')
+  await page.getByRole('button', { name: 'Log pumping' }).click()
+  const pumpSheet = page.locator('.sheet')
+  await pumpSheet.getByRole('button', { name: 'Start', exact: true }).click()
+  await page.waitForTimeout(1200)
+  await pumpSheet.getByLabel('Left (ml)').fill('60')
+  await pumpSheet.getByLabel('Right (ml)').fill('80')
+  check(
+    'the session totals both sides',
+    (await pumpSheet.getByText(/Total 140 ml/).count()) === 1,
+  )
+  await pumpSheet.getByRole('button', { name: 'Save session' }).click()
+  await page.getByText('Pumping session saved').waitFor()
+
+  const pumpRow = page.locator('.timeline-row', { hasText: 'Pumped' })
+  check(
+    'the session reaches the timeline with its split, not just a total',
+    /140 ml · left 60 ml, right 80 ml/.test(
+      await pumpRow.locator('.timeline-detail').innerText(),
+    ),
+  )
+
+  await page.getByRole('button', { name: 'Milk stash' }).first().click()
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  const stashSheet = page.locator('.sheet')
+  await stashSheet.getByLabel('Amount (ml)').fill('150')
+  await stashSheet.getByRole('button', { name: 'Freezer' }).click()
+  await stashSheet.getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/150 ml added to the stash/).waitFor()
+
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  await stashSheet.getByLabel('Amount (ml)').fill('90')
+  await stashSheet.getByRole('button', { name: 'Fridge' }).click()
+  await stashSheet.getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/90 ml added to the stash/).waitFor()
+
+  check(
+    'the stash totals each shelf',
+    /90 ml in the fridge · 150 ml in the freezer/.test(
+      await page.locator('.field-note.num').innerText(),
+    ),
+  )
+  // The ordering is the feature: fridge milk is on a four-day clock and freezer
+  // milk on a six-month one, so the fridge bottle comes first even though both
+  // were logged moments ago.
+  const firstRow = page.locator('.stash-row').first()
+  check(
+    'the most urgent shelf comes first, not the oldest bag',
+    (await firstRow.locator('.stash-meta').innerText()).startsWith('Fridge'),
+  )
+  check(
+    'and freshly stored milk is not flagged',
+    (await firstRow.getAttribute('data-state')) === 'fresh',
+  )
+  // Six months of freezer life rendered as "4319h 59m" before the coarse span
+  // format existed. Storage life is measured in days and months, not hours.
+  const freezerState = await page
+    .locator('.stash-row')
+    .nth(1)
+    .locator('.stash-state')
+    .innerText()
+  check(
+    `freezer life reads in months, not hours (${freezerState})`,
+    /months? left$/.test(freezerState),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'stash.png') })
+
+  await firstRow.getByRole('button', { name: 'Use it all' }).click()
+  await page.getByText(/90 ml used/).waitFor()
+  check(
+    'using a container up removes it rather than leaving a zero row',
+    (await page.locator('.stash-row').count()) === 1,
+  )
+
+  await page.locator('.stash-row').first().getByRole('button', { name: 'Throw away' }).click()
+  await page.getByText('Nothing stored.').waitFor()
+  check('and throwing the last one away empties the stash', true)
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ More than one baby')
   // The property that matters: each baby's log is their own. A tracker that
   // showed one twin's feeds under the other would be worse than no tracker.

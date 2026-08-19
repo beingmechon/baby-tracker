@@ -144,6 +144,15 @@ try {
   await page.getByText('Reminder saved').waitFor()
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  // Something in the stash, so that screen has rows to audit too.
+  await page.getByRole('button', { name: 'Milk stash' }).first().click()
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  await page.locator('.sheet').getByLabel('Amount (ml)').fill('120')
+  await page.locator('.sheet').getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/added to the stash/).waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
   for (const [label, theme] of [
@@ -167,6 +176,12 @@ try {
     await page.getByRole('button', { name: 'Reminders' }).click()
     await page.locator('.reminder-row').first().waitFor()
     writeFileSync(join(OUT, `reminders-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Milk stash' }).first().click()
+    await page.locator('.stash-row').first().waitFor()
+    writeFileSync(join(OUT, `stash-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

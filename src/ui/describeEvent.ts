@@ -14,7 +14,7 @@ import {
 } from '@/i18n/format'
 import type { MessageKey, Translator } from '@/i18n/locales'
 
-export type Category = 'feed' | 'sleep' | 'diaper' | 'growth'
+export type Category = 'feed' | 'sleep' | 'diaper' | 'growth' | 'pumping'
 
 export interface EventDescription {
   category: Category
@@ -97,6 +97,23 @@ export function describeEvent(
         detail: '',
         live: false,
       }
+
+    case 'pumping': {
+      const total = event.leftMl + event.rightMl
+      const split =
+        event.leftMl > 0 && event.rightMl > 0
+          ? t.t('pumping.bothSides', {
+              left: formatVolume(t, event.leftMl, volumeUnit),
+              right: formatVolume(t, event.rightMl, volumeUnit),
+            })
+          : t.t(event.leftMl > 0 ? 'pumping.leftOnly' : 'pumping.rightOnly')
+      return {
+        category: 'pumping',
+        title: t.t('event.pumping'),
+        detail: `${formatVolume(t, total, volumeUnit)} · ${split}`,
+        live: false,
+      }
+    }
 
     case 'growth':
       return {

@@ -378,6 +378,12 @@
   color: var(--growth-tint);
 }
 
+/* Pumping shares the feed hue: it is milk, and a fifth category colour would be
+   one more thing for the eye to decode for no gain. */
+.timeline-mark[data-category='pumping'] {
+  color: var(--pumping-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -768,6 +774,77 @@
   width: 1.5rem;
   height: 1.5rem;
   accent-color: var(--accent-solid);
+}
+
+/* ── Milk stash ──────────────────────────────────────────────────────────── */
+
+.stash-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-5);
+}
+
+.stash-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.stash-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stash-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.stash-amount {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+.stash-meta,
+.stash-state {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/*
+ * Urgency reads on the state line only, the same rule the reminders follow: the
+ * accent marks a fact about the row, never the row itself.
+ */
+.stash-row[data-state='useSoon'] .stash-state {
+  color: var(--accent-text);
+}
+
+.stash-row[data-state='pastGuideline'] .stash-state {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.stash-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.stash-actions .chip {
+  min-height: var(--tap);
+  padding: 0 var(--space-5);
+  font-size: var(--text--1);
+  font-weight: 500;
+}
+
+.stash-list + .button {
+  margin-top: var(--space-6);
 }
 
 /* ── Babies ──────────────────────────────────────────────────────────────── */

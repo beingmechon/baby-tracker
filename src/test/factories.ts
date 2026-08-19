@@ -1,5 +1,6 @@
 import type {
   BottleEvent,
+  PumpingEvent,
   DiaperEvent,
   DiaperKind,
   GrowthEvent,
@@ -111,6 +112,25 @@ export function growth(
     startedAt,
     measure,
     value,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function pumping(
+  startedAt: Timestamp,
+  leftMl: number,
+  rightMl: number,
+  durationMs = 15 * 60_000,
+): PumpingEvent {
+  return {
+    id: nextId('pumping'),
+    babyId: BABY_ID,
+    type: 'pumping',
+    startedAt,
+    leftMl,
+    rightMl,
+    durationMs,
     createdAt: startedAt,
     updatedAt: startedAt,
   }
