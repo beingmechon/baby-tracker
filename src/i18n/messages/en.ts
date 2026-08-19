@@ -46,6 +46,7 @@ export const en = {
   'section.today': 'Today',
   'section.timeline': 'Timeline',
   'section.growth': 'Growth',
+  'section.reminders': 'Reminders',
 
   // Actions
   'action.startSleep': 'Start sleep',
@@ -60,6 +61,7 @@ export const en = {
   'action.previousDay': 'Previous day',
   'action.nextDay': 'Next day',
   'action.growth': 'Growth',
+  'action.reminders': 'Reminders',
   'action.settings': 'Settings',
   'action.back': 'Back',
   'action.close': 'Close',
@@ -166,6 +168,41 @@ export const en = {
   'growth.measuredOn': 'Measured {date}',
   'growth.atAge': 'at {age}',
 
+  // Reminders
+  'reminders.title': 'Reminders',
+  'reminders.empty': 'No reminders set.',
+  'reminders.emptyHint':
+    'A reminder counts from the last time you logged the thing — so feeding the baby is how you dismiss the feed reminder. Nothing to tap.',
+  'reminders.add': 'Add a reminder',
+  'reminders.edit': 'Edit reminder',
+  'reminders.kind': 'Remind me about',
+  'reminders.kind.feed': 'Next feed',
+  'reminders.kind.diaper': 'Diaper change',
+  'reminders.kind.pumping': 'Pumping',
+  'reminders.kind.custom': 'Something else',
+  'reminders.label': 'Name',
+  'reminders.labelPlaceholder': 'e.g. Vitamin D drops',
+  'reminders.interval': 'Every',
+  'reminders.save': 'Save reminder',
+  'reminders.delete': 'Delete reminder',
+  'reminders.enabled': 'On',
+  'reminders.due': 'Due now',
+  'reminders.overdue': '{duration} overdue',
+  'reminders.upcoming': 'in {duration}',
+  'reminders.snoozedFor': 'snoozed · {duration}',
+  'reminders.off': 'Off',
+  'reminders.snooze': 'Snooze',
+  'reminders.done': 'Done',
+  'reminders.notifications': 'Notifications',
+  'reminders.notificationsAsk': 'Allow notifications',
+  'reminders.notificationsGranted': 'Notifications are on for this device.',
+  'reminders.notificationsDenied':
+    'Notifications are blocked in your browser settings. Reminders still appear on this screen and on the home screen.',
+  'reminders.notificationsUnsupported':
+    'This browser cannot show notifications. Reminders still appear on this screen and on the home screen.',
+  'reminders.limitation':
+    'Reminders alert while the app is open, including in the background once it is installed. There is no server here, so nothing can wake a fully closed app — anything that fell due while you were away is shown as overdue when you come back.',
+
   // Edit sheet
   'edit.title': 'Edit entry',
   'edit.date': 'Date',
@@ -252,6 +289,10 @@ export const en = {
   'toast.sideSaved': '{side} side saved',
   'toast.bottleSaved': 'Bottle saved',
   'toast.growthSaved': 'Measurement saved',
+  'toast.reminderSaved': 'Reminder saved',
+  'toast.reminderDeleted': 'Reminder deleted',
+  'toast.reminderSnoozed': 'Snoozed for {duration}',
+  'toast.reminderDone': 'Done · next in {duration}',
   'toast.feedRepeated': 'Last feed repeated',
   'toast.entryUpdated': 'Entry updated',
   'toast.entryDeleted': 'Entry deleted',
@@ -267,6 +308,7 @@ export const en = {
   'error.nameRequired': 'A name is required.',
   'error.enterAmount': 'Enter how much was in the bottle.',
   'error.enterValue': 'Enter a measurement.',
+  'error.enterLabel': 'Give the reminder a name.',
   'error.enterDuration': 'Enter the length of the feed in minutes.',
   'error.invalidStart': 'That start time is not valid.',
   'error.invalidWake': 'That wake-up time is not valid.',

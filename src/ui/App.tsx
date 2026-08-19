@@ -10,9 +10,14 @@ import { I18nProvider } from '@/i18n/I18nProvider'
 import { applyTheme, resolveTheme } from '@/app/theme'
 import { useBabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
+import { useReminders } from '@/app/useReminders'
+import { showLocalNotification } from '@/app/notifications'
+import type { ReminderStatus } from '@/domain/reminders'
+import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
 import { Home } from './Home'
 import { Onboarding } from './Onboarding'
+import { RemindersScreen } from './RemindersScreen'
 import { SettingsScreen } from './SettingsScreen'
 
 /** Tracks the OS light/dark preference so `auto` can follow it. */
@@ -62,14 +67,38 @@ function AppContent({
   updateSettings: (patch: Partial<Settings>) => void
 }) {
   const t = useTranslator()
-  const [screen, setScreen] = useState<'home' | 'growth' | 'settings'>('home')
+  const [screen, setScreen] = useState<'home' | 'growth' | 'reminders' | 'settings'>(
+    'home',
+  )
   const prefersDark = usePrefersDark()
 
-  // A minute is fine for theme switching; the home screen keeps its own faster
+  // Drives theme switching and the reminder check. Twenty seconds rather than a
+  // minute purely for the reminders: a full minute of lag between a reminder
+  // falling due and the screen saying so is noticeable, where twenty seconds on
+  // something scheduled in hours is not. The home screen keeps its own faster
   // clock for running timers.
-  const now = useNow(60_000)
+  const now = useNow(20_000)
 
   const store = useBabyStore(settings.activeBabyId, settings.nightWindow)
+
+  /**
+   * Raising the notification for a due reminder. Held in a ref-stable callback so
+   * the alerting effect does not re-run on every render of the shell.
+   */
+  const alert = useCallback(
+    async ({ reminder }: ReminderStatus) => {
+      await showLocalNotification({
+        title: reminderName(t, reminder.kind, reminder.label),
+        body: t.t('reminders.due'),
+        // Keyed by id, so re-alerting the same reminder replaces its notification
+        // rather than stacking a second one in the shade.
+        tag: `reminder-${reminder.id}`,
+      })
+    },
+    [t],
+  )
+
+  const reminders = useReminders(store.activeBaby?.id ?? null, store.events, now, alert)
 
   useEffect(() => {
     applyTheme(
@@ -137,6 +166,14 @@ function AppContent({
     )
   }
 
+  if (screen === 'reminders') {
+    return (
+      <div className="app">
+        <RemindersScreen reminders={reminders} onBack={() => setScreen('home')} />
+      </div>
+    )
+  }
+
   if (screen === 'growth') {
     return (
       <div className="app">
@@ -155,8 +192,10 @@ function AppContent({
       <Home
         store={store}
         settings={settings}
+        reminders={reminders}
         onOpenSettings={() => setScreen('settings')}
         onOpenGrowth={() => setScreen('growth')}
+        onOpenReminders={() => setScreen('reminders')}
       />
     </div>
   )

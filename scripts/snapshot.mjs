@@ -126,6 +126,24 @@ try {
   await page.locator('.sheet').getByLabel('Value (kg)').fill('5.6')
   await page.locator('.sheet').getByRole('button', { name: 'Save measurement' }).click()
   await page.getByText('Measurement saved').waitFor()
+
+  // Two reminders, one of each shape, so the reminders screen has rows to audit.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  const reminderSheet = page.locator('.sheet')
+  await reminderSheet
+    .getByLabel('Remind me about')
+    .selectOption({ label: 'Something else' })
+  await reminderSheet.getByLabel('Name').fill('Vitamin D drops')
+  await reminderSheet.getByLabel('Every').selectOption({ label: '24h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await reminderSheet.getByLabel('Every').selectOption({ label: '3h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
   for (const [label, theme] of [
@@ -143,6 +161,12 @@ try {
     await page.getByRole('button', { name: 'Growth', exact: true }).click()
     await page.locator('.growth-headline').waitFor()
     writeFileSync(join(OUT, `growth-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Reminders' }).click()
+    await page.locator('.reminder-row').first().waitFor()
+    writeFileSync(join(OUT, `reminders-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   }

@@ -1,3 +1,4 @@
+import { isValidInterval, type Reminder, type ReminderKind } from '@/domain/reminders'
 import type {
   Baby,
   BabyEvent,
@@ -45,6 +46,12 @@ const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
 const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
 const SEXES: readonly Sex[] = ['male', 'female']
+const REMINDER_KIND_VALUES: readonly ReminderKind[] = [
+  'feed',
+  'diaper',
+  'pumping',
+  'custom',
+]
 
 /** ISO `YYYY-MM-DD`, or null. Anything else is dropped to null. */
 function isoDate(value: unknown): string | null {
@@ -124,5 +131,43 @@ export function parseEvent(value: unknown): BabyEvent | null {
     }
     default:
       return null
+  }
+}
+
+/**
+ * A reminder from an export file.
+ *
+ * The interval is checked against the same rule the UI enforces, so a
+ * hand-edited file cannot install a reminder that fires every second.
+ */
+export function parseReminder(value: unknown): Reminder | null {
+  if (!isObject(value)) return null
+
+  const id = str(value.id)
+  const babyId = str(value.babyId)
+  const kind = oneOf(value.kind, REMINDER_KIND_VALUES)
+  const intervalMs = finiteNumber(value.intervalMs)
+  if (id === null || babyId === null || kind === null || intervalMs === null) return null
+  if (!isValidInterval(intervalMs)) return null
+
+  const createdAt = nonNegative(value.createdAt) ?? 0
+  const optionalTime = (candidate: unknown): number | null =>
+    candidate === null || candidate === undefined ? null : nonNegative(candidate)
+
+  return {
+    id,
+    babyId,
+    kind,
+    // A custom reminder with no label is legal; the UI falls back to the kind.
+    label: str(value.label) ?? '',
+    intervalMs,
+    // Anything other than an explicit `false` leaves the reminder on, matching
+    // how the app writes it.
+    enabled: value.enabled !== false,
+    lastDoneAt: optionalTime(value.lastDoneAt),
+    lastAlertedAt: optionalTime(value.lastAlertedAt),
+    snoozedUntil: optionalTime(value.snoozedUntil),
+    createdAt,
+    updatedAt: nonNegative(value.updatedAt) ?? createdAt,
   }
 }

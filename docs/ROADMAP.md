@@ -31,9 +31,14 @@ to use it with a real baby at 4am.
 - [x] Growth velocity (gain per week between weigh-ins)
 - [ ] Birth stats as an explicit baseline
 - [ ] Premature baby support: corrected age and Fenton preterm charts
-- [ ] Interval reminders: next feed, pumping, custom (vitamin D drops, tummy time)
-- [ ] Snoozeable reminders
+- [x] Interval reminders: next feed, diaper, pumping, custom (vitamin D drops,
+      tummy time), anchored to your own log
+- [x] Snoozeable reminders, with mark-done and per-reminder on/off
 - [ ] Home screen widgets for zero-open logging
+- [ ] Waking a *closed* app when a reminder falls due. Not possible for a
+      serverless PWA: web push needs a server holding a subscription, and
+      Notification Triggers was withdrawn before it shipped. It would arrive with
+      a native shell (Capacitor) or, opt-in, with the v0.3 sync server.
 
 ## v0.3 — Multiple caregivers
 

@@ -13,9 +13,11 @@ import {
 import type { Settings } from '@/app/settings'
 import type { MessageKey } from '@/i18n/locales'
 import type { BabyStore } from '@/app/useBabyStore'
+import type { ReminderStore } from '@/app/useReminders'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
+import { SNOOZE_MS } from '@/domain/reminders'
 import { isToday, selectEventsForDay } from '@/domain/select'
 import { summarizeDay } from '@/domain/summary'
 import {
@@ -27,16 +29,24 @@ import {
 } from '@/domain/time'
 import type { BabyEvent, BreastSide, DiaperKind, Timestamp } from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
-import { formatAge, formatMeasure, formatVolume, measureName } from '@/i18n/format'
+import {
+  formatAge,
+  formatDuration,
+  formatMeasure,
+  formatVolume,
+  measureName,
+} from '@/i18n/format'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
 import { GrowthSheet } from './GrowthSheet'
 import { NursingSheet } from './NursingSheet'
+import { ReminderList } from './ReminderList'
 import { RuleLabel } from './RuleLabel'
 import { StatusHeadline } from './StatusHeadline'
 import { Timeline } from './Timeline'
 import {
+  BellIcon,
   BottleIcon,
   CheckIcon,
   ChevronLeftIcon,
@@ -51,8 +61,10 @@ import {
 interface HomeProps {
   store: BabyStore
   settings: Settings
+  reminders: ReminderStore
   onOpenSettings: () => void
   onOpenGrowth: () => void
+  onOpenReminders: () => void
 }
 
 const QUICK_DIAPERS = [
@@ -65,7 +77,14 @@ const QUICK_DIAPERS = [
   toast: MessageKey
 }[]
 
-export function Home({ store, settings, onOpenSettings, onOpenGrowth }: HomeProps) {
+export function Home({
+  store,
+  settings,
+  reminders,
+  onOpenSettings,
+  onOpenGrowth,
+  onOpenReminders,
+}: HomeProps) {
   const t = useTranslator()
   const { activeBaby, events, sleepInProgress } = store
 
@@ -283,6 +302,51 @@ export function Home({ store, settings, onOpenSettings, onOpenGrowth }: HomeProp
               </button>
             )}
           </div>
+        </section>
+
+        <section className="section" aria-label={t.t('section.reminders')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenReminders}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('reminders.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.reminders')}
+          </RuleLabel>
+          {reminders.statuses.length === 0 ? (
+            <button
+              type="button"
+              className="action-repeat"
+              onClick={onOpenReminders}
+            >
+              <BellIcon size={16} />
+              <span>{t.t('reminders.add')}</span>
+            </button>
+          ) : (
+            <ReminderList
+              // No row-tapping here: on the home screen a stray tap should never
+              // open an editor. Managing them is one deliberate tap away.
+              statuses={reminders.statuses}
+              onSnooze={(reminder) => {
+                void reminders.snooze(reminder.id, Date.now())
+                setToast(
+                  t.t('toast.reminderSnoozed', {
+                    duration: formatDuration(t, SNOOZE_MS),
+                  }),
+                )
+              }}
+              onDone={(reminder) => {
+                void reminders.markDone(reminder.id, Date.now())
+                setToast(
+                  t.t('toast.reminderDone', {
+                    duration: formatDuration(t, reminder.intervalMs),
+                  }),
+                )
+              }}
+            />
+          )}
         </section>
 
         <section className="section" aria-label={t.t('section.today')}>

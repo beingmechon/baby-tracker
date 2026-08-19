@@ -1,3 +1,4 @@
+import type { Reminder } from '@/domain/reminders'
 import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 
 /**
@@ -15,6 +16,12 @@ export type NewEvent = DistributiveOmit<
   'id' | 'createdAt' | 'updatedAt' | 'babyId'
 >
 
+/** A new reminder. The three state timestamps all start null. */
+export type NewReminder = Pick<
+  Reminder,
+  'kind' | 'label' | 'intervalMs' | 'enabled'
+>
+
 export interface EventQuery {
   /** Inclusive lower bound on `startedAt`. */
   since?: Timestamp
@@ -29,11 +36,18 @@ export interface ExportBundle {
   exportedAt: Timestamp
   babies: Baby[]
   events: BabyEvent[]
+  /**
+   * Added in v0.2. The version stays 1 on purpose: an older build reading this
+   * file ignores the field and still restores every baby and event, which is
+   * what a backup is for. A version bump would have made it refuse the file.
+   */
+  reminders?: Reminder[]
 }
 
 export interface ImportResult {
   babiesImported: number
   eventsImported: number
+  remindersImported: number
   /** Entries rejected by validation, with a reason, so nothing fails silently. */
   skipped: { reason: string; count: number }[]
 }
@@ -60,6 +74,11 @@ export interface Repository {
   /** Applies a partial change and bumps `updatedAt`. */
   updateEvent(id: Id, patch: Partial<BabyEvent>): Promise<BabyEvent>
   deleteEvent(id: Id): Promise<void>
+
+  listReminders(babyId: Id): Promise<Reminder[]>
+  addReminder(babyId: Id, reminder: NewReminder): Promise<Reminder>
+  updateReminder(id: Id, patch: Partial<Reminder>): Promise<Reminder>
+  deleteReminder(id: Id): Promise<void>
 
   exportAll(): Promise<ExportBundle>
   importBundle(bundle: unknown): Promise<ImportResult>

@@ -6,6 +6,28 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — reminders
+
+- **Interval reminders** for the next feed, a diaper change, pumping, or anything
+  you name yourself. Snooze, mark done, turn off.
+- **A reminder counts from the last time you logged the thing**, not from when it
+  last went off. Feeding the baby is therefore how you dismiss the feed reminder —
+  an action a parent already performs, so there is nothing extra to remember.
+- **Reminders show on the home screen** as well as their own, and survive a
+  restart. The home screen deliberately has no checkbox and no tappable rows: a
+  stray thumb there should not turn a reminder off or open an editor.
+- **Local notifications**, with permission requested from a button on the
+  reminders screen and never on load.
+
+The reminders screen states the honest limit of a serverless app: alerts happen
+while the app is open, including in the background once installed, but nothing can
+wake a fully closed app without a server holding a push subscription. Anything that
+fell due while you were away shows as overdue when you return.
+
+Storage gained a `reminders` store, the schema's first migration. An export
+written by v0.1 still imports, and the export format stays at version 1 so an
+older build can still read a newer backup rather than refusing it.
+
 ### Added — growth tracking with real WHO percentiles
 
 - **Weight, length and head circumference**, in metric or imperial. Imperial
@@ -79,15 +101,22 @@ says so on screen.
 
 ### Fixed
 
+- **Snooze did nothing on the reminders most likely to be snoozed.** One field was
+  serving as both "last alerted" and "last resolved", so raising an alert advanced
+  the interval — and a ten-minute snooze was swallowed whole by a three-hour
+  reschedule. Alerting, resolving and deferring are now three separate timestamps,
+  and the case is a unit test.
 - `npm run smoke` wrote its screenshots into the committed `docs/screenshots/`, so
   any local verification run dirtied the working tree. It now writes to a
   gitignored directory; `npm run screenshots` refreshes the committed images.
 
 ### Verified
 
-236 unit tests (up from 156) and 45 browser smoke checks, including the WHO
-percentile maths against the organization's own published −2SD and +2SD figures,
-a metric-to-imperial round trip through storage, and a real language switch.
+268 unit tests (up from 156) and 56 browser smoke checks, including the WHO
+percentile maths against the organization's own published −2SD and +2SD figures, a
+metric-to-imperial round trip through storage, the v1-to-v2 schema migration
+against a genuine version-1 database, and a real language switch. 0 AI-tell
+findings across 13 rendered screens.
 
 ## [0.1.1] — 2026-08-17
 

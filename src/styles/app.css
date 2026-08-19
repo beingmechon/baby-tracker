@@ -762,11 +762,119 @@
   font-weight: 500;
 }
 
-.switch-row input[type='checkbox'] {
+.switch-row input[type='checkbox'],
+.reminder-toggle {
   flex: none;
   width: 1.5rem;
   height: 1.5rem;
   accent-color: var(--accent-solid);
+}
+
+/* ── Reminders ───────────────────────────────────────────────────────────── */
+
+/*
+ * Ruled rows, like the timeline: same timetable form, so the two lists read as
+ * one system rather than two designs. No boxes, no coloured status pills.
+ */
+.reminders {
+  display: flex;
+  flex-direction: column;
+}
+
+.reminder-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.reminder-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.reminder-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/*
+ * The name is the button, not the row: a whole-row target on the home screen
+ * would open an editor on a stray thumb, and the row also carries Snooze and
+ * Done. Padding keeps the tap target at the required height without a border.
+ */
+.reminder-name-button {
+  padding: var(--space-2) 0;
+  margin: calc(-1 * var(--space-2)) 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.reminder-name {
+  font-size: var(--text-0);
+  font-weight: 500;
+}
+
+.reminder-state {
+  font-size: var(--text--1);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/*
+ * A due reminder is the only place in this list that takes the accent, and it
+ * takes it on the *state*, not on a background. Overdue is information about a
+ * row, which is where categorical emphasis is allowed to live.
+ */
+.reminder-row[data-state='due'] .reminder-state {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.reminder-row[data-state='off'] .reminder-name {
+  color: var(--text-secondary);
+}
+
+.reminder-every {
+  font-weight: 400;
+}
+
+.reminder-toggle {
+  margin-left: auto;
+}
+
+.reminders + .button {
+  margin-top: var(--space-6);
+}
+
+.reminder-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/*
+ * Narrower than an amount chip but the same height. The 56px minimum is not
+ * negotiable — these get pressed one-handed in the dark — so only the horizontal
+ * padding and the type size come down.
+ */
+.reminder-actions .chip {
+  min-height: var(--tap);
+  padding: 0 var(--space-5);
+  font-size: var(--text--1);
+  font-weight: 500;
+}
+
+.reminder-actions .chip[data-emphasis='primary'] {
+  color: var(--accent-on-solid);
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
 }
 
 /* ── Growth ──────────────────────────────────────────────────────────────── */

@@ -314,6 +314,101 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Reminders')
+  // The empty state on the home screen leads to the reminders screen rather than
+  // opening a sheet in place, so this is two taps by design.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  const reminderSheet = page.locator('.sheet')
+  await reminderSheet
+    .getByLabel('Remind me about')
+    .selectOption({ label: 'Something else' })
+  await reminderSheet.getByLabel('Name').fill('Vitamin D drops')
+  await reminderSheet.getByLabel('Every').selectOption({ label: '24h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+
+  const vitaminRow = page.locator('.reminder-row', { hasText: 'Vitamin D drops' })
+  check('a custom reminder is listed under its own name', await vitaminRow.isVisible())
+  check(
+    'it counts down rather than claiming to be due',
+    /^in /.test(await vitaminRow.locator('.reminder-state').innerText()),
+  )
+  check(
+    'Snooze and Done stay off a reminder that is not due',
+    (await vitaminRow.getByRole('button', { name: 'Snooze' }).count()) === 0,
+  )
+
+  // The shortest interval the picker offers is 30 minutes, on purpose — a
+  // reminder that fires every minute is a way of breaking someone's phone. So the
+  // due, snooze and Done transitions belong to the unit tests, which own the
+  // clock; likewise the anchoring, which cannot be told apart from a
+  // count-from-creation reminder when the last feed was seconds ago. What the
+  // browser proves is the rest: that a reminder saves, renders on both screens,
+  // survives a restart, and can be turned off.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await reminderSheet.getByLabel('Every').selectOption({ label: '3h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  const feedRow = page.locator('.reminder-row', { hasText: 'Next feed' })
+  check(
+    'a reminder of a built-in kind is named for its kind',
+    await feedRow.isVisible(),
+  )
+  check(
+    'it shows both the countdown and the interval it repeats on',
+    /^in .+ · every 3h$/.test(await feedRow.locator('.reminder-state').innerText()),
+  )
+
+  // A plain click, not uncheck(): the toggle writes to storage and re-reads,
+  // which is this app's deliberate no-optimistic-updates rule, and Playwright's
+  // uncheck() retries the click when the state has not flipped yet — double
+  // toggling it straight back.
+  await feedRow.getByRole('checkbox').click()
+  await feedRow.locator('.reminder-state').filter({ hasText: 'Off' }).waitFor()
+  check(
+    'turning a reminder off says so plainly',
+    (await feedRow.getAttribute('data-state')) === 'off',
+  )
+  await feedRow.getByRole('checkbox').click()
+  await feedRow.locator('.reminder-state').filter({ hasText: /^in / }).waitFor()
+  check(
+    'and turning it back on resumes the countdown',
+    (await feedRow.getAttribute('data-state')) === 'upcoming',
+  )
+
+  await vitaminRow.getByRole('button', { name: /Vitamin D drops/ }).click()
+  await reminderSheet.getByLabel('Every').selectOption({ label: '12h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  // Wait for the row to catch up rather than sampling it. Every write here goes
+  // to storage and is read back before the UI changes, so there is a real gap
+  // between the toast and the row — sampling it made this check flake once.
+  await vitaminRow
+    .locator('.reminder-state')
+    .filter({ hasText: 'every 12h' })
+    .waitFor({ timeout: 5000 })
+    .catch(() => {})
+  const editedState = await vitaminRow.locator('.reminder-state').innerText()
+  check(
+    `editing a reminder keeps its name and changes its interval (${editedState})`,
+    editedState.includes('every 12h'),
+  )
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'reminders.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'reminders appear on the home screen as well',
+    await page.locator('.reminder-row', { hasText: 'Vitamin D drops' }).isVisible(),
+  )
+  check(
+    'the home screen does not offer a checkbox that could be hit by accident',
+    (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
+  )
+
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions
   // and the screenshots do not depend on what time the suite happens to run.
@@ -418,6 +513,10 @@ try {
   check(
     'every entry is still there after a restart',
     (await page.locator('.timeline-row').count()) >= 5,
+  )
+  check(
+    'so are the reminders',
+    (await page.locator('.reminder-row').count()) === 2,
   )
 
   console.log('\n▸ Offline')

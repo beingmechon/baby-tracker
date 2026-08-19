@@ -1,4 +1,5 @@
 import { G_PER_OZ, gramsToPoundsOunces, mmToInches } from '@/domain/measure'
+import type { ReminderKind, ReminderStatus } from '@/domain/reminders'
 import { MINUTE_MS, splitDuration, type AgeDescription } from '@/domain/time'
 import type {
   MeasureKind,
@@ -172,4 +173,52 @@ export function formatPercentile(t: Translator, percentile: number): string {
   if (percentile < 1) return t.t('growth.percentileBelowFirst')
   if (percentile > 99) return t.t('growth.percentileAboveLast')
   return t.t('growth.percentile', { percentile: t.ordinal(Math.round(percentile)) })
+}
+
+const REMINDER_KIND_NAMES: Record<ReminderKind, MessageKey> = {
+  feed: 'reminders.kind.feed',
+  diaper: 'reminders.kind.diaper',
+  pumping: 'reminders.kind.pumping',
+  custom: 'reminders.kind.custom',
+}
+
+/**
+ * What to call a reminder: its own name if the parent gave it one, otherwise the
+ * name of its kind. A custom reminder without a label is possible in an imported
+ * file, so this never returns an empty string.
+ */
+export function reminderName(t: Translator, kind: ReminderKind, label: string): string {
+  const trimmed = label.trim()
+  return trimmed.length > 0 ? trimmed : t.t(REMINDER_KIND_NAMES[kind])
+}
+
+/**
+ * A reminder's state as one short phrase: `in 2h 10m`, `40m overdue`,
+ * `snoozed · 8m`, `Due now`.
+ *
+ * Overdue reads as a duration rather than a time, because "40m overdue" answers
+ * the question a parent is actually asking and "due at 11:00" makes them do the
+ * subtraction.
+ */
+export function formatReminderState(t: Translator, status: ReminderStatus): string {
+  switch (status.state) {
+    case 'off':
+      return t.t('reminders.off')
+    case 'snoozed':
+      return t.t('reminders.snoozedFor', {
+        duration: formatDuration(t, status.remainingMs),
+      })
+    case 'upcoming':
+      return t.t('reminders.upcoming', {
+        duration: formatDuration(t, status.remainingMs),
+      })
+    case 'due': {
+      const overdueMs = -status.remainingMs
+      // Under a minute late is "due now"; a countdown to the second would be
+      // noise on something that is only accurate to the interval anyway.
+      return overdueMs < MINUTE_MS
+        ? t.t('reminders.due')
+        : t.t('reminders.overdue', { duration: formatDuration(t, overdueMs) })
+    }
+  }
 }
