@@ -16,6 +16,9 @@ jobs:
   check:
     name: Lint, typecheck and test
     runs-on: ubuntu-latest
+    # Everything here finishes in about a minute. A cap means a wedged runner
+    # fails fast instead of occupying a job slot.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +64,11 @@ jobs:
   smoke:
     name: Offline and end-to-end smoke test
     runs-on: ubuntu-latest
+    # Without a cap, GitHub's default is six hours. A stalled apt mirror inside
+    # `playwright install --with-deps` once held this job for exactly that long
+    # and reported "cancelled", which reads like someone cancelled it rather than
+    # like the infrastructure failure it was.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +80,11 @@ jobs:
       - run: npm ci
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        # Deliberately without `--with-deps`, which runs apt-get. The GitHub
+        # ubuntu-latest image already carries Chromium's shared libraries, and the
+        # apt step is the one part of this job that can hang indefinitely on a
+        # mirror that stops responding — which is exactly what happened.
+        run: npx playwright install chromium
 
       - name: Build
         run: npm run build
