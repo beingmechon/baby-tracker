@@ -2,6 +2,8 @@ import type {
   BottleEvent,
   DiaperEvent,
   DiaperKind,
+  GrowthEvent,
+  MeasureKind,
   NursingEvent,
   SleepEvent,
   SleepKind,
@@ -91,6 +93,24 @@ export function diaper(startedAt: Timestamp, kind: DiaperKind): DiaperEvent {
     type: 'diaper',
     startedAt,
     kind,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function growth(
+  startedAt: Timestamp,
+  measure: MeasureKind,
+  /** Canonical: grams for weight, millimetres for length and head. */
+  value: number,
+): GrowthEvent {
+  return {
+    id: nextId('growth'),
+    babyId: BABY_ID,
+    type: 'growth',
+    startedAt,
+    measure,
+    value,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

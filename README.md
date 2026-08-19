@@ -10,8 +10,9 @@ to sign up to, because there is no server.
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
 <p align="center">
-  <img src="docs/screenshots/home-day.png" alt="The home screen on warm off-white paper: a large serif numeral showing how long the baby has been awake, a rule labelled LOG, an ochre Start sleep button, and flush-left buttons for nursing, bottle and diapers." width="45%">
-  <img src="docs/screenshots/home-night.png" alt="The same screen in night mode: the identical layout in warm amber on a deep brown-black ground, with no blue light." width="45%">
+  <img src="docs/screenshots/home-day.png" alt="The home screen on warm off-white paper: a large serif numeral showing how long the baby has been awake, a rule labelled LOG, an ochre Start sleep button, and flush-left buttons for nursing, bottle and diapers." width="30%">
+  <img src="docs/screenshots/home-night.png" alt="The same screen in night mode: the identical layout in warm amber on a deep brown-black ground, with no blue light." width="30%">
+  <img src="docs/screenshots/growth.png" alt="The growth screen: a large serif 5.6 kg, a ledger reading 77th percentile for age, and a chart plotting the measurement against the WHO 3rd, 50th and 97th percentile curves." width="30%">
 </p>
 
 ---
@@ -37,7 +38,7 @@ So this project aims at the gap:
    start, not US-only.
 4. **Install and go** — a real app on your phone, with no server to run.
 
-## What works today (v0.1)
+## What works today
 
 This is an early release, deliberately small, and genuinely usable right now:
 
@@ -55,6 +56,15 @@ This is an early release, deliberately small, and genuinely usable right now:
   your night hours. Huge tap targets throughout.
 - **Works offline** — install it to your home screen and it opens and logs with
   no connection at all.
+- **Growth with real WHO percentile charts** — weight, length and head
+  circumference, in metric or imperial, plotted against the World Health
+  Organization's own reference curves. Gain per week between weigh-ins. This is
+  the feature most trackers put behind a subscription; here it is just part of the
+  app.
+- **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
+  counted from your own log rather than from when the reminder last went off.
+- **Your language** — every string is translatable, with plurals, locale-aware
+  clocks and numbers, and a language picker.
 - **Your data is yours** — full JSON backup, CSV export for the paediatrician,
   JSON import, and one-tap deletion of everything.
 
@@ -138,7 +148,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 7
+the result is checked by its deterministic AI-tell detector: **0 findings across 13
 screens and 16 rules**, down from 13.
 
 ## Tech

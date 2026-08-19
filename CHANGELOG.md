@@ -6,6 +6,60 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — reminders
+
+- **Interval reminders** for the next feed, a diaper change, pumping, or anything
+  you name yourself. Snooze, mark done, turn off.
+- **A reminder counts from the last time you logged the thing**, not from when it
+  last went off. Feeding the baby is therefore how you dismiss the feed reminder —
+  an action a parent already performs, so there is nothing extra to remember.
+- **Reminders show on the home screen** as well as their own, and survive a
+  restart. The home screen deliberately has no checkbox and no tappable rows: a
+  stray thumb there should not turn a reminder off or open an editor.
+- **Local notifications**, with permission requested from a button on the
+  reminders screen and never on load.
+
+The reminders screen states the honest limit of a serverless app: alerts happen
+while the app is open, including in the background once installed, but nothing can
+wake a fully closed app without a server holding a push subscription. Anything that
+fell due while you were away shows as overdue when you return.
+
+Storage gained a `reminders` store, the schema's first migration. An export
+written by v0.1 still imports, and the export format stays at version 1 so an
+older build can still read a newer backup rather than refusing it.
+
+### Added — growth tracking with real WHO percentiles
+
+- **Weight, length and head circumference**, in metric or imperial. Imperial
+  weight is entered and shown as two units ("9 lb 15 oz"), because that is how a
+  scale reads and how a parent says it.
+- **A growth screen** with the measurement as its headline, the date it was taken,
+  the change since the previous reading as a per-week rate, and the WHO percentile
+  for age.
+- **A WHO percentile chart** — the baby's own readings plotted against the 3rd,
+  50th and 97th percentile curves, drawn from the World Health Organization's
+  published LMS parameters. Hand-drawn SVG; no charting dependency.
+- **Sex on the baby's profile**, optional, used only to pick the right WHO
+  reference. Percentiles are hidden rather than guessed when it is not set.
+- **Growth rows in the CSV export**, in both metric and imperial columns.
+- Measurements are editable and deletable like every other entry.
+
+Percentiles are computed at the age the measurement was *taken*, not today's age,
+so an old weigh-in does not appear to slide down the chart as the baby grows.
+
+**Head circumference is tracked but has no percentile.** The reference was not in
+the WHO source set this project extracted from, and inventing curves behind a
+number a parent shows to a doctor is not something this project will do. The app
+says so on screen.
+
+### Changed
+
+- Canonical storage for measurements is whole grams and whole millimetres — finer
+  than any home scale or tape — so switching between metric and imperial can never
+  drift a stored value.
+- `describeEvent` takes a context object rather than a growing positional
+  argument list.
+
 ### Added — internationalisation
 
 - **Every string in the app is now translatable.** A dependency-free i18n core
@@ -45,10 +99,24 @@ versions may change behaviour.
   whole-sentence messages per kind — interpolating nouns into sentences breaks
   casing and grammatical agreement in other languages regardless.
 
+### Fixed
+
+- **Snooze did nothing on the reminders most likely to be snoozed.** One field was
+  serving as both "last alerted" and "last resolved", so raising an alert advanced
+  the interval — and a ten-minute snooze was swallowed whole by a three-hour
+  reschedule. Alerting, resolving and deferring are now three separate timestamps,
+  and the case is a unit test.
+- `npm run smoke` wrote its screenshots into the committed `docs/screenshots/`, so
+  any local verification run dirtied the working tree. It now writes to a
+  gitignored directory; `npm run screenshots` refreshes the committed images.
+
 ### Verified
 
-171 unit tests (up from 156), 36 browser smoke checks including a real
-language switch, and 0 AI-tell findings across 7 screens.
+268 unit tests (up from 156) and 56 browser smoke checks, including the WHO
+percentile maths against the organization's own published −2SD and +2SD figures, a
+metric-to-imperial round trip through storage, the v1-to-v2 schema migration
+against a genuine version-1 database, and a real language switch. 0 AI-tell
+findings across 13 rendered screens.
 
 ## [0.1.1] — 2026-08-17
 

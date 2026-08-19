@@ -59,6 +59,26 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+export function BellIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4 1.5 5.5 1.5 5.5H5s1.5-1.5 1.5-5.5Z" />
+      <path d="M10.2 18.5a2 2 0 0 0 3.6 0" />
+    </svg>
+  )
+}
+
+/** A rising line over an axis: growth as a curve, not a scale or a ruler. */
+export function GrowthIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M4 20V4" />
+      <path d="M4 20h16" />
+      <path d="M7 16.5c2.6 0 3.4-3.2 5-6.2 1.1-2 2.6-3.3 5-3.3" />
+    </svg>
+  )
+}
+
 export function SettingsIcon({ size = 22, className }: IconProps) {
   return (
     <svg {...svgProps(size)} className={className}>

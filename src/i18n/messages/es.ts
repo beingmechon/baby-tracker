@@ -43,6 +43,7 @@ export const es: Messages = {
   'section.today': 'Hoy',
   'section.timeline': 'Cronología',
   'section.growth': 'Crecimiento',
+  'section.reminders': 'Recordatorios',
 
   'action.startSleep': 'Empezar sueño',
   'action.wakeUp': 'Despertar',
@@ -55,6 +56,8 @@ export const es: Messages = {
   'action.repeatFeed': 'Repetir última toma · {detail}',
   'action.previousDay': 'Día anterior',
   'action.nextDay': 'Día siguiente',
+  'action.growth': 'Crecimiento',
+  'action.reminders': 'Recordatorios',
   'action.settings': 'Ajustes',
   'action.back': 'Atrás',
   'action.close': 'Cerrar',
@@ -122,18 +125,73 @@ export const es: Messages = {
   'growth.measure.length': 'Longitud',
   'growth.measure.head': 'Cabeza',
   'growth.value': 'Valor ({unit})',
+  'growth.pounds': 'Libras',
+  'growth.ounces': 'Onzas',
+  'growth.poundsOunces': '{pounds} lb {ounces} oz',
   'growth.save': 'Guardar medida',
+  'growth.add': 'Registrar una medida',
   'growth.empty': 'Aún no hay medidas.',
+  'growth.emptyHint':
+    'Pesos de una revisión, o de tu propia balanza en casa. Con dos medidas ya se ve una tendencia.',
   'growth.latest': 'Última',
   'growth.change': '{change} desde {date}',
   'growth.perWeek': '{amount} por semana',
+  'growth.percentileLabel': 'Percentil',
   'growth.percentile': 'percentil {percentile} para la edad',
+  'growth.percentileBelowFirst': 'por debajo del percentil 1 para la edad',
+  'growth.percentileAboveLast': 'por encima del percentil 99 para la edad',
   'growth.percentileUnavailable':
     'El percentil necesita una fecha de nacimiento y el sexo en los ajustes.',
   'growth.percentileNoData':
     'Todavía no hay datos de referencia de la OMS para esta medida y edad.',
   'growth.referenceNote':
     'Los percentiles provienen de los Patrones de Crecimiento Infantil de la OMS. Describen poblaciones, no a tu bebé: conviene comentarlo con tu médico, nunca es un diagnóstico.',
+  'growth.history': 'Historial',
+  'growth.chart': 'Frente a la referencia de la OMS',
+  'growth.chartDescription':
+    '{measure} representado frente a las curvas de los percentiles {low}, {mid} y {high} de la OMS, desde el nacimiento hasta los {months} meses.',
+  'growth.chartNoReference':
+    'No hay curvas de referencia para esta medida, así que solo se representan tus propias medidas.',
+  'growth.chartNeedsBirthDate':
+    'Añade una fecha de nacimiento en los ajustes para representar las medidas según la edad.',
+  'growth.axisAge': 'Edad (meses)',
+  'growth.curveLabel': 'OMS {percentile}',
+  'growth.measuredOn': 'Medido el {date}',
+  'growth.atAge': 'a los {age}',
+
+  'reminders.title': 'Recordatorios',
+  'reminders.empty': 'No hay recordatorios.',
+  'reminders.emptyHint':
+    'Un recordatorio cuenta desde la última vez que lo registraste: dar de comer al bebé es lo que descarta el recordatorio de la toma. No hay que pulsar nada.',
+  'reminders.add': 'Añadir un recordatorio',
+  'reminders.edit': 'Editar recordatorio',
+  'reminders.kind': 'Recordarme',
+  'reminders.kind.feed': 'La próxima toma',
+  'reminders.kind.diaper': 'Cambio de pañal',
+  'reminders.kind.pumping': 'Extracción',
+  'reminders.kind.custom': 'Otra cosa',
+  'reminders.label': 'Nombre',
+  'reminders.labelPlaceholder': 'p. ej. gotas de vitamina D',
+  'reminders.interval': 'Cada',
+  'reminders.save': 'Guardar recordatorio',
+  'reminders.delete': 'Eliminar recordatorio',
+  'reminders.enabled': 'Activado',
+  'reminders.due': 'Toca ahora',
+  'reminders.overdue': '{duration} de retraso',
+  'reminders.upcoming': 'en {duration}',
+  'reminders.snoozedFor': 'pospuesto · {duration}',
+  'reminders.off': 'Desactivado',
+  'reminders.snooze': 'Posponer',
+  'reminders.done': 'Hecho',
+  'reminders.notifications': 'Notificaciones',
+  'reminders.notificationsAsk': 'Permitir notificaciones',
+  'reminders.notificationsGranted': 'Las notificaciones están activadas en este dispositivo.',
+  'reminders.notificationsDenied':
+    'Las notificaciones están bloqueadas en los ajustes del navegador. Los recordatorios siguen apareciendo en esta pantalla y en la pantalla de inicio.',
+  'reminders.notificationsUnsupported':
+    'Este navegador no puede mostrar notificaciones. Los recordatorios siguen apareciendo en esta pantalla y en la pantalla de inicio.',
+  'reminders.limitation':
+    'Los recordatorios avisan mientras la aplicación está abierta, también en segundo plano una vez instalada. Aquí no hay servidor, así que nada puede despertar una aplicación cerrada del todo: lo que venciera mientras no estabas aparece como retrasado al volver.',
 
   'edit.title': 'Editar entrada',
   'edit.date': 'Fecha',
@@ -218,6 +276,10 @@ export const es: Messages = {
   'toast.sideSaved': 'Lado {side} guardado',
   'toast.bottleSaved': 'Biberón guardado',
   'toast.growthSaved': 'Medida guardada',
+  'toast.reminderSaved': 'Recordatorio guardado',
+  'toast.reminderDeleted': 'Recordatorio eliminado',
+  'toast.reminderSnoozed': 'Pospuesto {duration}',
+  'toast.reminderDone': 'Hecho · el siguiente en {duration}',
   'toast.feedRepeated': 'Última toma repetida',
   'toast.entryUpdated': 'Entrada actualizada',
   'toast.entryDeleted': 'Entrada eliminada',
@@ -231,6 +293,7 @@ export const es: Messages = {
   'error.nameRequired': 'El nombre es obligatorio.',
   'error.enterAmount': 'Indica cuánto había en el biberón.',
   'error.enterValue': 'Introduce una medida.',
+  'error.enterLabel': 'Ponle un nombre al recordatorio.',
   'error.enterDuration': 'Indica la duración de la toma en minutos.',
   'error.invalidStart': 'Esa hora de inicio no es válida.',
   'error.invalidWake': 'Esa hora de despertar no es válida.',
@@ -255,6 +318,13 @@ export const es: Messages = {
   'age.years.one': '{count} año',
   'age.years.other': '{count} años',
   'age.yearsMonths': '{years} a {months} m',
+
+  // El español no flexiona el ordinal en este contexto: «percentil 42», no
+  // «percentil 42.º». Las cuatro formas son iguales a propósito.
+  'ordinal.one': '{value}',
+  'ordinal.two': '{value}',
+  'ordinal.few': '{value}',
+  'ordinal.other': '{value}',
 
   'duration.seconds': '{seconds} s',
   'duration.minutes': '{minutes} min',

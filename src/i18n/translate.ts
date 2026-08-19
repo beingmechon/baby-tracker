@@ -30,6 +30,13 @@ export interface Translator {
    * back to `key.other`. `count` is interpolated automatically.
    */
   plural(key: PluralKey, count: number, values?: InterpolationValues): string
+  /**
+   * An ordinal — `1st`, `2nd`, `42nd`. English needs four suffixes chosen by a
+   * rule most people apply without thinking; other languages inflect ordinals
+   * differently or not at all, which is why the suffix is in the catalogue and
+   * not in a `switch` here.
+   */
+  ordinal(value: number): string
   /** Locale-aware number formatting. */
   number(value: number, options?: Intl.NumberFormatOptions): string
 }
@@ -62,6 +69,7 @@ export function createTranslator({
   transform,
 }: TranslatorOptions): Translator {
   const pluralRules = new Intl.PluralRules(locale)
+  const ordinalRules = new Intl.PluralRules(locale, { type: 'ordinal' })
   const numberFormat = new Intl.NumberFormat(locale)
 
   function resolve(key: MessageKey): string {
@@ -85,6 +93,14 @@ export function createTranslator({
         messages[specific] !== undefined || fallback[specific] !== undefined
       const chosen = isDefined ? specific : (`${key}.other` as MessageKey)
       return interpolate(resolve(chosen), { count, ...values })
+    },
+
+    ordinal(value) {
+      const specific = `ordinal.${ordinalRules.select(value)}` as MessageKey
+      const isDefined =
+        messages[specific] !== undefined || fallback[specific] !== undefined
+      const chosen = isDefined ? specific : ('ordinal.other' as MessageKey)
+      return interpolate(resolve(chosen), { value: numberFormat.format(value) })
     },
 
     number(value, options) {

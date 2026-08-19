@@ -6,8 +6,33 @@ const validBase = { id: 'e1', babyId: 'b1', startedAt: 1000 }
 describe('parseBaby', () => {
   it('accepts a well-formed baby', () => {
     expect(
-      parseBaby({ id: 'b1', name: 'Mira', birthDate: '2026-01-01', createdAt: 5 }),
-    ).toEqual({ id: 'b1', name: 'Mira', birthDate: '2026-01-01', createdAt: 5 })
+      parseBaby({
+        id: 'b1',
+        name: 'Mira',
+        birthDate: '2026-01-01',
+        sex: 'female',
+        createdAt: 5,
+      }),
+    ).toEqual({
+      id: 'b1',
+      name: 'Mira',
+      birthDate: '2026-01-01',
+      sex: 'female',
+      createdAt: 5,
+    })
+  })
+
+  it('imports a baby exported before growth tracking existed', () => {
+    // No `sex` key at all. It must import, with percentiles simply unavailable
+    // until the parent fills it in — not fail, and not be guessed.
+    const baby = parseBaby({ id: 'b1', name: 'Mira', createdAt: 5 })
+    expect(baby).not.toBeNull()
+    expect(baby!.sex).toBeNull()
+  })
+
+  it('drops a sex that is not one of the two WHO reference sets', () => {
+    expect(parseBaby({ id: 'b1', name: 'Mira', sex: 'unknown' })?.sex).toBeNull()
+    expect(parseBaby({ id: 'b1', name: 'Mira', sex: 3 })?.sex).toBeNull()
   })
 
   it('requires an id and a name', () => {
@@ -110,6 +135,43 @@ describe('parseEvent', () => {
       for (const kind of ['wet', 'dirty', 'mixed', 'dry']) {
         expect(parseEvent({ ...validBase, type: 'diaper', kind })).toMatchObject({ kind })
       }
+    })
+  })
+
+  describe('growth', () => {
+    it('accepts each measurement kind', () => {
+      for (const measure of ['weight', 'length', 'head']) {
+        expect(
+          parseEvent({ ...validBase, type: 'growth', measure, value: 4500 }),
+        ).toMatchObject({ measure, value: 4500 })
+      }
+    })
+
+    it('rejects an unknown measurement', () => {
+      expect(
+        parseEvent({ ...validBase, type: 'growth', measure: 'shoe_size', value: 3 }),
+      ).toBeNull()
+    })
+
+    it('rejects a zero or negative measurement', () => {
+      // Not merely implausible: it makes the z-score NaN, which would then
+      // propagate silently into the chart.
+      expect(
+        parseEvent({ ...validBase, type: 'growth', measure: 'weight', value: 0 }),
+      ).toBeNull()
+      expect(
+        parseEvent({ ...validBase, type: 'growth', measure: 'weight', value: -100 }),
+      ).toBeNull()
+    })
+
+    it('rejects a missing or non-numeric value', () => {
+      expect(parseEvent({ ...validBase, type: 'growth', measure: 'weight' })).toBeNull()
+      expect(
+        parseEvent({ ...validBase, type: 'growth', measure: 'weight', value: '4500' }),
+      ).toBeNull()
+      expect(
+        parseEvent({ ...validBase, type: 'growth', measure: 'weight', value: NaN }),
+      ).toBeNull()
     })
   })
 })

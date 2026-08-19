@@ -25,15 +25,20 @@ to use it with a real baby at 4am.
 
 ## v0.2 — Growth and reminders
 
-- [ ] Weight, length/height, head circumference — *reference data already in
-      the repo; the event type, units and UI are what remain*
-- [ ] WHO percentile charts (0–2y) — *LMS tables shipped; z-score maths and the
-      chart remain*. CDC (2y+) still to source
-- [ ] Growth velocity view (gain per week), birth stats as the baseline
+- [x] Weight, length/height, head circumference, in metric or imperial
+- [x] WHO percentile charts — weight-for-age to 5 years, length-for-age to 2
+      years, both sexes, from the WHO's own LMS tables. CDC (2y+) still to source
+- [x] Growth velocity (gain per week between weigh-ins)
+- [ ] Birth stats as an explicit baseline
 - [ ] Premature baby support: corrected age and Fenton preterm charts
-- [ ] Interval reminders: next feed, pumping, custom (vitamin D drops, tummy time)
-- [ ] Snoozeable reminders
+- [x] Interval reminders: next feed, diaper, pumping, custom (vitamin D drops,
+      tummy time), anchored to your own log
+- [x] Snoozeable reminders, with mark-done and per-reminder on/off
 - [ ] Home screen widgets for zero-open logging
+- [ ] Waking a *closed* app when a reminder falls due. Not possible for a
+      serverless PWA: web push needs a server holding a subscription, and
+      Notification Triggers was withdrawn before it shipped. It would arrive with
+      a native shell (Capacitor) or, opt-in, with the v0.3 sync server.
 
 ## v0.3 — Multiple caregivers
 
@@ -118,11 +123,25 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
       inventing reference numbers for a measurement parents show to doctors is
       not something this project will do.
 
+## Languages, in priority order
+
+The plumbing is done; a new language is one file in `src/i18n/messages/` plus an
+entry in `locales.ts`. **Help especially wanted.**
+
+1. **Tamil (ta)** — next up, and the priority.
+2. **Hindi (hi), Telugu (te), Kannada (kn), Malayalam (ml), Bengali (bn), Marathi
+   (mr)** — Indian languages ahead of European ones. India has more births per
+   year than any other country and almost no baby tracker speaks these languages.
+3. Everything else, as people bring it.
+
+Spanish shipped first only because it proved the plumbing — plurals, accents,
+placeholder parity and a 24-hour clock — in a language the drift tests could
+check. It is still awaiting native review, and that review is welcome, but it was
+never meant to signal that European languages come first.
+
 ## Always
 
-- [ ] More translations — **help especially wanted**. The plumbing is done; a new
-      language is one file in `src/i18n/messages/` plus an entry in `locales.ts`.
-- [ ] Native review of the Spanish catalogue, especially medical-adjacent copy
+- [ ] More translations, in the order above
 - [ ] Accessibility improvements
 - [ ] Keeping the bundle small enough to be genuinely offline-first
 - [ ] Never adding an analytics SDK, an ad network, or a paywall

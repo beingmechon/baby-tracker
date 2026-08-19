@@ -4,7 +4,7 @@ import type { BabyStore } from '@/app/useBabyStore'
 import { toCsv } from '@/data/csv'
 import { downloadTextFile, exportFilename, readTextFile } from '@/data/download'
 import { localDateKey } from '@/domain/time'
-import type { VolumeUnit } from '@/domain/types'
+import type { MeasureSystem, Sex, VolumeUnit } from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
 import { LOCALES, findLocale, type LocaleCode, type MessageKey } from '@/i18n/locales'
 import { RuleLabel } from './RuleLabel'
@@ -29,6 +29,18 @@ const VOLUME_UNITS = [
   { value: 'oz', label: 'settings.volumeUnit.oz' },
 ] as const satisfies readonly { value: VolumeUnit; label: MessageKey }[]
 
+const MEASURE_SYSTEMS = [
+  { value: 'metric', label: 'settings.measureUnit.metric' },
+  { value: 'imperial', label: 'settings.measureUnit.imperial' },
+] as const satisfies readonly { value: MeasureSystem; label: MessageKey }[]
+
+/** null is a real option, not an absence: recording it is the parent's choice. */
+const SEXES = [
+  { value: null, label: 'settings.sex.unset' },
+  { value: 'male', label: 'settings.sex.male' },
+  { value: 'female', label: 'settings.sex.female' },
+] as const satisfies readonly { value: Sex | null; label: MessageKey }[]
+
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
 export function SettingsScreen({
@@ -45,6 +57,7 @@ export function SettingsScreen({
   const [confirmingWipe, setConfirmingWipe] = useState(false)
   const [name, setName] = useState(activeBaby?.name ?? '')
   const [birthDate, setBirthDate] = useState(activeBaby?.birthDate ?? '')
+  const [sex, setSex] = useState<Sex | null>(activeBaby?.sex ?? null)
 
   /** An hour label in the reader's locale, so es shows 21:00 rather than 9:00 pm. */
   function hourLabel(hour: number): string {
@@ -113,6 +126,7 @@ export function SettingsScreen({
       await store.updateBaby(activeBaby.id, {
         name: trimmed,
         birthDate: birthDate === '' ? null : birthDate,
+        sex,
       })
       setMessage(t.t('toast.detailsSaved'))
     } catch (cause) {
@@ -184,6 +198,28 @@ export function SettingsScreen({
                   onChange={(e) => setBirthDate(e.target.value)}
                 />
               </div>
+              <div className="field">
+                <span className="field-label" id="settings-sex-label">
+                  {t.t('settings.sex')}
+                </span>
+                <div
+                  className="segmented"
+                  role="group"
+                  aria-labelledby="settings-sex-label"
+                >
+                  {SEXES.map(({ value, label }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      aria-pressed={sex === value}
+                      onClick={() => setSex(value)}
+                    >
+                      {t.t(label)}
+                    </button>
+                  ))}
+                </div>
+                <p className="field-note">{t.t('settings.sexNote')}</p>
+              </div>
               <button
                 type="button"
                 className="button"
@@ -234,6 +270,28 @@ export function SettingsScreen({
                     type="button"
                     aria-pressed={settings.volumeUnit === value}
                     onClick={() => onChange({ volumeUnit: value })}
+                  >
+                    {t.t(label)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <span className="field-label" id="settings-measure-label">
+                {t.t('settings.measureUnit')}
+              </span>
+              <div
+                className="segmented"
+                role="group"
+                aria-labelledby="settings-measure-label"
+              >
+                {MEASURE_SYSTEMS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={settings.measureSystem === value}
+                    onClick={() => onChange({ measureSystem: value })}
                   >
                     {t.t(label)}
                   </button>

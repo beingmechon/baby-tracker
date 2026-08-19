@@ -1,10 +1,12 @@
-import type { Baby, BabyEvent, Id, Timestamp } from '@/domain/types'
+import type { Reminder } from '@/domain/reminders'
+import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 import { newId } from './ids'
 import {
   DB_NAME,
   DB_VERSION,
   STORE_BABIES,
   STORE_EVENTS,
+  STORE_REMINDERS,
   openDatabase,
   requestToPromise,
   transactionDone,
@@ -14,9 +16,10 @@ import type {
   ExportBundle,
   ImportResult,
   NewEvent,
+  NewReminder,
   Repository,
 } from './repository'
-import { parseBaby, parseEvent } from './validate'
+import { parseBaby, parseEvent, parseReminder } from './validate'
 
 export interface RepositoryOptions {
   /** Injectable so tests can control time and ids. */
@@ -67,10 +70,19 @@ export class IndexedDbRepository implements Repository {
 
   async listBabies(): Promise<Baby[]> {
     const babies = await this.readAll<Baby>(STORE_BABIES)
-    return babies.sort((a, b) => a.createdAt - b.createdAt)
+    return babies
+      // Records written before growth tracking existed have no `sex` key at all.
+      // Normalising on read means the rest of the app never has to distinguish
+      // "not recorded" from "written by an older version".
+      .map((baby) => ({ ...baby, sex: baby.sex ?? null }))
+      .sort((a, b) => a.createdAt - b.createdAt)
   }
 
-  async createBaby(input: { name: string; birthDate: string | null }): Promise<Baby> {
+  async createBaby(input: {
+    name: string
+    birthDate: string | null
+    sex?: Sex | null
+  }): Promise<Baby> {
     const name = input.name.trim()
     if (name.length === 0) throw new Error('A baby needs a name')
 
@@ -78,6 +90,7 @@ export class IndexedDbRepository implements Repository {
       id: this.generateId(),
       name,
       birthDate: input.birthDate,
+      sex: input.sex ?? null,
       createdAt: this.now(),
     }
     const db = await this.db()
@@ -107,14 +120,20 @@ export class IndexedDbRepository implements Repository {
 
   async deleteBaby(id: Id): Promise<void> {
     const db = await this.db()
-    const tx = db.transaction([STORE_BABIES, STORE_EVENTS], 'readwrite')
+    const tx = db.transaction(
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      'readwrite',
+    )
     tx.objectStore(STORE_BABIES).delete(id)
 
-    // Cascade, so deleting a profile leaves no orphaned events behind.
-    const index = tx.objectStore(STORE_EVENTS).index('babyId')
-    const keys = await requestToPromise<IDBValidKey[]>(index.getAllKeys(id))
-    const events = tx.objectStore(STORE_EVENTS)
-    for (const key of keys) events.delete(key)
+    // Cascade, so deleting a profile leaves no orphaned rows behind.
+    for (const storeName of [STORE_EVENTS, STORE_REMINDERS]) {
+      const store = tx.objectStore(storeName)
+      const keys = await requestToPromise<IDBValidKey[]>(
+        store.index('babyId').getAllKeys(id),
+      )
+      for (const key of keys) store.delete(key)
+    }
 
     await transactionDone(tx)
   }
@@ -183,10 +202,68 @@ export class IndexedDbRepository implements Repository {
     await transactionDone(tx)
   }
 
+  async listReminders(babyId: Id): Promise<Reminder[]> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_REMINDERS, 'readonly')
+    const index = tx.objectStore(STORE_REMINDERS).index('babyId')
+    const reminders = await requestToPromise<Reminder[]>(index.getAll(babyId))
+    await transactionDone(tx)
+    return reminders.sort((a, b) => a.createdAt - b.createdAt)
+  }
+
+  async addReminder(babyId: Id, reminder: NewReminder): Promise<Reminder> {
+    const timestamp = this.now()
+    const stored: Reminder = {
+      ...reminder,
+      id: this.generateId(),
+      babyId,
+      lastDoneAt: null,
+      lastAlertedAt: null,
+      snoozedUntil: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }
+    const db = await this.db()
+    const tx = db.transaction(STORE_REMINDERS, 'readwrite')
+    tx.objectStore(STORE_REMINDERS).put(stored)
+    await transactionDone(tx)
+    return stored
+  }
+
+  async updateReminder(id: Id, patch: Partial<Reminder>): Promise<Reminder> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_REMINDERS, 'readwrite')
+    const store = tx.objectStore(STORE_REMINDERS)
+    const existing = await requestToPromise<Reminder | undefined>(store.get(id))
+    if (existing === undefined) {
+      tx.abort()
+      throw new Error(`No reminder with id ${id}`)
+    }
+    const updated: Reminder = {
+      ...existing,
+      ...patch,
+      id: existing.id,
+      babyId: existing.babyId,
+      createdAt: existing.createdAt,
+      updatedAt: this.now(),
+    }
+    store.put(updated)
+    await transactionDone(tx)
+    return updated
+  }
+
+  async deleteReminder(id: Id): Promise<void> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_REMINDERS, 'readwrite')
+    tx.objectStore(STORE_REMINDERS).delete(id)
+    await transactionDone(tx)
+  }
+
   async exportAll(): Promise<ExportBundle> {
-    const [babies, events] = await Promise.all([
+    const [babies, events, reminders] = await Promise.all([
       this.readAll<Baby>(STORE_BABIES),
       this.readAll<BabyEvent>(STORE_EVENTS),
+      this.readAll<Reminder>(STORE_REMINDERS),
     ])
     return {
       format: 'baby-tracker-export',
@@ -194,6 +271,7 @@ export class IndexedDbRepository implements Repository {
       exportedAt: this.now(),
       babies,
       events: events.sort((a, b) => a.startedAt - b.startedAt),
+      reminders,
     }
   }
 
@@ -213,24 +291,35 @@ export class IndexedDbRepository implements Repository {
 
     const rawBabies = Array.isArray(candidate.babies) ? candidate.babies : []
     const rawEvents = Array.isArray(candidate.events) ? candidate.events : []
+    // Absent from every export written before v0.2, which must still import.
+    const rawReminders = Array.isArray(candidate.reminders) ? candidate.reminders : []
 
     const babies = rawBabies.map(parseBaby).filter((b): b is Baby => b !== null)
     const events = rawEvents.map(parseEvent).filter((e): e is BabyEvent => e !== null)
+    const reminders = rawReminders
+      .map(parseReminder)
+      .filter((r): r is Reminder => r !== null)
 
     // An event whose baby is in neither the file nor the store would be
     // invisible in the UI forever, so it is dropped rather than silently kept.
     const existingIds = new Set((await this.listBabies()).map((b) => b.id))
     for (const baby of babies) existingIds.add(baby.id)
     const importable = events.filter((event) => existingIds.has(event.babyId))
+    const importableReminders = reminders.filter((r) => existingIds.has(r.babyId))
 
     const db = await this.db()
-    const tx = db.transaction([STORE_BABIES, STORE_EVENTS], 'readwrite')
+    const tx = db.transaction(
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      'readwrite',
+    )
     const babyStore = tx.objectStore(STORE_BABIES)
     const eventStore = tx.objectStore(STORE_EVENTS)
+    const reminderStore = tx.objectStore(STORE_REMINDERS)
     for (const baby of babies) babyStore.put(baby)
     // put() by id makes import idempotent: importing the same file twice
     // overwrites rather than duplicating.
     for (const event of importable) eventStore.put(event)
+    for (const reminder of importableReminders) reminderStore.put(reminder)
     await transactionDone(tx)
 
     const skipped: ImportResult['skipped'] = []
@@ -252,19 +341,30 @@ export class IndexedDbRepository implements Repository {
         count: events.length - importable.length,
       })
     }
+    if (rawReminders.length > importableReminders.length) {
+      skipped.push({
+        reason: 'malformed or orphaned reminders',
+        count: rawReminders.length - importableReminders.length,
+      })
+    }
 
     return {
       babiesImported: babies.length,
       eventsImported: importable.length,
+      remindersImported: importableReminders.length,
       skipped,
     }
   }
 
   async clearAll(): Promise<void> {
     const db = await this.db()
-    const tx = db.transaction([STORE_BABIES, STORE_EVENTS], 'readwrite')
+    const tx = db.transaction(
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      'readwrite',
+    )
     tx.objectStore(STORE_BABIES).clear()
     tx.objectStore(STORE_EVENTS).clear()
+    tx.objectStore(STORE_REMINDERS).clear()
     await transactionDone(tx)
   }
 }

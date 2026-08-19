@@ -22,9 +22,10 @@ export function transactionDone(tx: IDBTransaction): Promise<void> {
 }
 
 export const DB_NAME = 'baby-tracker'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 export const STORE_BABIES = 'babies'
 export const STORE_EVENTS = 'events'
+export const STORE_REMINDERS = 'reminders'
 
 /**
  * Opens the database, running migrations as needed.
@@ -48,6 +49,13 @@ export function openDatabase(name = DB_NAME, version = DB_VERSION): Promise<IDBD
         // so that compound index carries essentially all query load.
         events.createIndex('babyId_startedAt', ['babyId', 'startedAt'])
         events.createIndex('babyId', 'babyId')
+      }
+
+      if (oldVersion < 2) {
+        // Reminders, added in v0.2. A handful of rows per baby, always read as a
+        // whole set, so `babyId` is the only index worth carrying.
+        const reminders = db.createObjectStore(STORE_REMINDERS, { keyPath: 'id' })
+        reminders.createIndex('babyId', 'babyId')
       }
     }
 

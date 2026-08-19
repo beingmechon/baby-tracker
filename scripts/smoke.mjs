@@ -16,7 +16,10 @@ import { join } from 'node:path'
 
 const PORT = 4317
 const BASE = `http://localhost:${PORT}`
-const SHOTS = process.env.SHOT_DIR ?? join(process.cwd(), 'docs', 'screenshots')
+// Default to the gitignored scratch directory: a routine verification run must not
+// dirty the working tree. `npm run screenshots` opts in to refreshing the committed
+// README images, and CI sets SHOT_DIR to a temp path.
+const SHOTS = process.env.SHOT_DIR ?? join(process.cwd(), 'screenshots')
 
 let failures = 0
 
@@ -177,11 +180,21 @@ try {
   await page.waitForTimeout(1500)
   await page.getByRole('button', { name: 'Wake up' }).click()
   await page.getByText('Sleep ended').waitFor()
-  // Nap or night sleep depending on the wall clock — the classification is what
-  // is under test here, not which side of it we happen to land on.
+  // Identify the sleep row by its category marker, not by its title. Matching on
+  // the title made this assertion depend on the wall clock: a sleep started
+  // before 19:00 is a nap and after it is night sleep, and `/^Nap|.../` could
+  // never match anyway because a row's text begins with the time, not the title.
+  // It passed only while CI happened to run in the evening.
+  const sleepRow = page
+    .locator('.timeline-row')
+    .filter({ has: page.locator('.timeline-mark[data-category="sleep"]') })
+    .first()
+  check('ending the sleep records it', await sleepRow.isVisible())
+
+  const sleepTitle = await sleepRow.locator('.timeline-title').innerText()
   check(
-    'ending the sleep records it',
-    await page.locator('.timeline-row', { hasText: /^Nap|Night sleep/ }).isVisible(),
+    `it is classified as a nap or night sleep (${sleepTitle})`,
+    ['Nap', 'Night sleep'].includes(sleepTitle),
   )
   check(
     'the live marker is gone once the sleep ends',
@@ -209,6 +222,191 @@ try {
   check(
     'the note is kept',
     await page.getByText('checked with the midwife').isVisible(),
+  )
+
+  console.log('\n▸ Growth')
+  // Percentiles need a sex to pick the right WHO reference; the app hides them
+  // rather than guessing, so set it first and check the guard both ways.
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const growthSettings = page.locator('.settings-group').first()
+  await growthSettings.getByRole('button', { name: 'Girl' }).click()
+  await page.getByRole('button', { name: 'Save details' }).click()
+  await page.getByText('Details saved.').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  const growthSheet = page.locator('.sheet')
+  await growthSheet.getByLabel('Value (kg)').fill('5.6')
+  await growthSheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  check(
+    'a weight reaches the timeline in the parent\u2019s own units',
+    await page
+      .locator('.timeline-row', { hasText: 'Weight' })
+      .locator('text=5.6 kg')
+      .isVisible(),
+  )
+  check(
+    'the home ledger shows the latest weight',
+    (await page
+      .locator('.ledger-row', { hasText: 'Weight' })
+      .locator('.ledger-value')
+      .innerText()) === '5.6 kg',
+  )
+
+  // The end-to-end unit path: stored canonically in grams, read back in pounds.
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Imperial' }).click()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  const imperialWeight = await page
+    .locator('.ledger-row', { hasText: 'Weight' })
+    .locator('.ledger-value')
+    .innerText()
+  check(
+    `the same weight reads in pounds and ounces (${imperialWeight})`,
+    /^\d+ lb \d+ oz$/.test(imperialWeight),
+  )
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Metric' }).click()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Growth', exact: true }).click()
+  await page.locator('.growth-headline').waitFor()
+  check(
+    'the growth screen leads with the measurement',
+    (await page.locator('.growth-headline').innerText()) === '5.6 kg',
+  )
+  const percentile = await page
+    .locator('.ledger-row', { hasText: 'Percentile' })
+    .locator('.ledger-note')
+    .innerText()
+  check(
+    `a WHO percentile is computed for the baby\u2019s age (${percentile})`,
+    /(\d+(st|nd|rd|th) percentile for age|below the 1st|above the 99th)/.test(percentile),
+  )
+  check(
+    'the chart draws the reference curves and the baby\u2019s own line',
+    (await page.locator('.chart-reference').count()) === 3 &&
+      (await page.locator('.chart-series').count()) === 1,
+  )
+  check(
+    'the chart is labelled for a screen reader',
+    /percentile curves/.test(
+      (await page.locator('.chart-svg').getAttribute('aria-label')) ?? '',
+    ),
+  )
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'growth.png') })
+
+  // Head circumference ships no WHO reference. The app must say so rather than
+  // invent a curve behind a number a parent shows to a doctor.
+  await page.getByRole('button', { name: 'Head', exact: true }).click()
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  await page.locator('.sheet').getByLabel('Value (cm)').fill('39')
+  await page.locator('.sheet').getByRole('button', { name: 'Save measurement' }).click()
+  await page.locator('.growth-headline').waitFor()
+  check(
+    'head circumference is tracked without a percentile',
+    (await page.locator('.growth-headline').innerText()) === '39 cm' &&
+      (await page.locator('.chart-reference').count()) === 0,
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Reminders')
+  // The empty state on the home screen leads to the reminders screen rather than
+  // opening a sheet in place, so this is two taps by design.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  const reminderSheet = page.locator('.sheet')
+  await reminderSheet
+    .getByLabel('Remind me about')
+    .selectOption({ label: 'Something else' })
+  await reminderSheet.getByLabel('Name').fill('Vitamin D drops')
+  await reminderSheet.getByLabel('Every').selectOption({ label: '24h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+
+  const vitaminRow = page.locator('.reminder-row', { hasText: 'Vitamin D drops' })
+  check('a custom reminder is listed under its own name', await vitaminRow.isVisible())
+  check(
+    'it counts down rather than claiming to be due',
+    /^in /.test(await vitaminRow.locator('.reminder-state').innerText()),
+  )
+  check(
+    'Snooze and Done stay off a reminder that is not due',
+    (await vitaminRow.getByRole('button', { name: 'Snooze' }).count()) === 0,
+  )
+
+  // The shortest interval the picker offers is 30 minutes, on purpose — a
+  // reminder that fires every minute is a way of breaking someone's phone. So the
+  // due, snooze and Done transitions belong to the unit tests, which own the
+  // clock; likewise the anchoring, which cannot be told apart from a
+  // count-from-creation reminder when the last feed was seconds ago. What the
+  // browser proves is the rest: that a reminder saves, renders on both screens,
+  // survives a restart, and can be turned off.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await reminderSheet.getByLabel('Every').selectOption({ label: '3h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  const feedRow = page.locator('.reminder-row', { hasText: 'Next feed' })
+  check(
+    'a reminder of a built-in kind is named for its kind',
+    await feedRow.isVisible(),
+  )
+  check(
+    'it shows both the countdown and the interval it repeats on',
+    /^in .+ · every 3h$/.test(await feedRow.locator('.reminder-state').innerText()),
+  )
+
+  // A plain click, not uncheck(): the toggle writes to storage and re-reads,
+  // which is this app's deliberate no-optimistic-updates rule, and Playwright's
+  // uncheck() retries the click when the state has not flipped yet — double
+  // toggling it straight back.
+  await feedRow.getByRole('checkbox').click()
+  await feedRow.locator('.reminder-state').filter({ hasText: 'Off' }).waitFor()
+  check(
+    'turning a reminder off says so plainly',
+    (await feedRow.getAttribute('data-state')) === 'off',
+  )
+  await feedRow.getByRole('checkbox').click()
+  await feedRow.locator('.reminder-state').filter({ hasText: /^in / }).waitFor()
+  check(
+    'and turning it back on resumes the countdown',
+    (await feedRow.getAttribute('data-state')) === 'upcoming',
+  )
+
+  await vitaminRow.getByRole('button', { name: /Vitamin D drops/ }).click()
+  await reminderSheet.getByLabel('Every').selectOption({ label: '12h' })
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+  await page.getByText('Reminder saved').waitFor()
+  // Wait for the row to catch up rather than sampling it. Every write here goes
+  // to storage and is read back before the UI changes, so there is a real gap
+  // between the toast and the row — sampling it made this check flake once.
+  await vitaminRow
+    .locator('.reminder-state')
+    .filter({ hasText: 'every 12h' })
+    .waitFor({ timeout: 5000 })
+    .catch(() => {})
+  const editedState = await vitaminRow.locator('.reminder-state').innerText()
+  check(
+    `editing a reminder keeps its name and changes its interval (${editedState})`,
+    editedState.includes('every 12h'),
+  )
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'reminders.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'reminders appear on the home screen as well',
+    await page.locator('.reminder-row', { hasText: 'Vitamin D drops' }).isVisible(),
+  )
+  check(
+    'the home screen does not offer a checkbox that could be hit by accident',
+    (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
   )
 
   console.log('\n▸ Themes')
@@ -315,6 +513,10 @@ try {
   check(
     'every entry is still there after a restart',
     (await page.locator('.timeline-row').count()) >= 5,
+  )
+  check(
+    'so are the reminders',
+    (await page.locator('.reminder-row').count()) === 2,
   )
 
   console.log('\n▸ Offline')

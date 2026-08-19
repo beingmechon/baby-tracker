@@ -1,9 +1,12 @@
+import { isValidInterval, type Reminder, type ReminderKind } from '@/domain/reminders'
 import type {
   Baby,
   BabyEvent,
   BottleContents,
   BreastSide,
   DiaperKind,
+  MeasureKind,
+  Sex,
   SleepKind,
 } from '@/domain/types'
 
@@ -41,6 +44,14 @@ const SIDES: readonly BreastSide[] = ['left', 'right']
 const CONTENTS: readonly BottleContents[] = ['breast_milk', 'formula']
 const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
+const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
+const SEXES: readonly Sex[] = ['male', 'female']
+const REMINDER_KIND_VALUES: readonly ReminderKind[] = [
+  'feed',
+  'diaper',
+  'pumping',
+  'custom',
+]
 
 /** ISO `YYYY-MM-DD`, or null. Anything else is dropped to null. */
 function isoDate(value: unknown): string | null {
@@ -58,6 +69,9 @@ export function parseBaby(value: unknown): Baby | null {
     id,
     name,
     birthDate: isoDate(value.birthDate),
+    // Absent in exports written before growth tracking existed, which must still
+    // import cleanly — the app simply hides percentiles until it is set.
+    sex: oneOf(value.sex, SEXES),
     createdAt: nonNegative(value.createdAt) ?? 0,
   }
 }
@@ -107,7 +121,53 @@ export function parseEvent(value: unknown): BabyEvent | null {
       if (kind === null) return null
       return { ...base, type: 'diaper', kind }
     }
+    case 'growth': {
+      const measure = oneOf(value.measure, MEASURES)
+      const measured = finiteNumber(value.value)
+      // A zero or negative weight is not a measurement, and it would produce a
+      // NaN z-score that then propagates into the chart.
+      if (measure === null || measured === null || measured <= 0) return null
+      return { ...base, type: 'growth', measure, value: measured }
+    }
     default:
       return null
+  }
+}
+
+/**
+ * A reminder from an export file.
+ *
+ * The interval is checked against the same rule the UI enforces, so a
+ * hand-edited file cannot install a reminder that fires every second.
+ */
+export function parseReminder(value: unknown): Reminder | null {
+  if (!isObject(value)) return null
+
+  const id = str(value.id)
+  const babyId = str(value.babyId)
+  const kind = oneOf(value.kind, REMINDER_KIND_VALUES)
+  const intervalMs = finiteNumber(value.intervalMs)
+  if (id === null || babyId === null || kind === null || intervalMs === null) return null
+  if (!isValidInterval(intervalMs)) return null
+
+  const createdAt = nonNegative(value.createdAt) ?? 0
+  const optionalTime = (candidate: unknown): number | null =>
+    candidate === null || candidate === undefined ? null : nonNegative(candidate)
+
+  return {
+    id,
+    babyId,
+    kind,
+    // A custom reminder with no label is legal; the UI falls back to the kind.
+    label: str(value.label) ?? '',
+    intervalMs,
+    // Anything other than an explicit `false` leaves the reminder on, matching
+    // how the app writes it.
+    enabled: value.enabled !== false,
+    lastDoneAt: optionalTime(value.lastDoneAt),
+    lastAlertedAt: optionalTime(value.lastAlertedAt),
+    snoozedUntil: optionalTime(value.snoozedUntil),
+    createdAt,
+    updatedAt: nonNegative(value.updatedAt) ?? createdAt,
   }
 }

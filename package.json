@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
+    "screenshots": "SHOT_DIR=docs/screenshots node scripts/smoke.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "fonts": "node scripts/vendor-fonts.mjs"

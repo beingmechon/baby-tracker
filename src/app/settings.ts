@@ -2,7 +2,7 @@ import type { NightWindow } from '@/domain/sleep'
 import { DEFAULT_NIGHT_WINDOW } from '@/domain/sleep'
 import type { LocaleCode } from '@/i18n/locales'
 import { findLocale, negotiateLocale } from '@/i18n/locales'
-import type { Id, VolumeUnit } from '@/domain/types'
+import type { Id, MeasureSystem, VolumeUnit } from '@/domain/types'
 
 export type ThemeMode = 'auto' | 'day' | 'dark' | 'night'
 
@@ -12,6 +12,9 @@ export interface Settings {
   /** null means "follow the browser's languages". */
   locale: LocaleCode | null
   volumeUnit: VolumeUnit
+  /** Units for weight and length. Independent of `volumeUnit` on purpose: plenty
+   *  of parents weigh in kilograms and still measure bottles in ounces. */
+  measureSystem: MeasureSystem
   themeMode: ThemeMode
   nightWindow: NightWindow
   /** Whether the wake-window display shows age-based guidance. */
@@ -22,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   activeBabyId: null,
   locale: null,
   volumeUnit: 'ml',
+  measureSystem: 'metric',
   themeMode: 'auto',
   nightWindow: DEFAULT_NIGHT_WINDOW,
   showWakeWindowGuidance: true,
@@ -62,6 +66,7 @@ export function loadSettings(): Settings {
           ? (value.locale as LocaleCode)
           : null,
       volumeUnit: value.volumeUnit === 'oz' ? 'oz' : 'ml',
+      measureSystem: value.measureSystem === 'imperial' ? 'imperial' : 'metric',
       themeMode:
         value.themeMode === 'day' ||
         value.themeMode === 'dark' ||

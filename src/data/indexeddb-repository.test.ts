@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { MINUTE_MS } from '@/domain/time'
+import { HOUR_MS, MINUTE_MS } from '@/domain/time'
 import type { BabyEvent, SleepEvent } from '@/domain/types'
 import { at } from '@/test/factories'
+import { STORE_BABIES, transactionDone } from './idb'
 import { IndexedDbRepository } from './indexeddb-repository'
 
 /**
@@ -293,14 +294,271 @@ describe('export and import', () => {
   })
 })
 
+
+describe('reminders', () => {
+  it('stamps identity and starts every state timestamp at null', async () => {
+    const baby = await seedBaby()
+    const reminder = await repo.addReminder(baby.id, {
+      kind: 'feed',
+      label: '',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+    })
+    expect(reminder).toMatchObject({
+      babyId: baby.id,
+      kind: 'feed',
+      lastDoneAt: null,
+      lastAlertedAt: null,
+      snoozedUntil: null,
+      createdAt: clock,
+    })
+  })
+
+  it('scopes the list to one baby, oldest first', async () => {
+    const mira = await seedBaby('Mira')
+    const arun = await seedBaby('Arun')
+    await repo.addReminder(mira.id, {
+      kind: 'feed',
+      label: '',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+    })
+    clock += MINUTE_MS
+    await repo.addReminder(mira.id, {
+      kind: 'custom',
+      label: 'Vitamin D',
+      intervalMs: 24 * HOUR_MS,
+      enabled: true,
+    })
+    await repo.addReminder(arun.id, {
+      kind: 'pumping',
+      label: '',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+    })
+
+    const forMira = await repo.listReminders(mira.id)
+    expect(forMira.map((r) => r.kind)).toEqual(['feed', 'custom'])
+    await expect(repo.listReminders(arun.id)).resolves.toHaveLength(1)
+  })
+
+  it('updates a reminder and bumps updatedAt without touching identity', async () => {
+    const baby = await seedBaby()
+    const reminder = await repo.addReminder(baby.id, {
+      kind: 'custom',
+      label: 'Tummy time',
+      intervalMs: 4 * HOUR_MS,
+      enabled: true,
+    })
+    clock += MINUTE_MS
+    const updated = await repo.updateReminder(reminder.id, {
+      enabled: false,
+      snoozedUntil: clock + MINUTE_MS,
+    })
+    expect(updated).toMatchObject({
+      id: reminder.id,
+      babyId: baby.id,
+      createdAt: reminder.createdAt,
+      enabled: false,
+      updatedAt: clock,
+    })
+  })
+
+  it('rejects an update to a reminder that does not exist', async () => {
+    await expect(repo.updateReminder('nope', { enabled: false })).rejects.toThrow(
+      /No reminder/,
+    )
+  })
+
+  it('deletes a reminder', async () => {
+    const baby = await seedBaby()
+    const reminder = await repo.addReminder(baby.id, {
+      kind: 'diaper',
+      label: '',
+      intervalMs: 2 * HOUR_MS,
+      enabled: true,
+    })
+    await repo.deleteReminder(reminder.id)
+    await expect(repo.listReminders(baby.id)).resolves.toEqual([])
+  })
+
+  it('cascades a delete to that baby’s reminders', async () => {
+    const baby = await seedBaby()
+    await repo.addReminder(baby.id, {
+      kind: 'feed',
+      label: '',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+    })
+    await repo.deleteBaby(baby.id)
+    await expect(repo.listReminders(baby.id)).resolves.toEqual([])
+  })
+
+  it('round-trips through an export', async () => {
+    const baby = await seedBaby()
+    await repo.addReminder(baby.id, {
+      kind: 'custom',
+      label: 'Vitamin D',
+      intervalMs: 24 * HOUR_MS,
+      enabled: true,
+    })
+    const bundle = await repo.exportAll()
+    expect(bundle.reminders).toHaveLength(1)
+
+    const fresh = new IndexedDbRepository({
+      databaseName: `test-db-${counter}-restore`,
+      now: () => clock,
+    })
+    try {
+      const result = await fresh.importBundle(bundle)
+      expect(result.remindersImported).toBe(1)
+      const restored = await fresh.listReminders(baby.id)
+      expect(restored[0]).toMatchObject({ label: 'Vitamin D', kind: 'custom' })
+    } finally {
+      await fresh.close()
+    }
+  })
+
+  it('imports an export written before reminders existed', async () => {
+    // Exports from v0.1 have no `reminders` key at all. They must restore every
+    // baby and event rather than being refused.
+    const baby = await seedBaby()
+    const bundle = await repo.exportAll()
+    const legacy = { ...bundle, reminders: undefined }
+
+    const fresh = new IndexedDbRepository({
+      databaseName: `test-db-${counter}-legacy`,
+      now: () => clock,
+    })
+    try {
+      const result = await fresh.importBundle(legacy)
+      expect(result.babiesImported).toBe(1)
+      expect(result.remindersImported).toBe(0)
+      expect(result.skipped).toEqual([])
+      expect((await fresh.listBabies())[0]?.name).toBe(baby.name)
+    } finally {
+      await fresh.close()
+    }
+  })
+
+  it('drops a reminder whose interval would fire continuously', async () => {
+    const baby = await seedBaby()
+    const bundle = await repo.exportAll()
+    const tampered = {
+      ...bundle,
+      reminders: [
+        {
+          id: 'r-bad',
+          babyId: baby.id,
+          kind: 'feed',
+          label: '',
+          intervalMs: 10,
+          enabled: true,
+          createdAt: clock,
+          updatedAt: clock,
+        },
+      ],
+    }
+
+    const fresh = new IndexedDbRepository({
+      databaseName: `test-db-${counter}-tampered`,
+      now: () => clock,
+    })
+    try {
+      const result = await fresh.importBundle(tampered)
+      expect(result.remindersImported).toBe(0)
+      expect(result.skipped).toContainEqual({
+        reason: 'malformed or orphaned reminders',
+        count: 1,
+      })
+    } finally {
+      await fresh.close()
+    }
+  })
+})
+
+describe('schema migration', () => {
+  /**
+   * Builds a genuine version-1 database: the schema as v0.1 shipped it.
+   *
+   * Deliberately not via `openDatabase(name, 1)`. The append-only
+   * `if (oldVersion < n)` blocks are not gated on the version being *requested*,
+   * so opening a fresh database at version 1 runs the version-2 block too and
+   * creates the very store this test needs to be absent. That is harmless in the
+   * app, which only ever opens at DB_VERSION, but it makes that helper useless
+   * for simulating an older client.
+   */
+  function openLegacyDatabase(name: string): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(name, 1)
+      request.onupgradeneeded = () => {
+        const db = request.result
+        db.createObjectStore('babies', { keyPath: 'id' })
+        const events = db.createObjectStore('events', { keyPath: 'id' })
+        events.createIndex('babyId_startedAt', ['babyId', 'startedAt'])
+        events.createIndex('babyId', 'babyId')
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error ?? new Error('open failed'))
+    })
+  }
+
+  it('adds the reminders store to a database created before it existed', async () => {
+    // The case that matters on a real phone: version 1 is already on disk with a
+    // baby in it. Opening at version 2 must add the new store and keep the data.
+    const name = `test-db-${counter}-migrate`
+    const v1 = await openLegacyDatabase(name)
+    expect([...v1.objectStoreNames]).not.toContain('reminders')
+
+    const tx = v1.transaction(STORE_BABIES, 'readwrite')
+    tx.objectStore(STORE_BABIES).put({
+      id: 'existing',
+      name: 'Mira',
+      birthDate: '2026-01-01',
+      createdAt: clock,
+    })
+    await transactionDone(tx)
+    v1.close()
+
+    const migrated = new IndexedDbRepository({ databaseName: name, now: () => clock })
+    try {
+      const babies = await migrated.listBabies()
+      expect(babies).toHaveLength(1)
+      expect(babies[0]?.name).toBe('Mira')
+      // A row written before the sex field existed reads back as "not recorded".
+      expect(babies[0]?.sex).toBeNull()
+
+      // And the new store works, rather than merely existing.
+      const reminder = await migrated.addReminder('existing', {
+        kind: 'feed',
+        label: '',
+        intervalMs: 3 * HOUR_MS,
+        enabled: true,
+      })
+      await expect(migrated.listReminders('existing')).resolves.toEqual([reminder])
+    } finally {
+      await migrated.close()
+    }
+  })
+})
+
 describe('clearAll', () => {
-  it('removes every baby and every event', async () => {
+  it('removes every baby, event and reminder', async () => {
     const baby = await seedBaby()
     await repo.addEvent(baby.id, { type: 'diaper', kind: 'wet', startedAt: clock })
+    await repo.addReminder(baby.id, {
+      kind: 'feed',
+      label: '',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+    })
 
     await repo.clearAll()
 
     await expect(repo.listBabies()).resolves.toHaveLength(0)
     await expect(repo.listEvents(baby.id)).resolves.toHaveLength(0)
+    // The privacy promise is "delete everything", so a forgotten store here would
+    // leave a reminder behind after the user asked for a wipe.
+    await expect(repo.listReminders(baby.id)).resolves.toHaveLength(0)
   })
 })
