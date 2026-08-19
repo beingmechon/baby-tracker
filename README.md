@@ -61,6 +61,8 @@ This is an early release, deliberately small, and genuinely usable right now:
   Organization's own reference curves. Gain per week between weigh-ins. This is
   the feature most trackers put behind a subscription; here it is just part of the
   app.
+- **More than one baby** — switch from the app bar; each one's log, growth and
+  reminders are entirely their own.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
   counted from your own log rather than from when the reminder last went off.
 - **Your language** — every string is translatable, with plurals, locale-aware
@@ -148,7 +150,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 13
+the result is checked by its deterministic AI-tell detector: **0 findings across 16
 screens and 16 rules**, down from 13.
 
 ## Tech

@@ -55,6 +55,7 @@ export function SettingsScreen({
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmingWipe, setConfirmingWipe] = useState(false)
+  const [confirmingBabyDelete, setConfirmingBabyDelete] = useState(false)
   const [name, setName] = useState(activeBaby?.name ?? '')
   const [birthDate, setBirthDate] = useState(activeBaby?.birthDate ?? '')
   const [sex, setSex] = useState<Sex | null>(activeBaby?.sex ?? null)
@@ -131,6 +132,26 @@ export function SettingsScreen({
       setMessage(t.t('toast.detailsSaved'))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t.t('error.couldNotSave'))
+    }
+  }
+
+  /**
+   * Deleting one baby, offered only when another remains.
+   *
+   * With a single baby this would be indistinguishable from "delete all my data",
+   * which already exists below and says so much more clearly. The repository
+   * cascades to that baby's events and reminders.
+   */
+  async function deleteThisBaby() {
+    if (activeBaby === null) return
+    const remaining = store.babies.filter((baby) => baby.id !== activeBaby.id)[0]
+    try {
+      await store.deleteBaby(activeBaby.id)
+      onChange({ activeBabyId: remaining?.id ?? null })
+      setConfirmingBabyDelete(false)
+      setMessage(t.t('toast.babyDeleted', { name: activeBaby.name }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t.t('error.couldNotDelete'))
     }
   }
 
@@ -228,6 +249,42 @@ export function SettingsScreen({
               >
                 {t.t('settings.saveDetails')}
               </button>
+
+              {store.babies.length > 1 &&
+                (confirmingBabyDelete ? (
+                  <>
+                    <p className="banner" data-tone="error">
+                      {t.t('babies.deleteWarning', { name: activeBaby.name })}
+                    </p>
+                    <div className="button-row">
+                      <button
+                        type="button"
+                        className="button"
+                        data-variant="secondary"
+                        onClick={() => setConfirmingBabyDelete(false)}
+                      >
+                        {t.t('settings.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        className="button"
+                        data-variant="danger"
+                        onClick={() => void deleteThisBaby()}
+                      >
+                        {t.t('babies.confirmDelete', { name: activeBaby.name })}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="button"
+                    data-variant="ghost"
+                    onClick={() => setConfirmingBabyDelete(true)}
+                  >
+                    {t.t('babies.delete')}
+                  </button>
+                ))}
             </div>
           </section>
         )}

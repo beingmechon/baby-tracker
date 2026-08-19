@@ -409,6 +409,91 @@ try {
     (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
   )
 
+  console.log('\n▸ More than one baby')
+  // The property that matters: each baby's log is their own. A tracker that
+  // showed one twin's feeds under the other would be worse than no tracker.
+  const feedRowsForMira = await page.locator('.timeline-row').count()
+  await page.getByRole('button', { name: /Mira/ }).click()
+  const babySheet = page.locator('.sheet')
+  await babySheet.getByRole('button', { name: 'Add a baby' }).click()
+  await babySheet.getByLabel('Name').fill('Arun')
+  await babySheet.getByLabel('Date of birth').fill('2026-06-20')
+  await babySheet.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByText('Arun added').waitFor()
+
+  check(
+    'adding a baby switches to them',
+    (await page.locator('.appbar-name').innerText()) === 'Arun',
+  )
+  check(
+    'the new baby starts with an empty timeline',
+    (await page.locator('.timeline-row').count()) === 0 && feedRowsForMira > 0,
+  )
+  check(
+    'and with no reminders of their own',
+    (await page.locator('.reminder-row').count()) === 0,
+  )
+
+  // A measurement logged for the wrong baby would end up on the wrong growth
+  // chart, which is the kind of error a parent would carry to a doctor.
+  await page.getByRole('button', { name: 'Wet' }).click()
+  await page.getByText('Wet diaper logged').waitFor()
+  check(
+    'logging goes to the baby who is open',
+    (await page.locator('.timeline-row').count()) === 1,
+  )
+
+  await page.getByRole('button', { name: /Arun/ }).click()
+  await babySheet.getByRole('button', { name: /Mira/ }).click()
+  await page.getByText(/Now logging for Mira/).waitFor()
+  // The toast fires on the switch; the entries arrive a tick later from storage.
+  // Waiting for the rows rather than sampling them is the difference between a
+  // deterministic check and one that passes on a fast machine.
+  await page.locator('.timeline-row').nth(feedRowsForMira - 1).waitFor()
+  check(
+    'switching back restores that baby’s own entries',
+    (await page.locator('.appbar-name').innerText()) === 'Mira' &&
+      (await page.locator('.timeline-row').count()) === feedRowsForMira,
+  )
+  await page.locator('.reminder-row').nth(1).waitFor()
+  check(
+    'and their reminders',
+    (await page.locator('.reminder-row').count()) === 2,
+  )
+
+  // The switcher marks who is open rather than relying on position.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  check(
+    'the switcher says which baby is open',
+    (await babySheet
+      .locator('.baby-row[aria-pressed="true"]')
+      .locator('.baby-name')
+      .innerText()) === 'Mira',
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'babies.png') })
+  await babySheet.getByRole('button', { name: 'Close' }).click()
+
+  // Deleting a baby takes their entries and leaves the others alone.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  await babySheet.getByRole('button', { name: /Arun/ }).click()
+  await page.getByText(/Now logging for Arun/).waitFor()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Delete this baby' }).click()
+  await page.getByRole('button', { name: 'Delete Arun' }).click()
+  await page.getByText('Arun deleted').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'deleting a baby falls back to the one that remains',
+    (await page.locator('.appbar-name').innerText()) === 'Mira' &&
+      (await page.locator('.timeline-row').count()) === feedRowsForMira,
+  )
+  check(
+    'and the per-baby delete is hidden once only one baby is left',
+    await page.evaluate(() => !document.body.innerText.includes('Delete this baby')),
+  )
+
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions
   // and the screenshots do not depend on what time the suite happens to run.

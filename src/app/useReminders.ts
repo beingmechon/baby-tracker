@@ -28,6 +28,9 @@ export interface ReminderStore {
   reload(): Promise<void>
 }
 
+/** Stable empty list, for the same reason `NO_EVENTS` exists in the event store. */
+const NO_REMINDERS: Reminder[] = []
+
 /**
  * Reminder state, plus the loop that turns a due reminder into a notification.
  *
@@ -43,16 +46,22 @@ export function useReminders(
   alert: (status: ReminderStatus) => Promise<void> | void,
 ): ReminderStore {
   const repository = useRepository()
-  const [reminders, setReminders] = useState<Reminder[]>([])
+  // Tagged with whose reminders these are, for the same reason the event store
+  // does it: switching baby must never show one baby's reminders under another's.
+  const [loaded, setLoaded] = useState<{ babyId: Id | null; reminders: Reminder[] }>({
+    babyId: null,
+    reminders: [],
+  })
   const [error, setError] = useState<string | null>(null)
+  const reminders = loaded.babyId === babyId ? loaded.reminders : NO_REMINDERS
 
   const reload = useCallback(async () => {
     if (babyId === null) {
-      setReminders([])
+      setLoaded({ babyId: null, reminders: [] })
       return
     }
     try {
-      setReminders(await repository.listReminders(babyId))
+      setLoaded({ babyId, reminders: await repository.listReminders(babyId) })
       setError(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not load reminders')

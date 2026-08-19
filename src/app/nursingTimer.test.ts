@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { MINUTE_MS } from '@/domain/time'
 import { at } from '@/test/factories'
 import {
   completeTimer,
+  loadTimer,
+  saveTimer,
   elapsedMs,
   hasElapsed,
   idleTimer,
@@ -126,5 +128,74 @@ describe('switchSide', () => {
     const first = switchSide(startTimer('left', T0), T0 + MINUTE_MS)
     const second = switchSide(first.next, T0 + 2 * MINUTE_MS)
     expect(second.next.side).toBe('left')
+  })
+})
+
+describe('persistence', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('restores a running timer, so locking the phone cannot lose a feed', () => {
+    const running = startTimer('right', T0)
+    saveTimer('baby-a', running)
+    expect(loadTimer('baby-a')).toEqual(running)
+  })
+
+  it('keeps each baby’s timer separate', () => {
+    // With twins, a timer running for one must not appear under the other — and
+    // must certainly not be saved as the other one's feed.
+    saveTimer('baby-a', startTimer('left', T0))
+    saveTimer('baby-b', startTimer('right', T0 + MINUTE_MS))
+
+    expect(loadTimer('baby-a')?.side).toBe('left')
+    expect(loadTimer('baby-b')?.side).toBe('right')
+  })
+
+  it('returns null for a baby with no timer', () => {
+    saveTimer('baby-a', startTimer('left', T0))
+    expect(loadTimer('baby-b')).toBeNull()
+  })
+
+  it('clears only that baby’s timer', () => {
+    saveTimer('baby-a', startTimer('left', T0))
+    saveTimer('baby-b', startTimer('right', T0))
+    saveTimer('baby-a', null)
+
+    expect(loadTimer('baby-a')).toBeNull()
+    expect(loadTimer('baby-b')).not.toBeNull()
+  })
+
+  it('saves nothing for a timer that was never started', () => {
+    saveTimer('baby-a', idleTimer('left'))
+    expect(loadTimer('baby-a')).toBeNull()
+  })
+
+  it('adopts a timer left running by the version before per-baby keys', () => {
+    // Upgrading mid-feed must not lose the feed.
+    const running = startTimer('left', T0)
+    localStorage.setItem('baby-tracker:nursing-timer', JSON.stringify(running))
+
+    expect(loadTimer('baby-a')).toEqual(running)
+    // Adopted once, then the old key is gone, so a second baby cannot inherit it.
+    expect(localStorage.getItem('baby-tracker:nursing-timer')).toBeNull()
+    expect(loadTimer('baby-b')).toBeNull()
+  })
+
+  it('does not let the legacy timer overwrite one this baby already has', () => {
+    saveTimer('baby-a', startTimer('right', T0 + MINUTE_MS))
+    localStorage.setItem(
+      'baby-tracker:nursing-timer',
+      JSON.stringify(startTimer('left', T0)),
+    )
+    expect(loadTimer('baby-a')?.side).toBe('right')
+  })
+
+  it('ignores stored junk rather than throwing', () => {
+    localStorage.setItem('baby-tracker:nursing-timer:baby-a', 'not json')
+    expect(loadTimer('baby-a')).toBeNull()
+
+    localStorage.setItem('baby-tracker:nursing-timer:baby-a', JSON.stringify({ side: 'x' }))
+    expect(loadTimer('baby-a')).toBeNull()
   })
 })

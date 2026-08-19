@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   completeTimer,
   elapsedMs,
@@ -36,6 +36,7 @@ import {
   formatVolume,
   measureName,
 } from '@/i18n/format'
+import { BabySwitcherSheet } from './BabySwitcherSheet'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
@@ -65,6 +66,7 @@ interface HomeProps {
   onOpenSettings: () => void
   onOpenGrowth: () => void
   onOpenReminders: () => void
+  onSwitchBaby: (babyId: string) => void
 }
 
 const QUICK_DIAPERS = [
@@ -84,14 +86,15 @@ export function Home({
   onOpenSettings,
   onOpenGrowth,
   onOpenReminders,
+  onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
   const { activeBaby, events, sleepInProgress } = store
 
   const [nursingTimer, setNursingTimer] = useState<NursingTimerState | null>(null)
-  const [openSheet, setOpenSheet] = useState<'nursing' | 'bottle' | 'growth' | null>(
-    null,
-  )
+  const [openSheet, setOpenSheet] = useState<
+    'nursing' | 'bottle' | 'growth' | 'babies' | null
+  >(null)
   const [editing, setEditing] = useState<BabyEvent | null>(null)
   const [dayAnchor, setDayAnchor] = useState<Timestamp>(() => startOfLocalDay(Date.now()))
   const [toast, setToast] = useState<string | null>(null)
@@ -101,14 +104,29 @@ export function Home({
   const nursingRunning = nursingTimer !== null && isRunning(nursingTimer)
   const now = useNow(sleepInProgress !== null || nursingRunning ? 1000 : 20_000)
 
-  // Restore a nursing timer left running when the app was last closed.
-  useEffect(() => {
-    setNursingTimer(loadTimer())
-  }, [])
+  const activeBabyId = activeBaby?.id ?? null
 
+  // Restore a nursing timer left running when the app was last closed, and swap
+  // to the right one when the baby changes.
   useEffect(() => {
-    saveTimer(nursingTimer)
-  }, [nursingTimer])
+    setNursingTimer(activeBabyId === null ? null : loadTimer(activeBabyId))
+  }, [activeBabyId])
+
+  /**
+   * Persists at the moment of change rather than in an effect on the timer.
+   *
+   * An effect would fire once more after the baby changed but before the reload
+   * had replaced the state, writing one baby's running timer under the other
+   * baby's key. Saving here means the write always uses the baby that was open
+   * when the user touched the timer.
+   */
+  const updateTimer = useCallback(
+    (next: NursingTimerState | null) => {
+      setNursingTimer(next)
+      if (activeBabyId !== null) saveTimer(activeBabyId, next)
+    },
+    [activeBabyId],
+  )
 
   useEffect(() => {
     if (toast === null) return
@@ -163,7 +181,7 @@ export function Home({
   }
 
   function openNursing() {
-    setNursingTimer((current) => current ?? idleTimer(suggestNextSide(lastSide)))
+    updateTimer(nursingTimer ?? idleTimer(suggestNextSide(lastSide)))
     setOpenSheet('nursing')
   }
 
@@ -174,7 +192,7 @@ export function Home({
       await store.logNursing(completed)
       setToast(t.t('toast.feedSaved'))
     }
-    setNursingTimer(null)
+    updateTimer(null)
     setOpenSheet(null)
     returnToToday()
   }
@@ -192,7 +210,7 @@ export function Home({
         }),
       )
     }
-    setNursingTimer(next)
+    updateTimer(next)
   }
 
   async function repeatLast() {
@@ -214,10 +232,18 @@ export function Home({
   return (
     <>
       <header className="appbar">
-        <div className="appbar-identity">
+        {/* The name is the switcher. With one baby it still opens — that is how a
+            second one gets added — so there is no state where the control
+            disappears and the parent has to hunt through settings. */}
+        <button
+          type="button"
+          className="appbar-identity appbar-switcher"
+          onClick={() => setOpenSheet('babies')}
+        >
           <span className="appbar-name">{activeBaby.name}</span>
           {age !== null && <span className="appbar-age">{age}</span>}
-        </div>
+          <span className="sr-only">{t.t('babies.switch')}</span>
+        </button>
         <button type="button" className="icon-button" onClick={onOpenSettings}>
           <SettingsIcon />
           <span className="sr-only">{t.t('action.settings')}</span>
@@ -440,15 +466,15 @@ export function Home({
           now={now}
           lastSide={lastSide}
           onToggle={() =>
-            setNursingTimer((current) =>
-              current === null ? null : toggleTimer(current, Date.now()),
+            updateTimer(
+              nursingTimer === null ? null : toggleTimer(nursingTimer, Date.now()),
             )
           }
           onSwitchSide={() => void handleSwitchSide()}
-          onSelectSide={(side: BreastSide) => setNursingTimer(idleTimer(side))}
+          onSelectSide={(side: BreastSide) => updateTimer(idleTimer(side))}
           onSave={() => void saveNursing()}
           onDiscard={() => {
-            setNursingTimer(null)
+            updateTimer(null)
             setOpenSheet(null)
           }}
           onClose={() => setOpenSheet(null)}
@@ -480,6 +506,27 @@ export function Home({
             setToast(t.t('toast.growthSaved'))
             setOpenSheet(null)
             returnToToday()
+          }}
+          onClose={() => setOpenSheet(null)}
+        />
+      )}
+
+      {openSheet === 'babies' && (
+        <BabySwitcherSheet
+          babies={store.babies}
+          activeBabyId={activeBaby.id}
+          now={now}
+          onSwitch={(baby) => {
+            setOpenSheet(null)
+            if (baby.id === activeBaby.id) return
+            onSwitchBaby(baby.id)
+            setToast(t.t('toast.babySwitched', { name: baby.name }))
+          }}
+          onAdd={async (input) => {
+            const baby = await store.createBaby(input)
+            setOpenSheet(null)
+            onSwitchBaby(baby.id)
+            setToast(t.t('toast.babyAdded', { name: baby.name }))
           }}
           onClose={() => setOpenSheet(null)}
         />

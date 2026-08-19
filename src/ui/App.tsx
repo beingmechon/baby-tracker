@@ -196,6 +196,7 @@ function AppContent({
         onOpenSettings={() => setScreen('settings')}
         onOpenGrowth={() => setScreen('growth')}
         onOpenReminders={() => setScreen('reminders')}
+        onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>
   )

@@ -168,6 +168,21 @@ export const en = {
   'growth.measuredOn': 'Measured {date}',
   'growth.atAge': 'at {age}',
 
+  // Babies
+  'babies.title': 'Babies',
+  'babies.switch': 'Switch baby',
+  'babies.add': 'Add a baby',
+  'babies.name': 'Name',
+  'babies.namePlaceholder': 'e.g. Arun',
+  'babies.birthDate': 'Date of birth',
+  'babies.save': 'Add',
+  'babies.saving': 'Adding…',
+  'babies.openNow': 'open now',
+  'babies.delete': 'Delete this baby',
+  'babies.deleteWarning':
+    'This permanently deletes {name} and every entry, measurement and reminder logged for them on this device. Your other babies are untouched. If you have not exported a backup, it cannot be undone.',
+  'babies.confirmDelete': 'Delete {name}',
+
   // Reminders
   'reminders.title': 'Reminders',
   'reminders.empty': 'No reminders set.',
@@ -223,6 +238,7 @@ export const en = {
   // Settings
   'settings.title': 'Settings',
   'settings.baby': 'Baby',
+  'settings.babies': 'Babies',
   'settings.name': 'Name',
   'settings.birthDate': 'Date of birth',
   'settings.sex': 'Sex',
@@ -291,6 +307,9 @@ export const en = {
   'toast.growthSaved': 'Measurement saved',
   'toast.reminderSaved': 'Reminder saved',
   'toast.reminderDeleted': 'Reminder deleted',
+  'toast.babyAdded': '{name} added',
+  'toast.babySwitched': 'Now logging for {name}',
+  'toast.babyDeleted': '{name} deleted',
   'toast.reminderSnoozed': 'Snoozed for {duration}',
   'toast.reminderDone': 'Done · next in {duration}',
   'toast.feedRepeated': 'Last feed repeated',

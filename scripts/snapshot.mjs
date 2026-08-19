@@ -169,6 +169,12 @@ try {
     writeFileSync(join(OUT, `reminders-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: /Mira/ }).click()
+    await page.locator('.baby-row').first().waitFor()
+    writeFileSync(join(OUT, `babies-${theme}.html`), await serialize(page))
+    await page.locator('.sheet').getByRole('button', { name: 'Close' }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   }
 
   console.log(`Wrote snapshots to ${OUT}`)

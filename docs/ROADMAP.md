@@ -42,7 +42,8 @@ to use it with a real baby at 4am.
 
 ## v0.3 — Multiple caregivers
 
-- [ ] Multiple children, including a twins mode that logs both in one action
+- [x] Multiple children, with a switcher on the app bar
+- [ ] Twins mode: one action that logs the same thing for both
 - [ ] Self-hosted sync server (Docker image, Postgres or SQLite)
 - [ ] End-to-end encrypted relay as an alternative to self-hosting
 - [ ] Roles: edit vs view-only

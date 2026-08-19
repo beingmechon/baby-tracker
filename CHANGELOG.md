@@ -6,6 +6,30 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — more than one baby
+
+- **A switcher on the app bar.** The baby's name is the control; tapping it lists
+  everyone, marks who is open, and offers to add another. It opens with one baby
+  too, because that is how the second one gets added.
+- **Add and delete babies.** Deleting one takes their entries, measurements and
+  reminders with it and leaves the others alone. The per-baby delete only appears
+  when another baby remains — with a single baby it would be indistinguishable from
+  "delete all my data", which already exists and says so far more clearly.
+- Every screen was already scoped by baby — events, growth, reminders — so this is
+  mostly a way in. Two things genuinely needed fixing, both below.
+
+### Fixed
+
+- **A running nursing timer followed you to the other baby.** It was persisted
+  under a single key, so with twins a feed started for one could be shown, and
+  saved, as the other one's. Timers are now keyed per baby, and one left running
+  across the upgrade is adopted by whichever baby is open rather than lost.
+- **Switching baby briefly showed the previous baby's entries under the new
+  name.** The id changes synchronously while the read from storage resolves a tick
+  later. Loaded events and reminders are now tagged with whose they are and only
+  rendered for that baby, so the gap shows an empty list instead of someone else's
+  data.
+
 ### Added — reminders
 
 - **Interval reminders** for the next feed, a diaper change, pumping, or anything
@@ -112,11 +136,11 @@ says so on screen.
 
 ### Verified
 
-268 unit tests (up from 156) and 56 browser smoke checks, including the WHO
+276 unit tests (up from 156) and 65 browser smoke checks, including the WHO
 percentile maths against the organization's own published −2SD and +2SD figures, a
 metric-to-imperial round trip through storage, the v1-to-v2 schema migration
 against a genuine version-1 database, and a real language switch. 0 AI-tell
-findings across 13 rendered screens.
+findings across 16 rendered screens.
 
 ## [0.1.1] — 2026-08-17
 

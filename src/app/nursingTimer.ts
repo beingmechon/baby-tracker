@@ -101,24 +101,45 @@ export function switchSide(
   return { completed, next }
 }
 
-const STORAGE_KEY = 'baby-tracker:nursing-timer'
+/**
+ * Keyed per baby. With twins, a timer running for one of them must not appear
+ * under the other — and, worse, must not be saved as the other one's feed.
+ */
+function storageKey(babyId: string): string {
+  return `baby-tracker:nursing-timer:${babyId}`
+}
+
+/** The key used before the app supported more than one baby. */
+const LEGACY_STORAGE_KEY = 'baby-tracker:nursing-timer'
 
 /** Persists the running timer so locking the phone cannot lose a feed. */
-export function saveTimer(state: NursingTimerState | null): void {
+export function saveTimer(babyId: string, state: NursingTimerState | null): void {
   try {
     if (state === null || state.sessionStartedAt === null) {
-      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(storageKey(babyId))
       return
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    localStorage.setItem(storageKey(babyId), JSON.stringify(state))
   } catch {
     // Losing persistence is bad but not worth a crash; the in-memory timer runs on.
   }
 }
 
-export function loadTimer(): NursingTimerState | null {
+export function loadTimer(babyId: string): NursingTimerState | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    // A timer left running across the upgrade that introduced per-baby keys is
+    // adopted by whichever baby is open, then the old key is cleared. Losing a
+    // running feed to a version bump would be exactly the 3am failure the
+    // persistence exists to prevent.
+    const migrated = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (migrated !== null) {
+      localStorage.removeItem(LEGACY_STORAGE_KEY)
+      if (localStorage.getItem(storageKey(babyId)) === null) {
+        localStorage.setItem(storageKey(babyId), migrated)
+      }
+    }
+
+    const raw = localStorage.getItem(storageKey(babyId))
     if (raw === null) return null
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return null

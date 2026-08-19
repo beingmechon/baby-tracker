@@ -770,6 +770,81 @@
   accent-color: var(--accent-solid);
 }
 
+/* ── Babies ──────────────────────────────────────────────────────────────── */
+
+/*
+ * The app bar's name is a button, but must not look like one: it is the page's
+ * title first and a switcher second. No border, no fill — the sheet it opens is
+ * the affordance.
+ */
+.appbar-switcher {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.baby-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-6);
+}
+
+.baby-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--tap);
+  padding: var(--space-4) 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.baby-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.baby-identity {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.baby-name {
+  font-size: var(--text-1);
+  font-weight: 500;
+}
+
+.baby-age {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/*
+ * Which baby is open is marked, not highlighted: a filled row would be a second
+ * decorative device, and the tick plus a label says it once, for eyes and for a
+ * screen reader alike.
+ */
+.baby-active {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-text);
+}
+
+.baby-active-label {
+  font-size: var(--text--1);
+}
+
 /* ── Reminders ───────────────────────────────────────────────────────────── */
 
 /*

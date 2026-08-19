@@ -159,6 +159,20 @@ export const es: Messages = {
   'growth.measuredOn': 'Medido el {date}',
   'growth.atAge': 'a los {age}',
 
+  'babies.title': 'Bebés',
+  'babies.switch': 'Cambiar de bebé',
+  'babies.add': 'Añadir un bebé',
+  'babies.name': 'Nombre',
+  'babies.namePlaceholder': 'p. ej. Arun',
+  'babies.birthDate': 'Fecha de nacimiento',
+  'babies.save': 'Añadir',
+  'babies.saving': 'Añadiendo…',
+  'babies.openNow': 'abierto ahora',
+  'babies.delete': 'Eliminar este bebé',
+  'babies.deleteWarning':
+    'Esto elimina de forma permanente a {name} y todas las entradas, medidas y recordatorios registrados para él o ella en este dispositivo. Tus otros bebés no se ven afectados. Si no has exportado una copia de seguridad, no se puede deshacer.',
+  'babies.confirmDelete': 'Eliminar a {name}',
+
   'reminders.title': 'Recordatorios',
   'reminders.empty': 'No hay recordatorios.',
   'reminders.emptyHint':
@@ -211,6 +225,7 @@ export const es: Messages = {
 
   'settings.title': 'Ajustes',
   'settings.baby': 'Bebé',
+  'settings.babies': 'Bebés',
   'settings.name': 'Nombre',
   'settings.birthDate': 'Fecha de nacimiento',
   'settings.sex': 'Sexo',
@@ -278,6 +293,9 @@ export const es: Messages = {
   'toast.growthSaved': 'Medida guardada',
   'toast.reminderSaved': 'Recordatorio guardado',
   'toast.reminderDeleted': 'Recordatorio eliminado',
+  'toast.babyAdded': '{name} añadido',
+  'toast.babySwitched': 'Ahora registrando para {name}',
+  'toast.babyDeleted': '{name} eliminado',
   'toast.reminderSnoozed': 'Pospuesto {duration}',
   'toast.reminderDone': 'Hecho · el siguiente en {duration}',
   'toast.feedRepeated': 'Última toma repetida',

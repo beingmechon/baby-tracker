@@ -59,6 +59,10 @@ export interface BabyStore {
   reload(): Promise<void>
 }
 
+/** One stable empty array, so a baby with nothing loaded yet does not invalidate
+ *  every memo downstream on each render. */
+const NO_EVENTS: BabyEvent[] = []
+
 function messageFor(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong'
 }
@@ -80,7 +84,19 @@ export function useBabyStore(
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [babies, setBabies] = useState<Baby[]>([])
-  const [events, setEvents] = useState<BabyEvent[]>([])
+  /**
+   * The loaded events, tagged with whose they are.
+   *
+   * Switching baby changes `activeBabyId` synchronously but the read from storage
+   * resolves a tick later, so a plain `events` array would spend that tick showing
+   * one baby's entries under another baby's name. Tagging them means the wrong
+   * baby's data is never rendered at all — an empty timeline for a few
+   * milliseconds is honest, and showing someone else's feeds is not.
+   */
+  const [loaded, setLoaded] = useState<{ babyId: Id | null; events: BabyEvent[] }>({
+    babyId: null,
+    events: [],
+  })
 
   const activeBaby = useMemo(() => {
     if (babies.length === 0) return null
@@ -88,6 +104,7 @@ export function useBabyStore(
   }, [babies, activeBabyId])
 
   const activeId = activeBaby?.id ?? null
+  const events = loaded.babyId === activeId ? loaded.events : NO_EVENTS
 
   const reload = useCallback(async () => {
     try {
@@ -96,10 +113,13 @@ export function useBabyStore(
 
       const target =
         loadedBabies.find((baby) => baby.id === activeBabyId) ?? loadedBabies[0] ?? null
-      // v0.1 reads the full history: a year of dense logging is a few thousand
-      // small records, which IndexedDB returns in single-digit milliseconds. The
+      // The full history is read: a year of dense logging is a few thousand small
+      // records, which IndexedDB returns in single-digit milliseconds. The
       // [babyId, startedAt] index is already in place for when windowing pays off.
-      setEvents(target === null ? [] : await repository.listEvents(target.id))
+      setLoaded({
+        babyId: target?.id ?? null,
+        events: target === null ? [] : await repository.listEvents(target.id),
+      })
 
       setStatus('ready')
       setError(null)
