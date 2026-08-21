@@ -14,6 +14,9 @@ to sign up to, because there is no server.
   <img src="docs/screenshots/home-night.png" alt="The same screen in night mode: the identical layout in warm amber on a deep brown-black ground, with no blue light." width="30%">
   <img src="docs/screenshots/growth.png" alt="The growth screen: a large serif 5.6 kg, a ledger reading 77th percentile for age, and a chart plotting the measurement against the WHO 3rd, 50th and 97th percentile curves." width="30%">
 </p>
+<p align="center">
+  <img src="docs/screenshots/patterns.png" alt="The patterns screen: a 24-hour clock face with midnight at the top, sleep drawn as an arc on the rim and feeds and diapers as tick marks, the day's total sleep set in the middle of the ring, and a seven-day bar chart of nights and naps below it." width="30%">
+</p>
 
 ---
 
@@ -67,6 +70,11 @@ This is an early release, deliberately small, and genuinely usable right now:
 - **Pumping and a milk stash** — per-side output with a session clock, plus fridge
   and freezer stock listed in the order to use it, each container measured against
   its own storage guideline.
+- **Sleep patterns, free** — the next nap predicted from this baby's own wake
+  windows (with the spread it is honest about, and no prediction at all from too
+  few data points), a 24-hour day wheel, a week of nights and naps stacked, the
+  trend against last week, and cluster feeding named when it happens. All of it
+  computed on the device. This is the $69-a-year feature.
 - **More than one baby** — switch from the app bar; each one's log, growth and
   reminders are entirely their own.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
@@ -156,7 +164,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 22
+the result is checked by its deterministic AI-tell detector: **0 findings across 25
 screens and 16 rules**, down from 13.
 
 ## Tech

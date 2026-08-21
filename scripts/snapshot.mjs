@@ -200,6 +200,12 @@ try {
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+    await page.getByRole('button', { name: 'The day, round the clock' }).click()
+    await page.locator('.wheel').waitFor()
+    writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
     await page.getByRole('button', { name: /Mira/ }).click()
     await page.locator('.baby-row').first().waitFor()
     writeFileSync(join(OUT, `babies-${theme}.html`), await serialize(page))

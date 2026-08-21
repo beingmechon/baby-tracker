@@ -48,6 +48,7 @@ export const en = {
   'section.growth': 'Growth',
   'section.stash': 'Milk stash',
   'section.health': 'Health',
+  'section.patterns': 'Patterns',
   'section.reminders': 'Reminders',
 
   // Actions
@@ -65,6 +66,7 @@ export const en = {
   'action.growth': 'Growth',
   'action.stash': 'Milk stash',
   'action.health': 'Health',
+  'action.patterns': 'Patterns',
   'action.reminders': 'Reminders',
   'action.settings': 'Settings',
   'action.back': 'Back',
@@ -173,6 +175,51 @@ export const en = {
   'growth.curveLabel': 'WHO {percentile}',
   'growth.measuredOn': 'Measured {date}',
   'growth.atAge': 'at {age}',
+
+  // Patterns
+  'patterns.title': 'Patterns',
+  'patterns.dayWheel': 'The day, round the clock',
+  'patterns.dayWheelLabel':
+    'A 24-hour clock face for {date}, midnight at the top. Sleep is drawn as arcs, feeds and diapers as marks.',
+  'patterns.wheelNoSleep': 'no sleep logged',
+  'patterns.weekNoSleep': 'No sleep logged in the last seven days.',
+  'patterns.wheelAsleep': 'asleep',
+  'patterns.wheelFeeds.one': '{count} feed',
+  'patterns.wheelFeeds.other': '{count} feeds',
+  'patterns.wheelDiapers.one': '{count} diaper',
+  'patterns.wheelDiapers.other': '{count} diapers',
+  'patterns.legend.sleep': 'Sleep',
+  'patterns.legend.night': 'Night sleep',
+  'patterns.legend.feed': 'Feeds',
+  'patterns.legend.diaper': 'Diapers',
+  'patterns.week': 'The last seven days',
+  'patterns.weekLabel':
+    'Daily sleep for the last seven days, {low} to {high} per day.',
+  'patterns.noData': 'Not enough logged yet to see a pattern.',
+  'patterns.noDataHint':
+    'A few days of sleep is all it takes. Everything here is worked out from your own log, on this device.',
+  'patterns.nextNapLabel': 'Next nap',
+  'patterns.nextNap': 'Next nap likely around {time}',
+  'patterns.nextNapRange': 'somewhere between {from} and {to}',
+  'patterns.nextNapBasis': 'from a typical {duration} awake, over {count} wake windows',
+  'patterns.nextNapOverdue': 'That was {duration} ago',
+  'patterns.confidence.low': 'early days — only a few wake windows to go on',
+  'patterns.confidence.fair': 'the wake windows vary a fair bit',
+  'patterns.confidence.good': 'a steady routine so far',
+  'patterns.trend': 'Night sleep',
+  'patterns.trendMore': '{duration} more a night than last week',
+  'patterns.trendLess': '{duration} less a night than last week',
+  'patterns.trendSame': 'about the same as last week',
+  'patterns.notes': 'Worth knowing',
+  'patterns.cluster': '{count} feeds in the last {duration}',
+  'patterns.clusterNote':
+    'Clusters like this are common, especially in the evening and during a growth spurt.',
+  'patterns.deviation.lessSleep': '{duration} less sleep than a typical recent day',
+  'patterns.deviation.moreSleep': '{duration} more sleep than a typical recent day',
+  'patterns.deviationNote':
+    'Just a note about your own log, not a judgement about your baby. Days vary enormously.',
+  'patterns.note':
+    'Everything here is worked out from this baby’s own log, on this device. No averages from other babies, and nothing sent anywhere.',
 
   // Temperature and medication
   'health.title': 'Health',

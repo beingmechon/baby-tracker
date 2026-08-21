@@ -649,6 +649,160 @@ try {
     await page.evaluate(() => !document.body.innerText.includes('Delete this baby')),
   )
 
+  console.log('\n▸ Patterns and the day wheel')
+  // Give the wheel a real sleep to draw. The timer test leaves a sleep a second and
+  // a half long, which is true but invisible, and a chart of it says nothing. The
+  // times are computed in the page from its own clock rather than written as
+  // literals, so this is always a completed sleep in the recent past whatever hour
+  // the suite runs at.
+  const backdated = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const fields = (date) => ({
+      date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    })
+    return {
+      from: fields(new Date(Date.now() - 5 * 60 * 60 * 1000)),
+      to: fields(new Date(Date.now() - 2 * 60 * 60 * 1000)),
+    }
+  })
+  await sleepRow.click()
+  await sheet.getByLabel('Date', { exact: true }).fill(backdated.from.date)
+  await sheet.getByLabel('Time', { exact: true }).fill(backdated.from.time)
+  await sheet.getByLabel('Woke — date').fill(backdated.to.date)
+  await sheet.getByLabel('Woke — time').fill(backdated.to.time)
+  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await page.getByText('Entry updated').waitFor()
+  check(
+    'a sleep can be given the hours it actually happened',
+    /3h/.test(await sleepRow.innerText()),
+  )
+
+  await page.getByRole('button', { name: 'The day, round the clock' }).click()
+  await page.getByRole('img', { name: /24-hour clock face/ }).waitFor()
+  check(
+    'the patterns screen opens on the day wheel',
+    (await page.locator('.appbar-name').innerText()) === 'Patterns',
+  )
+  check(
+    'it does not claim there is nothing logged, because there is',
+    (await page.locator('.empty').count()) === 0,
+  )
+  check(
+    'the wheel draws the day’s sleep as arcs',
+    (await page.locator('.wheel-sleep').count()) >= 1,
+  )
+  const wheelMarks = await page.locator('.wheel-mark').count()
+  check(
+    `feeds and diapers are marked round the rim (${wheelMarks} marks)`,
+    wheelMarks >= 3,
+  )
+  check(
+    'feed and diaper marks carry their own categorical tint, not one colour',
+    await page.evaluate(() => {
+      const colour = (kind) => {
+        const mark = document.querySelector(`.wheel-mark[data-kind="${kind}"]`)
+        return mark === null ? null : getComputedStyle(mark).stroke
+      }
+      const feed = colour('feed')
+      const diaper = colour('diaper')
+      return feed !== null && diaper !== null && feed !== diaper
+    }),
+  )
+  check('the wheel shows where "now" is on today', await page.locator('.wheel-now').isVisible())
+  check(
+    'the hour labels orient the face at midnight, 6, 12 and 18',
+    (await page.locator('.wheel-hour-label').allTextContents()).join(',') === '0,6,12,18',
+  )
+  // The ring is drawn as two arcs precisely because a single sweep back to its own
+  // start renders nothing; this guards that a full-day sleep is visible at all.
+  check(
+    'every arc has a path to draw',
+    await page.evaluate(() =>
+      [...document.querySelectorAll('.wheel-sleep')].every(
+        (arc) => (arc.getAttribute('d') ?? '').length > 0,
+      ),
+    ),
+  )
+
+  check(
+    'the week reads as seven columns, one per day',
+    (await page.locator('.week-bar').count()) === 7,
+  )
+  check(
+    'a day with nothing logged is an empty column rather than a drawn bar',
+    await page.evaluate(() => {
+      const fills = [...document.querySelectorAll('.week-bar-fill')]
+      return fills.some((fill) => fill.getBoundingClientRect().height < 1)
+    }),
+  )
+  check(
+    'the week chart carries a text alternative for a screen reader',
+    /Daily sleep for the last seven days/.test(
+      (await page.locator('.week-bars').getAttribute('aria-label')) ?? '',
+    ),
+  )
+  check(
+    'the ring carries the day it encircles, so the hole is not dead space',
+    /\d/.test(await page.locator('.wheel-total').textContent()),
+  )
+  check(
+    'and names what the figure is, with the day’s counts under it',
+    (await page.locator('.wheel-total-label').allTextContents()).join(' ').includes('asleep'),
+  )
+  check(
+    'the screen says where the figures were worked out',
+    await page.getByText(/on this device/).first().isVisible(),
+  )
+
+  // The prediction needs three completed wake windows and a daytime clock, so
+  // whether it appears depends on the log and the hour. Both branches are
+  // asserted rather than one of them being wished for: the maths itself is
+  // covered by src/domain/patterns.test.ts, which owns a fixed clock.
+  const predicted = await page.locator('.patterns-headline').count()
+  if (predicted > 0) {
+    check(
+      'the prediction leads with a clock time',
+      /\d{1,2}[:.]\d{2}/.test(await page.locator('.patterns-headline').innerText()),
+    )
+    check(
+      'and shows its reasoning, not just a number',
+      /wake windows/.test(await page.locator('.patterns-detail, .field-note').first().innerText()) ||
+        (await page.getByText(/wake windows/).first().isVisible()),
+    )
+  } else {
+    check(
+      'with too few wake windows, no prediction is offered at all',
+      (await page.locator('.patterns-headline').count()) === 0,
+    )
+  }
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'patterns.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Previous day' }).click()
+  check(
+    'stepping back a day drops the "now" hand, which belongs to today only',
+    (await page.locator('.wheel-now').count()) === 0,
+  )
+  check(
+    'and the day being shown is named',
+    /\d/.test(
+      await page.locator('section', { has: page.locator('.wheel') }).locator('.rule-label').innerText(),
+    ),
+  )
+  await page.getByRole('button', { name: 'Next day' }).click()
+  check(
+    'stepping forward returns to today',
+    await page.locator('.wheel-now').isVisible(),
+  )
+  check(
+    'and there is no walking into tomorrow',
+    await page.getByRole('button', { name: 'Next day' }).isDisabled(),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions
   // and the screenshots do not depend on what time the suite happens to run.

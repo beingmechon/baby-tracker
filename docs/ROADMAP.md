@@ -72,15 +72,17 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v0.5 — Patterns and pumping
 
-- [ ] Sleep predictions ("next nap likely around 2:15pm"), pattern-based and
+- [x] Sleep predictions ("next nap likely around 2:15pm"), pattern-based and
       computed on-device. Paywalled elsewhere; free here, permanently.
 - [x] Pumping: per-side output, session timer
 - [x] Milk storage inventory: fridge/freezer stock, expiry warnings, oldest-first
-- [ ] Cluster-feeding support: rapid consecutive logs with no friction
-- [ ] 24-hour circular "day wheel" visualisation
-- [ ] Weekly and monthly pattern charts
-- [ ] Trends: "sleeping 40min longer at night than last week"
-- [ ] Gentle deviation nudges — informational, never diagnostic
+- [x] Cluster-feeding support: rapid consecutive logs with no friction, and the
+      run named on screen once it is one
+- [x] 24-hour circular "day wheel" visualisation
+- [x] Weekly pattern chart, with night and naps stacked
+- [ ] Monthly pattern charts
+- [x] Trends: "sleeping 40min longer at night than last week"
+- [x] Gentle deviation nudges — informational, never diagnostic
 
 ## v1.0 — Toddler and ecosystem
 

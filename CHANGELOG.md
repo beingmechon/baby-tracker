@@ -6,6 +6,59 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — sleep patterns, the day wheel and the week
+
+- **The next nap, predicted from this baby's own log.** The median gap between
+  waking and the next nap, added to when they last woke. No model, no population
+  average, no server — and the screen shows its reasoning ("from a typical 1h 40m
+  awake, over 6 wake windows") rather than presenting a time and expecting to be
+  believed. This is the feature one popular tracker charges $69 a year for.
+- **It declines to guess.** No prediction while the baby is asleep, none during
+  your night hours (the next sleep is bedtime, and nobody needs an app for that),
+  and none at all from fewer than three completed wake windows. The likely window
+  either side comes from the interquartile range of this baby's own wake windows,
+  so a steady routine gives a narrow range and a chaotic week gives a wide one and
+  says so.
+- **Only nap-preceding gaps count.** The wake window before bedtime is reliably the
+  longest of the day; mixing it in would push every prediction later than the
+  baby's actual routine.
+- **A 24-hour day wheel.** Midnight at the top, running clockwise: sleep as arcs on
+  the rim, feeds and diapers as tick marks in their own categorical colours, a tick
+  for where "now" is, and the day's total sleep set in the middle of the ring. A
+  night that crosses midnight is clipped to each day it spans, so it draws
+  correctly on both instead of wrapping over itself. Step back through previous
+  days; you cannot step into tomorrow.
+- **The last seven days**, nights and naps stacked so a short day reads at a glance
+  as a lost nap or a broken night, plus the trend in night sleep against the week
+  before — medians, so one missed log does not read as a week of lost sleep.
+- **Cluster feeding, named.** Three or more feeds inside three hours is reported as
+  what it is, with a line saying that clusters are common. It is alarming the first
+  time and completely normal.
+- **A gentle deviation note** when today is a quarter off the trailing median, and
+  deliberately hard to trigger: at least four days of history and half a day
+  elapsed. A tracker that remarks on every ordinary fluctuation teaches you to
+  ignore it. Every time it appears it says it is a note about a log, not a
+  judgement about a baby.
+- Plain SVG again, for the ring as for the growth chart. A polar chart library
+  would have been the largest dependency in the project, for arcs and tick marks.
+
+### Fixed
+
+- **The week chart normalised to its own tallest day**, so a week containing one
+  short nap drew the same full-height column as a week of solid nights. Bars are
+  drawn against at least twelve hours now; the figure the screen *reports* is still
+  the real observed peak.
+- **A day with no sleep logged showed a dash above the word "asleep"**, which read
+  as a figure that had gone missing rather than a day nobody wrote a nap down on.
+  It says so in words. Seven empty columns is likewise a sentence now, not a chart
+  of nothing.
+- **The "now" marker was drawn from the centre of the wheel to the rim** and was
+  the loudest thing on the screen — a scratch through the day rather than a
+  position in it. It is a tick crossing the rim, and the rim marks have a faint
+  track to sit on instead of floating.
+- The cluster and deviation section had borrowed the screen's own title, so
+  "Patterns" appeared twice; it has its own heading.
+
 ### Added — temperature and medication
 
 - **Temperature readings** with the site they were taken at, in °C or °F. Stored

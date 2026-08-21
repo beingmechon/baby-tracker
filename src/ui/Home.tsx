@@ -17,12 +17,14 @@ import type { ReminderStore } from '@/app/useReminders'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
+import { predictNextNap } from '@/domain/patterns'
 import { SNOOZE_MS } from '@/domain/reminders'
 import { isToday, selectEventsForDay } from '@/domain/select'
 import { summarizeDay } from '@/domain/summary'
 import {
   addDays,
   describeAge,
+  formatClock,
   formatStopwatch,
   localDateKey,
   startOfLocalDay,
@@ -60,6 +62,7 @@ import {
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
+  WheelIcon,
 } from './icons'
 
 interface HomeProps {
@@ -71,6 +74,7 @@ interface HomeProps {
   onOpenReminders: () => void
   onOpenStash: () => void
   onOpenHealth: () => void
+  onOpenPatterns: () => void
   onSwitchBaby: (babyId: string) => void
 }
 
@@ -93,6 +97,7 @@ export function Home({
   onOpenReminders,
   onOpenStash,
   onOpenHealth,
+  onOpenPatterns,
   onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
@@ -145,6 +150,11 @@ export function Home({
   const lastFeed = useMemo(() => findLastFeed(events), [events])
 
   const lastMeasurements = useMemo(() => latestMeasurements(events), [events])
+
+  const napPrediction = useMemo(
+    () => predictNextNap(events, now, settings.nightWindow),
+    [events, now, settings.nightWindow],
+  )
 
   const dayEvents = useMemo(
     () => selectEventsForDay(events, dayAnchor, now),
@@ -271,6 +281,21 @@ export function Home({
           now={now}
           showGuidance={settings.showWakeWindowGuidance}
         />
+
+        {napPrediction !== null && (
+          <button
+            type="button"
+            className="prediction"
+            onClick={onOpenPatterns}
+          >
+            <span className="prediction-label">{t.t('patterns.nextNapLabel')}</span>
+            <span className="prediction-value num">
+              {t.t('patterns.nextNap', {
+                time: formatClock(napPrediction.expectedAt, t.locale),
+              })}
+            </span>
+          </button>
+        )}
 
         <section className="section" aria-label={t.t('section.log')}>
           <RuleLabel>{t.t('section.log')}</RuleLabel>
@@ -480,6 +505,23 @@ export function Home({
           <button type="button" className="action-repeat" onClick={onOpenStash}>
             <PumpIcon size={16} />
             <span>{t.t('stash.title')}</span>
+          </button>
+        </section>
+
+        <section className="section" aria-label={t.t('section.patterns')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenPatterns}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('patterns.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.patterns')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenPatterns}>
+            <WheelIcon size={16} />
+            <span>{t.t('patterns.dayWheel')}</span>
           </button>
         </section>
 

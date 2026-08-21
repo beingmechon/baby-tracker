@@ -59,6 +59,17 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+/** A clock face with one filled quadrant: the day, round the ring. */
+export function WheelIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" strokeWidth="3" />
+      <path d="M12 8v4l2.5 2" />
+    </svg>
+  )
+}
+
 /** A thermometer: the health screen covers temperature and medicine. */
 export function HealthIcon({ size = 22, className }: IconProps) {
   return (

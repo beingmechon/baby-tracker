@@ -1159,6 +1159,258 @@
   color: var(--text-secondary);
 }
 
+/* ── Patterns ────────────────────────────────────────────────────────────── */
+
+/*
+ * The next-nap line on the home screen. It sits directly under the status
+ * headline it qualifies, so it is pulled up out of the page's between-group gap:
+ * "asleep for 40m" and "next nap around 2:15pm" are one thought.
+ */
+.headline + .prediction {
+  margin-top: calc(var(--space-5) - var(--space-9));
+}
+
+.prediction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+  min-height: var(--tap);
+  padding: var(--space-4) 0;
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prediction:active {
+  background: var(--surface-active);
+}
+
+.prediction-label {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.prediction-value {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-1);
+  color: var(--text);
+}
+
+/* The predicted time leads its section, as the measurement does on Growth. */
+.patterns-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: var(--leading-display);
+  letter-spacing: -0.01em;
+}
+
+.patterns-detail {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text);
+}
+
+.patterns-detail + .field-note,
+.patterns-headline + .patterns-detail + .field-note {
+  margin-top: var(--space-3);
+}
+
+.patterns-detail.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The day wheel ───────────────────────────────────────────────────────── */
+
+/*
+ * Sized by its container like the growth chart, and centred: it is the one
+ * radial thing in the app, and flush-left would leave it looking dropped.
+ */
+.wheel {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  height: auto;
+  margin: var(--space-4) auto var(--space-5);
+}
+
+.wheel-ring {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+/* Fainter than the sleep ring: a track, not a second chart. */
+.wheel-track {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.wheel-hour {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.wheel-hour-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Sleep is the data, so sleep takes the accent — the rule the growth chart
+ * follows with the baby's own line. Night sleep is the frame around the day
+ * rather than a reading within it, so it stays neutral: what a parent is looking
+ * for on this ring is where the naps fell.
+ */
+.wheel-sleep {
+  stroke: var(--accent-solid);
+  stroke-width: 9;
+  stroke-linecap: butt;
+}
+
+.wheel-sleep[data-night='true'] {
+  stroke: var(--sleep-tint);
+  opacity: 0.45;
+}
+
+.wheel-mark {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.wheel-mark[data-kind='feed'] {
+  stroke: var(--feed-tint);
+}
+
+.wheel-mark[data-kind='diaper'] {
+  stroke: var(--diaper-tint);
+}
+
+/*
+ * Now: a tick crossing the rim, longer and stronger than an event mark but the
+ * neutral ink of the page rather than a category colour — it is a position on the
+ * dial, not something that was logged.
+ */
+.wheel-now {
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The day's own sleep total, set in the hole the ring leaves. */
+.wheel-total {
+  fill: var(--text);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.wheel-total-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 9px;
+}
+
+.wheel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.wheel-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* A dash in the mark's own colour, matching the wheel's stroke weights. */
+.wheel-legend li::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.1875rem;
+  border-radius: 1px;
+  background: currentcolor;
+}
+
+.wheel-legend li[data-key='sleep'] {
+  color: var(--accent-text);
+}
+
+.wheel-legend li[data-key='feed'] {
+  color: var(--feed-tint);
+}
+
+.wheel-legend li[data-key='diaper'] {
+  color: var(--diaper-tint);
+}
+
+/* ── The week ────────────────────────────────────────────────────────────── */
+
+.week-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.week-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/*
+ * Bottom-anchored, and no track fill: an empty day is an empty column, which is
+ * the truth about it. A filled grey track would draw a bar where nothing was
+ * logged.
+ */
+.week-bar-track {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  height: 6rem;
+}
+
+.week-bar-fill {
+  width: 100%;
+  min-height: 0;
+}
+
+.week-bar-fill[data-part='nap'] {
+  background: var(--accent-solid);
+}
+
+.week-bar-fill[data-part='night'] {
+  background: var(--sleep-tint);
+  opacity: 0.45;
+}
+
+.week-bar-label {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 
 .empty {

@@ -84,3 +84,57 @@ export function padRange(
   const padding = (max - min) * fraction
   return [min - padding, max + padding]
 }
+
+export interface Point {
+  x: number
+  y: number
+}
+
+/**
+ * A point on a circle, from a fraction of the way round.
+ *
+ * Zero is at the top and it runs clockwise, because the day wheel is read like a
+ * clock: midnight at twelve, noon at six. SVG's own angles start at three o'clock
+ * and run the other way, so the quarter-turn offset lives here once rather than at
+ * every call site.
+ */
+export function polarPoint(
+  centre: Point,
+  radius: number,
+  fraction: number,
+): Point {
+  const angle = fraction * 2 * Math.PI - Math.PI / 2
+  return {
+    x: centre.x + radius * Math.cos(angle),
+    y: centre.y + radius * Math.sin(angle),
+  }
+}
+
+/**
+ * A stroked arc along a ring, for one sleep on the day wheel.
+ *
+ * A span covering the whole circle is drawn as two half arcs: a single `A` command
+ * from a point back to itself has zero length and renders nothing, which would make
+ * a baby who slept all day show as a baby who never slept.
+ */
+export function ringArcPath(
+  centre: Point,
+  radius: number,
+  startFraction: number,
+  endFraction: number,
+): string {
+  const span = Math.min(1, Math.max(0, endFraction - startFraction))
+  if (span <= 0) return ''
+
+  const start = polarPoint(centre, radius, startFraction)
+  const format = (point: Point): string => `${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+
+  if (span >= 1) {
+    const half = polarPoint(centre, radius, startFraction + 0.5)
+    return `M${format(start)} A${radius} ${radius} 0 1 1 ${format(half)} A${radius} ${radius} 0 1 1 ${format(start)}`
+  }
+
+  const end = polarPoint(centre, radius, endFraction)
+  const largeArc = span > 0.5 ? 1 : 0
+  return `M${format(start)} A${radius} ${radius} 0 ${largeArc} 1 ${format(end)}`
+}

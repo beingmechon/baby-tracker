@@ -17,6 +17,7 @@ import type { ReminderStatus } from '@/domain/reminders'
 import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
 import { HealthScreen } from './HealthScreen'
+import { PatternsScreen } from './PatternsScreen'
 import { Home } from './Home'
 import { Onboarding } from './Onboarding'
 import { RemindersScreen } from './RemindersScreen'
@@ -71,7 +72,7 @@ function AppContent({
 }) {
   const t = useTranslator()
   const [screen, setScreen] = useState<
-    'home' | 'growth' | 'reminders' | 'stash' | 'health' | 'settings'
+    'home' | 'growth' | 'reminders' | 'stash' | 'health' | 'patterns' | 'settings'
   >('home')
   const prefersDark = usePrefersDark()
 
@@ -178,6 +179,19 @@ function AppContent({
     )
   }
 
+  if (screen === 'patterns') {
+    return (
+      <div className="app">
+        <PatternsScreen
+          store={store}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
   if (screen === 'health') {
     return (
       <div className="app">
@@ -228,6 +242,7 @@ function AppContent({
         onOpenReminders={() => setScreen('reminders')}
         onOpenStash={() => setScreen('stash')}
         onOpenHealth={() => setScreen('health')}
+        onOpenPatterns={() => setScreen('patterns')}
         onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>
