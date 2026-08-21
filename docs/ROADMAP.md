@@ -65,8 +65,9 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
       by the custom reminders shipped above
 - [ ] Vaccination schedules, country-selectable: India (IAP), US (CDC), UK (NHS),
       WHO default — **help wanted from parents outside the US**
-- [ ] Doctor visits: notes, questions-to-ask list, attached photos and reports
-- [ ] Symptom and illness diary
+- [x] Doctor visits: a reason, who you are seeing, notes and a questions-to-ask
+      list you tick off in the room. Attached photos and reports still to come
+- [x] Symptom and illness diary, grouped into episodes, printable for a visit
 - [ ] Teething tracker with a visual tooth chart
 - [ ] Jaundice / phototherapy log — a common newborn need almost no app covers
 - [ ] Configurable medical trackers (feeding tubes, breathing treatments) for

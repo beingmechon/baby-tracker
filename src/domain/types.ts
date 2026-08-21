@@ -23,6 +23,8 @@ export type EventType =
   | 'pumping'
   | 'temperature'
   | 'medication'
+  | 'symptom'
+  | 'visit'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -36,6 +38,15 @@ export type MeasureKind = 'weight' | 'length' | 'head'
 
 /** Where a temperature was taken. It materially changes the number. */
 export type TemperatureSite = 'armpit' | 'ear' | 'forehead' | 'mouth' | 'rectal'
+
+/**
+ * How a symptom seemed *to the parent*.
+ *
+ * Their own impression, recorded so a diary can show a direction over days — the
+ * thing a doctor asks and nobody can remember. It is not a clinical grade and the
+ * app never acts on it: nothing is triaged, ranked or flagged from this value.
+ */
+export type SymptomImpression = 'mild' | 'moderate' | 'severe'
 
 /** Which units measurements are shown and entered in. */
 export type MeasureSystem = 'metric' | 'imperial'
@@ -131,6 +142,46 @@ export interface MedicationEvent extends EventBase {
   dose: string
 }
 
+export interface SymptomEvent extends EventBase {
+  type: 'symptom'
+  /**
+   * Free text, with the parent's own past entries offered as suggestions.
+   *
+   * A fixed list would be either incomplete or a set of clinical categories, and
+   * this app is not in a position to offer either. "Whatever you would say out
+   * loud" is the right vocabulary for a diary a parent keeps.
+   */
+  name: string
+  impression: SymptomImpression
+  // "Anything else" is the inherited `note`. A second field of the same name on
+  // this interface would have silently been the same property, so this event's
+  // free text lives where every other event's does — and is editable through the
+  // ordinary edit sheet for free.
+}
+
+/**
+ * A doctor, midwife or health-visitor appointment, with the questions to ask.
+ *
+ * The only event type that is *expected* to be in the future: the whole point of a
+ * questions list is that you write it down at 3am and take it with you next week.
+ * Everything that aggregates events therefore has to tolerate a future timestamp,
+ * which the window functions already do — they filter rather than assume.
+ */
+export interface DoctorVisitEvent extends EventBase {
+  type: 'visit'
+  reason: string
+  /** The clinic, doctor or health visitor. Free text; often left empty. */
+  who: string
+  questions: VisitQuestion[]
+  // What was said goes in the inherited `note`, for the same reason as above.
+}
+
+export interface VisitQuestion {
+  text: string
+  /** Ticked off in the room, which is the only reason the list is worth keeping. */
+  asked: boolean
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
@@ -140,6 +191,8 @@ export type BabyEvent =
   | PumpingEvent
   | TemperatureEvent
   | MedicationEvent
+  | SymptomEvent
+  | DoctorVisitEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -168,6 +221,14 @@ export function isTemperature(event: BabyEvent): event is TemperatureEvent {
 
 export function isMedication(event: BabyEvent): event is MedicationEvent {
   return event.type === 'medication'
+}
+
+export function isSymptom(event: BabyEvent): event is SymptomEvent {
+  return event.type === 'symptom'
+}
+
+export function isDoctorVisit(event: BabyEvent): event is DoctorVisitEvent {
+  return event.type === 'visit'
 }
 
 /** Total output of a pumping session. */

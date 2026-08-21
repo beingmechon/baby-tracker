@@ -208,3 +208,15 @@ export function HandoverIcon({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function DiaryIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6 3.5h12a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6Z" />
+      <path d="M6 3.5A1.5 1.5 0 0 0 4.5 5v14A1.5 1.5 0 0 0 6 20.5" />
+      <path d="M9 8.5h7" />
+      <path d="M9 12h7" />
+      <path d="M9 15.5h4" />
+    </svg>
+  )
+}

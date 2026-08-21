@@ -17,6 +17,7 @@ import type { ReminderStore } from '@/app/useReminders'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
+import { nextVisit } from '@/domain/illness'
 import { predictNextNap } from '@/domain/patterns'
 import { SNOOZE_MS } from '@/domain/reminders'
 import { isToday, selectEventsForDay } from '@/domain/select'
@@ -35,6 +36,7 @@ import {
   formatAge,
   formatDuration,
   formatMeasure,
+  formatSpan,
   formatVolume,
   measureName,
 } from '@/i18n/format'
@@ -62,6 +64,7 @@ import {
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
+  DiaryIcon,
   HandoverIcon,
   WheelIcon,
 } from './icons'
@@ -75,6 +78,7 @@ interface HomeProps {
   onOpenReminders: () => void
   onOpenStash: () => void
   onOpenHealth: () => void
+  onOpenIllness: () => void
   onOpenPatterns: () => void
   onOpenHandover: () => void
   onSwitchBaby: (babyId: string) => void
@@ -99,6 +103,7 @@ export function Home({
   onOpenReminders,
   onOpenStash,
   onOpenHealth,
+  onOpenIllness,
   onOpenPatterns,
   onOpenHandover,
   onSwitchBaby,
@@ -158,6 +163,8 @@ export function Home({
     () => predictNextNap(events, now, settings.nightWindow),
     [events, now, settings.nightWindow],
   )
+
+  const appointment = useMemo(() => nextVisit(events, now), [events, now])
 
   const dayEvents = useMemo(
     () => selectEventsForDay(events, dayAnchor, now),
@@ -562,6 +569,21 @@ export function Home({
             <HealthIcon size={16} />
             <span>{t.t('health.title')}</span>
           </button>
+          <button type="button" className="action-repeat" onClick={onOpenIllness}>
+            <DiaryIcon size={16} />
+            <span>{t.t('health.symptomsAndVisits')}</span>
+          </button>
+          {/* The one thing about an appointment worth seeing without opening
+              anything: that it is coming, and when. */}
+          {appointment !== null && (
+            <p className="field-note">
+              {appointment.reason}
+              {' · '}
+              {t.t('visit.in', {
+                duration: formatSpan(t, appointment.startedAt - now),
+              })}
+            </p>
+          )}
         </section>
 
         <section className="section" aria-label={t.t('section.timeline')}>

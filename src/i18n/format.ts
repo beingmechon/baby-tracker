@@ -16,6 +16,7 @@ import {
 import type {
   MeasureKind,
   MeasureSystem,
+  SymptomImpression,
   TemperatureSite,
   Timestamp,
   VolumeUnit,
@@ -301,6 +302,26 @@ export function temperatureSiteName(t: Translator, site: TemperatureSite): strin
 }
 
 /** Which scale a measurement system reads temperatures in. */
+/**
+ * The parent's own impression of a symptom.
+ *
+ * Worded as a description of what they saw, never as a grade the app assigns —
+ * "seemed mild", not "MILD".
+ */
+export function symptomImpressionName(
+  t: Translator,
+  impression: SymptomImpression,
+): string {
+  switch (impression) {
+    case 'mild':
+      return t.t('symptom.impression.mild')
+    case 'moderate':
+      return t.t('symptom.impression.moderate')
+    case 'severe':
+      return t.t('symptom.impression.severe')
+  }
+}
+
 export function temperatureUnit(system: MeasureSystem): 'c' | 'f' {
   return system === 'imperial' ? 'f' : 'c'
 }

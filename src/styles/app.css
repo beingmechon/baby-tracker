@@ -1486,6 +1486,194 @@
   margin-bottom: var(--space-4);
 }
 
+/* ── Symptoms and visits ─────────────────────────────────────────────────── */
+
+.episodes,
+.episode-entries,
+.questions {
+  display: flex;
+  flex-direction: column;
+}
+
+.episodes {
+  gap: var(--space-7);
+  margin-bottom: var(--space-6);
+}
+
+.episode-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.episode-name {
+  font-family: var(--font-display);
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+/*
+ * The parent's own word for how it seemed, set as a quiet label. Deliberately not
+ * colour-coded by level: a red "Bad" would be the app forming a view, and the whole
+ * point of this screen is that it does not.
+ */
+.episode-worst {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.episode-meta {
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.episode-meta.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A still-running episode gets the accent on its own name — the one thing on this
+   screen a parent is actively watching. */
+.episode[data-ongoing='true'] .episode-name {
+  color: var(--accent-text);
+}
+
+.episode-entries {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.episode-entry {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text--1);
+}
+
+.episode-entry-when {
+  flex: 0 0 4.5rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.episode-entry-body {
+  min-width: 0;
+}
+
+.episode-entry-note {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+}
+
+/* ── Visits ──────────────────────────────────────────────────────────────── */
+
+/* "Coming up" / "Been": a group heading inside a section, quieter than a rule. */
+.visit-group {
+  margin: var(--space-6) 0 var(--space-3);
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.visit {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.visit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.visit-reason {
+  font-family: var(--font-display);
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+.visit-when {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.visit-meta {
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.visit-notes {
+  margin-top: var(--space-4);
+  font-size: var(--text-0);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--border-subtle);
+}
+
+.questions {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * The one list in the app that gets ticked one-handed while somebody is talking to
+ * you, so the whole row is the target and the row is a full tap height.
+ */
+.question-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--tap);
+  font-size: var(--text-0);
+  cursor: pointer;
+}
+
+.question-label input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 1.375rem;
+  height: 1.375rem;
+  accent-color: var(--accent-solid);
+}
+
+/* Struck through rather than removed: what you already asked is part of the record
+   of the appointment. */
+.question-label span[data-asked='true'] {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+/* The rows in the visit sheet, where a question is typed. */
+.question-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.question-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.question-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /*
  * ── Print ────────────────────────────────────────────────────────────────────
  *
@@ -1531,8 +1719,28 @@
 
   /* A page break inside a fact turns one line into two half-lines. */
   .handover-fact,
+  .episode,
+  .visit,
   .section {
     break-inside: avoid;
+  }
+
+  /*
+   * A checkbox that prints as a filled square is unusable on paper; a printed
+   * question list is ticked with a pen. The box prints as an outline whatever the
+   * screen state, and an already-asked question keeps its strike-through so the
+   * sheet still says what was covered.
+   */
+  .question-label input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #666;
+    border-radius: 2px;
+    background: #fff;
+  }
+
+  .question-label {
+    min-height: 0;
   }
 }
 

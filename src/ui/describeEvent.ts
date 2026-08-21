@@ -12,6 +12,7 @@ import {
   formatTemperature,
   formatVolume,
   measureName,
+  symptomImpressionName,
   temperatureSiteName,
 } from '@/i18n/format'
 import type { MessageKey, Translator } from '@/i18n/locales'
@@ -136,6 +137,34 @@ export function describeEvent(
         category: 'health',
         title: event.name,
         detail: event.dose,
+        live: false,
+      }
+
+    case 'symptom':
+      return {
+        category: 'health',
+        title: event.name,
+        detail: symptomImpressionName(t, event.impression),
+        live: false,
+      }
+
+    case 'visit':
+      return {
+        category: 'health',
+        title: event.reason,
+        // The clinic if it was named, otherwise how far through the questions the
+        // parent got — the two things worth seeing without opening the entry.
+        detail:
+          event.who !== ''
+            ? event.who
+            : event.questions.length === 0
+              ? ''
+              : t.t('visit.questionsProgress', {
+                  asked: t.number(
+                    event.questions.filter((question) => question.asked).length,
+                  ),
+                  total: t.number(event.questions.length),
+                }),
         live: false,
       }
 

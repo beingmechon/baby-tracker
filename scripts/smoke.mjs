@@ -808,6 +808,191 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Symptoms and doctor visits')
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  check(
+    'the diary opens with nothing in it and says what it is for',
+    // Three empty states: symptoms, visits, and the printable sheet's own history.
+    (await page.locator('.empty').count()) === 3 &&
+      (await page.getByText(/every doctor asks/).isVisible()),
+  )
+
+  // Three entries about one thing on three different days: the episode is the
+  // feature, not the entries.
+  const symptomDays = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const day = (offset) => {
+      const d = new Date(Date.now() - offset * 24 * 60 * 60 * 1000)
+      return {
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      }
+    }
+    return [day(2), day(1)]
+  })
+
+  await page.getByRole('button', { name: 'Log a symptom' }).click()
+  await sheet.getByLabel('What did you notice?').fill('Cough')
+  await sheet.getByRole('button', { name: 'Moderate' }).click()
+  await sheet.getByLabel('Anything else').fill('worse at night')
+  await sheet.getByRole('button', { name: 'Save symptom' }).click()
+  await page.getByText('Symptom saved').waitFor()
+  check(
+    'a symptom reaches the diary as an episode',
+    await page.locator('.episode-name', { hasText: 'Cough' }).isVisible(),
+  )
+  check(
+    'the parent’s own word is shown, and not colour-coded into a verdict',
+    await page.evaluate(() => {
+      const worst = document.querySelector('.episode-worst')
+      const meta = document.querySelector('.episode-meta')
+      if (worst === null || meta === null) return false
+      return (
+        /moderate/i.test(worst.textContent ?? '') &&
+        getComputedStyle(worst).color === getComputedStyle(meta).color
+      )
+    }),
+  )
+  check(
+    'a fresh episode is marked as still being logged',
+    /still being logged/i.test(await page.locator('.episode-meta').innerText()),
+  )
+
+  // Backdate two more entries so the episode spans days and can show a direction.
+  for (const [index, when] of symptomDays.entries()) {
+    await page.getByRole('button', { name: 'Log a symptom' }).click()
+    await sheet.getByLabel('What did you notice?').fill('Cough')
+    await sheet
+      .getByRole('button', { name: index === 0 ? 'Mild' : 'Bad' })
+      .click()
+    await sheet.getByRole('button', { name: 'Save symptom' }).click()
+    await page.getByText('Symptom saved').waitFor()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+    await page.locator('.timeline-row', { hasText: 'Cough' }).first().click()
+    await sheet.getByLabel('Date', { exact: true }).fill(when.date)
+    await sheet.getByLabel('Time', { exact: true }).fill(when.time)
+    await sheet.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('Entry updated').waitFor()
+    await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+    await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  }
+
+  check(
+    'three entries about one thing stay one episode, not three',
+    (await page.locator('.episode').count()) === 1,
+  )
+  const episodeMeta = await page.locator('.episode-meta').innerText()
+  check(
+    `the episode says when it started and how many entries (${episodeMeta})`,
+    /first noted/i.test(episodeMeta) && /3 entries/.test(episodeMeta),
+  )
+  check(
+    'and reports the worst the parent called it, not the latest',
+    /bad/i.test(await page.locator('.episode-worst').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Add a visit' }).click()
+  await sheet.getByLabel('What is it for?').fill('8-week check')
+  await sheet.getByLabel(/Who are you seeing/).fill('Dr Rao')
+  const nextWeek = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  })
+  await sheet.getByLabel('Date', { exact: true }).fill(nextWeek)
+  const questionFields = sheet.getByLabel(/is this rash worth worrying/)
+  await questionFields.first().fill('Is the cough worth worrying about?')
+  await sheet.getByRole('button', { name: 'Add a question' }).click()
+  await questionFields.nth(1).fill('Should she be on vitamin D?')
+  await sheet.getByRole('button', { name: 'Save visit' }).click()
+  await page.getByText('Visit saved').waitFor()
+
+  check(
+    'a future appointment is filed as coming up, not as history',
+    (await page.locator('.visit-group').first().innerText()).toLowerCase() ===
+      'coming up',
+  )
+  check(
+    'it counts down rather than claiming to have happened',
+    /in \d/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+  check(
+    'the questions came with it',
+    (await page.locator('.question').count()) === 2 &&
+      /0 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+
+  // Clicked rather than `.check()`ed: the box is controlled by state that lands
+  // only once the write resolves, and `.check()` asserts the new state
+  // synchronously. Waiting for the recorded count is the honest assertion anyway.
+  await page.locator('.question-label').first().click()
+  await page.getByText('Ticked off').waitFor()
+  await page.getByText('1 of 2 asked').waitFor()
+  check(
+    'ticking a question off is recorded, not just visual',
+    /1 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+  check(
+    'and an asked question is struck through rather than removed',
+    await page.evaluate(() => {
+      const asked = document.querySelector('.question-label span[data-asked="true"]')
+      return (
+        asked !== null && getComputedStyle(asked).textDecorationLine === 'line-through'
+      )
+    }),
+  )
+  // A reload returns to the home screen — the app has no router, and that is true
+  // of every screen — so walk back in rather than assuming the screen survived.
+  await page.reload()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  check(
+    'the tick survives a restart',
+    /1 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+
+  const sheetText = await page.locator('.print-sheet').innerText()
+  check(
+    'the printable section carries the recent symptoms',
+    /Cough/.test(sheetText),
+  )
+  // `note` is optional on every event, so an entry without one used to render the
+  // word "undefined" onto the sheet a doctor reads.
+  check(
+    'and an entry with no note leaves a gap, not the word undefined',
+    !/undefined|null/.test(sheetText) &&
+      !/undefined|null/.test(await page.locator('.episodes').innerText()),
+  )
+  check(
+    'a span in the diary reads as elapsed time, not a bare number of days',
+    /first noted .* ago/i.test(await page.locator('.episode-meta').innerText()),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'illness.png'), fullPage: true })
+
+  await page.emulateMedia({ media: 'print' })
+  check(
+    'a printed question list has an outlined box to tick with a pen',
+    await page.evaluate(() => {
+      const box = document.querySelector('.question-label input[type="checkbox"]')
+      if (box === null) return false
+      const style = getComputedStyle(box)
+      return (
+        style.appearance === 'none' && style.backgroundColor === 'rgb(255, 255, 255)'
+      )
+    }),
+  )
+  await page.emulateMedia({ media: 'screen' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'the home screen says an appointment is coming',
+    await page.getByText(/8-week check/).isVisible(),
+  )
+
   console.log('\n▸ Handover')
   await page.getByRole('button', { name: 'What to tell the next person' }).click()
   await page.getByText('Right now').waitFor()

@@ -9,6 +9,8 @@ import {
   nursing,
   pumping,
   sleep,
+  symptom,
+  visit,
 } from '@/test/factories'
 import { escapeCsvField, toCsv } from './csv'
 import type { ExportBundle } from './repository'
@@ -132,6 +134,40 @@ describe('toCsv', () => {
     // feeds and output without special-casing the row type.
     expect(row).toContain('"140"')
     expect(row).toContain('"left 60 / right 80"')
+  })
+
+  it('records a symptom with the parent’s own impression beside it', () => {
+    const csv = toCsv(bundle([symptom(at(2026, 1, 15, 9, 0), 'Cough', 'moderate')]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"symptom"')
+    expect(row).toContain('"Cough: moderate"')
+  })
+
+  it('records a visit with its questions in the note column', () => {
+    const appointment = visit(
+      at(2026, 1, 15, 9, 0),
+      '8-week check',
+      [
+        { text: 'Is the cough worth worrying about?', asked: true },
+        { text: 'Vitamin D?', asked: false },
+      ],
+      'Dr Rao',
+    )
+    const csv = toCsv(bundle([appointment]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"visit"')
+    expect(row).toContain('"8-week check — Dr Rao"')
+    expect(row).toContain('questions 1/2')
+    expect(row).toContain('Is the cough worth worrying about?; Vitamin D?')
+  })
+
+  it('exports an event with no note at all', () => {
+    // A regression guard with teeth: `note` is optional on every event, and a
+    // row builder that assumed a string crashed the entire export — one missing
+    // note took the whole CSV down, not just its own row.
+    const bare = symptom(at(2026, 1, 15, 9, 0), 'Rash')
+    delete (bare as { note?: string }).note
+    expect(() => toCsv(bundle([bare]))).not.toThrow()
   })
 
   it('labels an event whose baby is missing rather than dropping the row', () => {

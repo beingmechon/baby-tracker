@@ -162,7 +162,7 @@ node scripts/snapshot.mjs .design-audit          # inlines CSS into static HTML
 node <path-to>/design-for-ai/scripts/detect.mjs .design-audit/*.html
 ```
 
-The current design scores 0 findings across 28 screens and 16 rules.
+The current design scores 0 findings across 31 screens and 16 rules.
 
 Test timestamps are always built from local calendar parts via the `at()` factory,
 so assertions about wall-clock behaviour hold in whatever timezone CI runs in.

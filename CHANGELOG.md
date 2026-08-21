@@ -6,6 +6,51 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — a symptom diary and doctor visits
+
+- **A symptom diary that answers the question every doctor opens with.** Entries
+  group into *episodes*, so "when did this start and how has it been since?" is
+  answered with "cough, four days, worse yesterday" rather than twelve scattered
+  lines. A gap of two days ends an episode — otherwise one endless "cough" runs
+  from birth and the answer is useless.
+- **The impression beside a symptom is the parent's own word**, and the sheet says
+  so at the point of entry. Nothing is scored, ranked, triaged or flagged from it;
+  it is not colour-coded into a verdict; the only places it goes are back onto the
+  screen and onto paper. The episode reports the worst the parent called it, which
+  is what gets asked, not the latest.
+- **Doctor visits, which may be in the future.** This is the first event type that
+  is *expected* to be, because the whole point of a questions list is that you
+  write one down at 3am and ask it next Tuesday. Upcoming visits sort
+  soonest-first, past ones newest-first.
+- **Questions you tick off in the room.** A checkbox with the whole row as the
+  target, at full tap height, because this is the one list in the app that gets
+  used one-handed while somebody is talking to you. An asked question is struck
+  through rather than removed: what you already covered is part of the record.
+- **Printable for the appointment** — the questions plus the last two weeks of
+  symptoms, which are the two things you get asked for across a desk. A printed
+  checkbox renders as an outlined box to tick with a pen rather than a filled
+  square.
+- The home screen shows the next appointment and how far off it is.
+- Symptoms and visits export to CSV with the rest of the log, questions included.
+
+### Fixed
+
+- **`SymptomEvent` declared its own `note` field, silently colliding with the
+  `note` every event already carries** — one property with two meanings. Worse,
+  the collision made the field look non-optional to the type checker while being
+  absent at runtime, so the CSV row builder called `.trim()` on `undefined` and
+  **one symptom with no note took the entire export down**, not just its own row.
+  Both new event types use the inherited `note` now, which also means they are
+  editable through the ordinary edit sheet for free. There is a regression test
+  that exports an event with the field deleted.
+- **"undefined" printed onto the sheet a doctor reads**, from the same optional
+  field compared against `''`. Folded through one helper, with a smoke check that
+  neither "undefined" nor "null" appears on the screen or the printed sheet.
+- "first noted 2 days" now reads "first noted 2 days ago". The span formatter
+  returns a bare duration by design, so the phrase has to supply the "ago" —
+  the mirror image of the "just now ago" bug in v0.4, and guarded the same way.
+
+
 ### Added — the handover
 
 - **A handover screen**, for the thing that actually happens at the door: pick a

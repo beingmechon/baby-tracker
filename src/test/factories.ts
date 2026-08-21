@@ -7,6 +7,10 @@ import type {
   MeasureKind,
   MedicationEvent,
   NursingEvent,
+  DoctorVisitEvent,
+  SymptomEvent,
+  SymptomImpression,
+  VisitQuestion,
   SleepEvent,
   SleepKind,
   TemperatureEvent,
@@ -168,6 +172,46 @@ export function medication(
     startedAt,
     name,
     dose,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function symptom(
+  startedAt: Timestamp,
+  name: string,
+  impression: SymptomImpression = 'mild',
+  note = '',
+): SymptomEvent {
+  return {
+    id: nextId('symptom'),
+    babyId: BABY_ID,
+    type: 'symptom',
+    startedAt,
+    name,
+    impression,
+    note,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function visit(
+  startedAt: Timestamp,
+  reason: string,
+  questions: VisitQuestion[] = [],
+  who = '',
+  note = '',
+): DoctorVisitEvent {
+  return {
+    id: nextId('visit'),
+    babyId: BABY_ID,
+    type: 'visit',
+    startedAt,
+    reason,
+    who,
+    note,
+    questions,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

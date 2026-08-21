@@ -18,6 +18,8 @@ import type {
   MeasureKind,
   Sex,
   SleepKind,
+  SymptomImpression,
+  VisitQuestion,
   TemperatureSite,
 } from '@/domain/types'
 
@@ -56,6 +58,28 @@ const CONTENTS: readonly BottleContents[] = ['breast_milk', 'formula']
 const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
 const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
+const IMPRESSIONS: readonly SymptomImpression[] = ['mild', 'moderate', 'severe']
+
+/**
+ * A cap on the questions list from a file.
+ *
+ * Nothing about a doctor's appointment needs two hundred questions, and an
+ * unbounded array from an untrusted file is an unbounded render.
+ */
+const MAX_QUESTIONS = 50
+
+function parseQuestions(value: unknown): VisitQuestion[] {
+  if (!Array.isArray(value)) return []
+  const questions: VisitQuestion[] = []
+  for (const entry of value) {
+    if (!isObject(entry)) continue
+    const text = str(entry.text)
+    if (text === null) continue
+    questions.push({ text, asked: entry.asked === true })
+    if (questions.length >= MAX_QUESTIONS) break
+  }
+  return questions
+}
 const SEXES: readonly Sex[] = ['male', 'female']
 const REMINDER_KIND_VALUES: readonly ReminderKind[] = [
   'feed',
@@ -145,6 +169,25 @@ export function parseEvent(value: unknown): BabyEvent | null {
       const name = str(value.name)
       if (name === null) return null
       return { ...base, type: 'medication', name, dose: str(value.dose) ?? '' }
+    }
+    case 'symptom': {
+      const name = str(value.name)
+      const impression = oneOf<SymptomImpression>(value.impression, IMPRESSIONS)
+      // An unnamed symptom is not an observation, and an unknown impression would
+      // render as an empty word next to it.
+      if (name === null || impression === null) return null
+      return { ...base, type: 'symptom', name, impression }
+    }
+    case 'visit': {
+      const reason = str(value.reason)
+      if (reason === null) return null
+      return {
+        ...base,
+        type: 'visit',
+        reason,
+        who: str(value.who) ?? '',
+        questions: parseQuestions(value.questions),
+      }
     }
     case 'pumping': {
       const leftMl = nonNegative(value.leftMl)

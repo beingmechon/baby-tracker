@@ -164,6 +164,29 @@ try {
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
+  // A symptom and an appointment, so the illness screen has episodes and a
+  // question list to audit rather than two empty states.
+  await page.getByRole('button', { name: 'Symptoms and visits' }).first().click()
+  await page.getByRole('button', { name: 'Log a symptom' }).click()
+  await page.locator('.sheet').getByLabel('What did you notice?').fill('Cough')
+  await page.locator('.sheet').getByRole('button', { name: 'Moderate' }).click()
+  await page.locator('.sheet').getByLabel('Anything else').fill('worse at night')
+  await page.locator('.sheet').getByRole('button', { name: 'Save symptom' }).click()
+  await page.getByText('Symptom saved').waitFor()
+  await page.getByRole('button', { name: 'Add a visit' }).click()
+  await page.locator('.sheet').getByLabel('What is it for?').fill('8-week check')
+  await page.locator('.sheet').getByLabel(/Who are you seeing/).fill('Dr Rao')
+  await page
+    .locator('.sheet')
+    .getByLabel(/is this rash worth worrying/)
+    .first()
+    .fill('Is the cough worth worrying about?')
+  await page.locator('.sheet').getByRole('button', { name: 'Save visit' }).click()
+  await page.getByText('Visit saved').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.waitForTimeout(2400)
+
   for (const [label, theme] of [
     ['Light', 'day'],
     ['Dark', 'dark'],
@@ -203,6 +226,12 @@ try {
     await page.getByRole('button', { name: 'The day, round the clock' }).click()
     await page.locator('.wheel').waitFor()
     writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+    await page.locator('.episode').first().waitFor()
+    writeFileSync(join(OUT, `illness-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

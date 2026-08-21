@@ -17,6 +17,7 @@ to sign up to, because there is no server.
 <p align="center">
   <img src="docs/screenshots/patterns.png" alt="The patterns screen: a 24-hour clock face with midnight at the top, sleep drawn as an arc on the rim and feeds and diapers as tick marks, the day's total sleep set in the middle of the ring, and a seven-day bar chart of nights and naps below it." width="30%">
   <img src="docs/screenshots/handover.png" alt="The handover screen: a Right Now ledger giving the times of the last sleep, feed and diaper change, the totals for the chosen window below it, and the whole thing rendered as a plain-text message ready to copy." width="30%">
+  <img src="docs/screenshots/illness.png" alt="The symptom diary: a Cough episode headed by the parent's own word for how bad it seemed, dated entries beneath it, and an upcoming doctor visit with its questions as a tick list." width="30%">
 </p>
 
 ---
@@ -76,6 +77,11 @@ This is an early release, deliberately small, and genuinely usable right now:
   few data points), a 24-hour day wheel, a week of nights and naps stacked, the
   trend against last week, and cluster feeding named when it happens. All of it
   computed on the device. This is the $69-a-year feature.
+- **A symptom diary and doctor visits** — entries group into episodes, so the
+  answer to "when did this start?" is "cough, four days, worse yesterday" instead
+  of twelve scattered lines. Appointments can be dated in the future with the
+  questions you thought of at 3am, ticked off in the room, and printed with the
+  last two weeks of symptoms. It records; it does not assess.
 - **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
   and when they last ate, slept and were changed, then copy it as a plain-text
   message or print it for a nursery. Copying puts text on your clipboard; nothing
@@ -169,7 +175,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 28
+the result is checked by its deterministic AI-tell detector: **0 findings across 31
 screens and 16 rules**, down from 13.
 
 ## Tech

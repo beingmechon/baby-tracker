@@ -64,6 +64,14 @@ function growthColumns(event: GrowthEvent): [string, string, string, string] {
   return [round(event.value / 10, 1), 'cm', round(mmToInches(event.value), 2), 'in']
 }
 
+/**
+ * Joins the several free-text fields these events carry into the one note column,
+ * skipping the empty ones so a row never reads " — — ".
+ */
+function joinNotes(...parts: string[]): string {
+  return parts.filter((part) => part.trim() !== '').join(' — ')
+}
+
 function rowFor(event: BabyEvent, babyName: string): string[] {
   const base = [babyName, localDateKey(event.startedAt), formatClock24(event.startedAt)]
   const note = event.note ?? ''
@@ -162,6 +170,46 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         '',
         '',
         note,
+      ]
+    }
+    case 'symptom':
+      // The parent's own impression goes in `detail` alongside the symptom, next
+      // to it rather than in a column of its own: it is a word they chose, not a
+      // grade anything can be computed from.
+      return [
+        ...base,
+        'symptom',
+        `${event.name}: ${event.impression}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'visit': {
+      const asked = event.questions.filter((question) => question.asked).length
+      return [
+        ...base,
+        'visit',
+        event.who === '' ? event.reason : `${event.reason} — ${event.who}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        joinNotes(
+          note,
+          event.questions.length === 0
+            ? ''
+            : `questions ${asked}/${event.questions.length}: ${event.questions
+                .map((question) => question.text)
+                .join('; ')}`,
+        ),
       ]
     }
   }
