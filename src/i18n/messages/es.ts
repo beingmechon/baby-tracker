@@ -447,6 +447,8 @@ export const es: Messages = {
     'Las notificaciones están bloqueadas en los ajustes del navegador. Los recordatorios siguen apareciendo en esta pantalla y en la pantalla de inicio.',
   'reminders.notificationsUnsupported':
     'Este navegador no puede mostrar notificaciones. Los recordatorios siguen apareciendo en esta pantalla y en la pantalla de inicio.',
+  'reminders.limitationNative':
+    'Los recordatorios se entregan a Android, así que llegan tanto si la aplicación está abierta, en segundo plano o cerrada. Nada se envía a ningún sitio para que eso funcione: la alarma la guarda tu teléfono.',
   'reminders.limitation':
     'Los recordatorios avisan mientras la aplicación está abierta, también en segundo plano una vez instalada. Aquí no hay servidor, así que nada puede despertar una aplicación cerrada del todo: lo que venciera mientras no estabas aparece como retrasado al volver.',
 

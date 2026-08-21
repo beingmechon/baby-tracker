@@ -14,7 +14,14 @@
  *
  * On opening the app, anything that came due while it was closed is shown as
  * overdue, which is the honest fallback.
+ *
+ * The Android shell changes this — and only this. There the due times are handed to
+ * the OS alarm scheduler, which fires them whether the app is running or dead. See
+ * `domain/scheduling.ts` for what gets handed over and `app/native.ts` for the
+ * handover itself. Nothing is sent anywhere to make it work: the alarm is held by
+ * the phone.
  */
+import { isNativeApp, nativeNotificationsGranted, requestNativeNotifications } from './native'
 
 export type NotificationPermissionState = 'unsupported' | 'default' | 'granted' | 'denied'
 
@@ -36,6 +43,31 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     // Older Safari rejects rather than resolving when called outside a gesture.
     return notificationState()
   }
+}
+
+/**
+ * The permission state, asking the right platform.
+ *
+ * In the Android shell the browser `Notification` API is present but irrelevant:
+ * what governs whether a reminder arrives is Android's own POST_NOTIFICATIONS
+ * grant, and reading the wrong one would have the screen offer to enable
+ * notifications that are already on, or claim they are on when they are not.
+ *
+ * Async because the native answer is. On the web it resolves immediately.
+ */
+export async function resolveNotificationState(): Promise<NotificationPermissionState> {
+  if (isNativeApp()) {
+    return (await nativeNotificationsGranted()) ? 'granted' : 'default'
+  }
+  return notificationState()
+}
+
+/** Asks whichever platform is actually in charge. Only ever from a real tap. */
+export async function askForNotifications(): Promise<NotificationPermissionState> {
+  if (isNativeApp()) {
+    return (await requestNativeNotifications()) ? 'granted' : 'denied'
+  }
+  return requestNotificationPermission()
 }
 
 export interface AlertContent {

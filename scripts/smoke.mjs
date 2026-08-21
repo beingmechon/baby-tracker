@@ -83,6 +83,23 @@ try {
   // on a prompt that never appears in a headless run.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE })
 
+  /*
+   * Pins the wall clock to mid-morning, then lets it run normally.
+   *
+   * The suite logs an event in one section and asserts on it in another, and
+   * several of those assertions are about *today* — the timeline, the day wheel,
+   * the handover window. A run that straddles local midnight moves those events
+   * onto yesterday and the suite fails for reasons that have nothing to do with the
+   * app. That is not hypothetical: it happened at 00:04 IST.
+   *
+   * `install` fixes the starting instant and `resume` lets time flow from there, so
+   * the running-stopwatch assertions still measure real elapsed seconds. The date
+   * is a Friday in the middle of a month, so nothing lands on a week or month
+   * boundary either.
+   */
+  await context.clock.install({ time: new Date('2026-08-21T04:30:00Z') })
+  await context.clock.resume()
+
   const page = await context.newPage()
 
   const consoleErrors = []

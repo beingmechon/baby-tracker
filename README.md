@@ -89,7 +89,9 @@ This is an early release, deliberately small, and genuinely usable right now:
 - **More than one baby** — switch from the app bar; each one's log, growth and
   reminders are entirely their own.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
-  counted from your own log rather than from when the reminder last went off.
+  counted from your own log rather than from when the reminder last went off. On
+  Android they are handed to the OS, so a closed app still wakes you — with no
+  server anywhere, because the alarm is held by your phone.
 - **Your language** — every string is translatable, with plurals, locale-aware
   clocks and numbers, and a language picker.
 - **Your data is yours** — full JSON backup, CSV export for the paediatrician,
@@ -99,9 +101,21 @@ See the [roadmap](docs/ROADMAP.md) for what is coming and how to help.
 
 ## Try it
 
-**On your phone (recommended):** open the app, then use *Add to Home Screen*
-(Share menu in Safari, or the install prompt in Chrome). It then behaves like any
-other app, works offline, and never asks you to sign in.
+**On Android (recommended):** install the app. Every push builds a debug APK —
+grab `baby-tracker-debug-apk` from the latest
+[Actions run](https://github.com/beingmechon/baby-tracker/actions). Reminders are
+handed to Android there, so they arrive whether the app is open, in the background,
+or closed. F-Droid is the intended home; metadata is already in the repo.
+
+**Anywhere else:** open the app and use *Add to Home Screen* (Share menu in Safari,
+or the install prompt in Chrome). It behaves like any other app, works offline, and
+never asks you to sign in. The one thing a browser cannot do is wake a fully closed
+app when a reminder falls due — the reminders screen says so plainly rather than
+pretending otherwise.
+
+There is no iOS build, deliberately: it would need a Mac and a paid Apple account
+every year, which is not a thing an open-source app should require. See
+[docs/ANDROID.md](docs/ANDROID.md) for the reasoning and the build instructions.
 
 **Run it locally:**
 
@@ -148,6 +162,7 @@ are "this wording confused me at 3am" and "this button is hard to hit one-handed
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code is organised and why
 - [docs/DESIGN.md](docs/DESIGN.md) — the design contract; read it before changing the UI
 - [docs/ROADMAP.md](docs/ROADMAP.md) — the full feature plan, version by version
+- [docs/ANDROID.md](docs/ANDROID.md) — the Android shell: why it exists, how to build it
 - Good first issues are labelled [`good first issue`](https://github.com/beingmechon/baby-tracker/labels/good%20first%20issue)
 
 Translations, country-specific vaccination schedules and accessibility fixes are
@@ -180,9 +195,12 @@ screens and 16 rules**, down from 13.
 
 ## Tech
 
-React + TypeScript + Vite, as an offline-first PWA. No UI framework, and two
-runtime dependencies (React and React DOM). About 300 KB precached in total,
-fonts included — downloaded once, then it runs offline forever.
+React + TypeScript + Vite, as an offline-first PWA, plus a Capacitor shell for the
+Android build. No UI framework. Three runtime dependencies: React, React DOM, and
+`@capacitor/core` — and the Capacitor half never reaches a browser. It sits behind a
+dynamic import in its own chunk, excluded from the service-worker precache, and CI
+asserts that against the real build output on every push. About 470 KB precached in
+total, fonts included — downloaded once, then it runs offline forever.
 
 ```
 src/domain/   Pure logic: units, time, sleep classification, summaries. No I/O.
@@ -190,18 +208,21 @@ src/data/     Storage behind one Repository interface (IndexedDB today).
 src/app/      React state: settings, theme, the nursing timer, the store.
 src/ui/       Components.
 src/styles/   Tokens, base, components, and the two self-hosted fonts.
+android/      The Capacitor shell. Generated, committed, and about 1 MB of config.
 ```
 
-The domain and data layers are deliberately free of React, so a native shell or a
-sync server can reuse them unchanged. 156 unit tests cover the logic, plus a
-browser smoke test that verifies the app still works with the network off — and
-that its numerals are genuinely tabular, so a running timer cannot jitter.
+The domain and data layers are deliberately free of React, which is what let the
+Android shell reuse them unchanged — and is what a sync server would reuse too. 443
+unit tests cover the logic, plus 132 browser checks that verify the app still works
+with the network off, that a printed page drops its chrome and prints black on
+white, and that its numerals are genuinely tabular so a running timer cannot jitter.
 
 ```bash
 npm test          # unit tests
 npm run check     # lint, typecheck, tests and a production build
 npm run smoke     # end-to-end run in a real browser (needs a built app)
 npm run fonts     # re-vendor the woff2 files from node_modules
+npm run android:apk   # build a debug APK (needs a JDK and the Android SDK)
 ```
 
 ## License

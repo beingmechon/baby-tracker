@@ -9,7 +9,7 @@
  */
 
 import { deflateSync } from 'node:zlib'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -149,5 +149,46 @@ writeFileSync(join(PUBLIC, 'icons', 'icon-512.png'), renderIcon(512, 0.16))
 // Maskable icons lose their outer ~20% to whatever mask the launcher applies.
 writeFileSync(join(PUBLIC, 'icons', 'icon-maskable-512.png'), renderIcon(512, 0.26))
 writeFileSync(join(PUBLIC, 'apple-touch-icon.png'), renderIcon(180, 0.16))
+
+/*
+ * The Android launcher icons, from the same crescent.
+ *
+ * Capacitor scaffolds its own logo into these files, and an app that ships the
+ * framework's logo in the launcher and in the F-Droid listing is an app that looks
+ * like nobody finished it. Generating them here rather than hand-exporting means
+ * there is one definition of the icon and it cannot drift.
+ *
+ * Densities are the standard mdpi..xxxhdpi ladder: 48dp rendered at 1x, 1.5x, 2x,
+ * 3x and 4x. `ic_launcher_round` is the same bitmap — the launcher applies the
+ * circular mask, so a separately-drawn round variant would only be a second thing
+ * to keep in step.
+ */
+const ANDROID_RES = join(ROOT, 'android', 'app', 'src', 'main', 'res')
+const DENSITIES = [
+  ['mdpi', 48],
+  ['hdpi', 72],
+  ['xhdpi', 96],
+  ['xxhdpi', 144],
+  ['xxxhdpi', 192],
+]
+
+if (existsSync(ANDROID_RES)) {
+  for (const [density, size] of DENSITIES) {
+    const dir = join(ANDROID_RES, `mipmap-${density}`)
+    mkdirSync(dir, { recursive: true })
+    // The legacy square icon keeps the tighter inset; the adaptive foreground
+    // below is what Android 8 and later actually shows.
+    const icon = renderIcon(size, 0.16)
+    writeFileSync(join(dir, 'ic_launcher.png'), icon)
+    writeFileSync(join(dir, 'ic_launcher_round.png'), icon)
+    // An adaptive icon's foreground is 108dp for a 72dp visible area, so the glyph
+    // needs the wider safe inset or the launcher's mask clips it.
+    writeFileSync(
+      join(dir, 'ic_launcher_foreground.png'),
+      renderIcon(Math.round(size * 2.25), 0.32),
+    )
+  }
+  console.log('Wrote android mipmap-*/ic_launcher*.png')
+}
 
 console.log('Wrote favicon.svg, apple-touch-icon.png and icons/*.png')

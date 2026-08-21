@@ -86,6 +86,11 @@ try {
     timezoneId: 'Asia/Kolkata',
     locale: 'en-GB',
   })
+  // Same reason as the smoke suite: a run that straddles local midnight moves
+  // seeded events onto yesterday, and a screen that waits for one never loads.
+  await context.clock.install({ time: new Date('2026-08-21T04:30:00Z') })
+  await context.clock.resume()
+
   const page = await context.newPage()
 
   await page.goto(BASE)

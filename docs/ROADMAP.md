@@ -35,10 +35,11 @@ to use it with a real baby at 4am.
       tummy time), anchored to your own log
 - [x] Snoozeable reminders, with mark-done and per-reminder on/off
 - [ ] Home screen widgets for zero-open logging
-- [ ] Waking a *closed* app when a reminder falls due. Not possible for a
-      serverless PWA: web push needs a server holding a subscription, and
-      Notification Triggers was withdrawn before it shipped. It would arrive with
-      a native shell (Capacitor) or, opt-in, with the v0.3 sync server.
+- [x] Waking a *closed* app when a reminder falls due. Impossible for a serverless
+      PWA — web push needs a server holding a subscription, and Notification
+      Triggers was withdrawn before it shipped — so the Android shell hands the due
+      times to the OS alarm scheduler instead. Still no server. On the web the old
+      limitation stands, and the screen says which one applies.
 
 ## v0.3 — Multiple caregivers
 
@@ -107,9 +108,8 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v1.x — Platform depth
 
-- [ ] Apple Watch and Wear OS quick actions
-- [ ] Live Activities (iOS lock-screen running timers)
-- [ ] Siri Shortcuts and Google Assistant
+- [ ] Wear OS quick actions
+- [ ] Google Assistant shortcuts
 - [ ] On-device AI logging: "she fed 10 min left side then napped" parsed into
       entries
 - [ ] Grafana-friendly data endpoint
@@ -119,6 +119,12 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
       checklists, belly journal
 
 ## Shipped outside the version tracks
+
+- [x] **A real Android app** — the same web build in a Capacitor shell, so
+      reminders are handed to Android's alarm scheduler and arrive whether the app
+      is open, backgrounded or closed. Still no server. Every push builds a debug
+      APK you can download from CI, and the shell is enforced to cost the web build
+      nothing. See [ANDROID.md](ANDROID.md).
 
 - [x] **i18n foundation** — every string extracted to a catalogue, plurals via
       `Intl.PluralRules`, locale-aware clocks and numbers, a language picker, and
@@ -157,3 +163,9 @@ Things we will not do, so nobody spends time on them:
 - Selling, sharing or aggregating anyone's data
 - Diagnostic claims or medical advice
 - Any paywall on tracking your own baby
+- **An iOS app.** Building one needs a Mac and a paid Apple Developer account
+  renewed every year, and no open-source project should need either in order to
+  ship — nor should a contributor without a Mac be locked out of half the codebase.
+  On iOS the installed PWA works offline and keeps its data; what it cannot do is
+  wake when fully closed, and the app says so rather than pretending otherwise.
+  Anything iOS-only follows from that: Live Activities, Siri, Apple Watch.

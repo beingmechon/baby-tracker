@@ -461,6 +461,8 @@ export const en = {
     'Notifications are blocked in your browser settings. Reminders still appear on this screen and on the home screen.',
   'reminders.notificationsUnsupported':
     'This browser cannot show notifications. Reminders still appear on this screen and on the home screen.',
+  'reminders.limitationNative':
+    'Reminders are handed to Android, so they arrive whether the app is open, in the background, or closed. Nothing is sent anywhere to make that work — the alarm is held by your phone.',
   'reminders.limitation':
     'Reminders alert while the app is open, including in the background once it is installed. There is no server here, so nothing can wake a fully closed app — anything that fell due while you were away is shown as overdue when you come back.',
 

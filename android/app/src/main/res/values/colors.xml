@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The only colours the native shell needs. Everything the app actually renders comes
+  from src/styles/tokens.css; these four exist because Android asks for them before
+  a single line of the web app has run.
+
+  Kept in step with the web build by hand, which is why there are so few of them:
+  navy is the manifest's theme_color, ochre is the one accent.
+-->
+<resources>
+    <color name="colorPrimary">#1b2a4a</color>
+    <color name="colorPrimaryDark">#131f36</color>
+    <color name="colorAccent">#d6b081</color>
+    <!-- Behind the launch screen, and behind the WebView before it paints. -->
+    <color name="launchBackground">#1b2a4a</color>
+</resources>

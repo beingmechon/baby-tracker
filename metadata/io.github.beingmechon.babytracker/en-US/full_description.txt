@@ -1,0 +1,35 @@
+Feeds, sleep and diapers in one tap — designed to be used one-handed, in the dark,
+while holding a baby. Everything is stored on your own device. There is no server
+to sign up to, because there is no server.
+
+Free forever, including the parts other trackers paywall:
+
+* Feeding — a nursing stopwatch with per-side timing that remembers which side was
+  last used, and bottle logging in ml or oz.
+* Sleep — one big start/stop timer, classified as a nap or night sleep from your
+  own night hours, and it survives closing the app.
+* Sleep patterns — the next nap predicted from this baby's own wake windows, a
+  24-hour day wheel, a week of nights and naps, and the trend against last week.
+  All computed on the device.
+* Growth with real WHO percentile charts — weight, length and head circumference
+  against the World Health Organization's own reference curves.
+* Reminders — next feed, diaper, pumping or anything you name, handed to Android
+  so they arrive whether the app is open or closed.
+* Pumping and a milk stash, listed in the order to use it.
+* Temperature and medication, compared against what health services publish and
+  never diagnosed.
+* A symptom diary and doctor visits, with the questions to ask, printable for an
+  appointment.
+* Handover — what to tell whoever has the baby next, as a message you can copy.
+* More than one baby, each with their own log.
+* Your data is yours: JSON backup, CSV export for the paediatrician, and one-tap
+  deletion of everything.
+
+Privacy is the point, not a feature. The app makes no network requests at all
+after it is installed — not analytics, not crash reporting, not an ad network.
+There is no account and nothing to breach. Because everything is local, your data
+is only as safe as your device, so export a backup now and then.
+
+Not a medical device. It records what you tell it and shows you your own numbers
+back. It does not diagnose anything and it is not a substitute for your
+paediatrician.

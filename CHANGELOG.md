@@ -6,6 +6,70 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — a real Android app
+
+- **The same web build, in a Capacitor shell.** No second codebase, no separate
+  native UI, no feature that exists on only one platform — with one exception, which
+  is the entire reason the shell exists.
+- **Reminders now wake a closed app.** A page can raise a notification while it is
+  running; nothing in a browser can wake an app you closed two hours ago, because
+  web push needs a server holding a subscription and Notification Triggers was
+  withdrawn before it shipped. The shell hands the due times to Android's own alarm
+  scheduler instead, which fires them whether the app is open, backgrounded or dead.
+  **Still no server** — the alarm is held by your phone. This closes the one item on
+  the roadmap that was marked impossible.
+- **What gets handed over is a pure function** (`domain/scheduling.ts`), so it is
+  tested without a device: nothing disabled, nothing already overdue (the screen
+  already says overdue, and an alarm for a past moment adds nothing), nothing beyond
+  a day out, and an unchanged plan is not re-issued — the clock ticks every twenty
+  seconds and rewriting the same three alarms three times a minute for months is
+  what shows up in a battery report.
+- **The reminders screen now tells the truth for the platform it is on.** On the web
+  it still says a closed app cannot be woken; in the shell it says the alarm is held
+  by Android. Shipping one sentence for both would have made one of them a lie.
+- **An APK from CI on every push**, downloadable from the Actions run — no Android
+  SDK, no Mac, no developer account, nothing to pay. Debug-signed on purpose: a
+  release build needs a signing key, and a signing key in a public repository is a
+  key anyone can publish updates with. `android/.gitignore` now refuses keystores
+  outright rather than leaving it commented out.
+- **F-Droid metadata**, which is the intended home: it builds from source, signs
+  with its own key, and needs no account. The app qualifies without compromise —
+  AGPL-3.0, no proprietary dependencies, no analytics, no network calls. Capacitor
+  is MIT.
+- `SCHEDULE_EXACT_ALARM` is requested so a 3am reminder lands at 3am rather than
+  whenever Android next wakes up, and denying it makes reminders approximate rather
+  than broken. `USE_EXACT_ALARM`, the auto-granted variant, is deliberately **not**
+  requested: it is for alarm clocks and calendars, and a feed reminder is neither.
+- **No iOS target, deliberately.** It would need a Mac and a paid Apple account
+  renewed yearly, which no open-source project should require in order to ship, and
+  which would lock out any contributor without a Mac. Moved to non-goals along with
+  everything that follows from it. On iOS the installed PWA still works offline and
+  keeps its data.
+- The shell adds nothing to the web build, and that is now enforced rather than
+  claimed: `scripts/check-web-payload.mjs` asserts against the real `dist/` that the
+  bridge stays out of the entry's static imports, out of index.html's preloads and
+  out of the service-worker precache — while still being present and reachable, so
+  it cannot pass by the feature having been deleted. It runs in `npm run check` and
+  in CI.
+- The Android version is generated from package.json with a CI check that rejects
+  drift, the same guard the icons and vendored fonts already had.
+
+### Fixed
+
+- **The first attempt at splitting the Capacitor bridge did the exact opposite of
+  what it claimed.** Grouping it with Rollup's `manualChunks` made the chunk a
+  *static* dependency of the entry, so browsers preloaded an Android bridge they can
+  never execute — and because it had also been excluded from the precache, the app
+  **stopped loading offline entirely**. The build succeeded and the bundle report
+  looked smaller; every unit test passed. Only the offline smoke test caught it.
+  Naming the chunks without grouping them leaves the module graph untouched, and the
+  new payload check fails on the bad version, which was verified by reintroducing it.
+- `@capacitor/cli` and `@capacitor/android` were installed as runtime dependencies
+  rather than build-time ones. They are devDependencies now; `npm audit --omit=dev`
+  reports zero vulnerabilities, and the `tar` advisories the CLI pulls in stay on the
+  build machine where they belong.
+
+
 ### Added — a symptom diary and doctor visits
 
 - **A symptom diary that answers the question every doctor opens with.** Entries

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The status-bar notification icon: the same crescent as the launcher icon and the
+  favicon, as a silhouette.
+
+  Android uses only the alpha channel of a notification small icon and tints the
+  result, so this is drawn in solid white with no background. Supplying the
+  full-colour launcher icon instead — the common mistake — gets you a grey square.
+
+  Kept as a vector rather than five density-specific PNGs so there is one shape to
+  change, and it matches public/favicon.svg by hand. If you edit the crescent
+  there, edit it here.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40.5,39.5A15,15 0 0 1 25,20a15,15 0 1 0 15.5,19.5Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M45.6,43a2.6,2.6 0 1 1 -5.2,0a2.6,2.6 0 1 1 5.2,0Z" />
+</vector>

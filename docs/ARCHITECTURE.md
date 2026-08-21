@@ -195,3 +195,14 @@ new event type, since events share one object store.
   issue first.
 - **Never add an analytics or crash-reporting SDK.** This is a hard project rule,
   not a preference.
+
+## The Android shell
+
+The app ships as a PWA and as an Android app built from the same `dist/`. The shell
+exists for one capability a browser cannot provide — an alarm the OS holds and fires
+when the app is closed — and it is constrained so that the web build pays nothing
+for it: `src/app/native.ts` imports nothing from Capacitor statically, the bridge
+lives in its own dynamically-imported chunk that is excluded from the precache, and
+`scripts/check-web-payload.mjs` asserts that against the real build in CI.
+
+There is no iOS target, deliberately. See [ANDROID.md](ANDROID.md).

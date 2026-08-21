@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   loadSettings,
   resolveLocale,
@@ -13,6 +13,8 @@ import { useNow } from '@/app/useNow'
 import { useReminders } from '@/app/useReminders'
 import { useStash } from '@/app/useStash'
 import { showLocalNotification } from '@/app/notifications'
+import { isNativeApp, scheduleNativeAlerts } from '@/app/native'
+import { plannedAlerts, samePlan, type PlannedAlert } from '@/domain/scheduling'
 import type { ReminderStatus } from '@/domain/reminders'
 import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
@@ -101,6 +103,10 @@ function AppContent({
    */
   const alert = useCallback(
     async ({ reminder }: ReminderStatus) => {
+      // In the Android shell the OS already holds an alarm for this moment, and it
+      // fires whether the app is open, backgrounded or dead. Raising a second
+      // notification from the page would put two of the same thing in the shade.
+      if (isNativeApp()) return
       await showLocalNotification({
         title: reminderName(t, reminder.kind, reminder.label),
         body: t.t('reminders.due'),
@@ -120,6 +126,42 @@ function AppContent({
       resolveTheme(settings.themeMode, now, settings.nightWindow, prefersDark),
     )
   }, [settings.themeMode, settings.nightWindow, now, prefersDark])
+
+  /**
+   * Hands the upcoming reminders to Android's alarm scheduler.
+   *
+   * This is the one thing the shell exists for: an alarm the OS holds fires when the
+   * app is closed, which no browser API can do. On the web the effect is a no-op —
+   * `scheduleNativeAlerts` answers false and nothing is loaded.
+   *
+   * The last plan is remembered so an unchanged one is not re-issued. The clock
+   * ticks every twenty seconds; rewriting the same three alarms three times a
+   * minute for months is exactly what shows up in a battery report.
+   */
+  const scheduled = useRef<PlannedAlert[]>([])
+  useEffect(() => {
+    if (!isNativeApp()) return
+    const plan = plannedAlerts(reminders.statuses, now)
+    if (samePlan(plan, scheduled.current)) return
+    scheduled.current = plan
+
+    void scheduleNativeAlerts(
+      plan.map((planItem) => {
+        const status = reminders.statuses.find(
+          (candidate) => candidate.reminder.id === planItem.reminderId,
+        )
+        return {
+          nativeId: planItem.nativeId,
+          at: planItem.at,
+          title:
+            status === undefined
+              ? t.t('app.name')
+              : reminderName(t, status.reminder.kind, status.reminder.label),
+          body: t.t('reminders.due'),
+        }
+      }),
+    )
+  }, [reminders.statuses, now, t])
 
   // Remember which baby is open, so the app returns to the right one.
   useEffect(() => {
