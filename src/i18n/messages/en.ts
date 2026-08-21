@@ -47,6 +47,7 @@ export const en = {
   'section.timeline': 'Timeline',
   'section.growth': 'Growth',
   'section.stash': 'Milk stash',
+  'section.health': 'Health',
   'section.reminders': 'Reminders',
 
   // Actions
@@ -63,6 +64,7 @@ export const en = {
   'action.nextDay': 'Next day',
   'action.growth': 'Growth',
   'action.stash': 'Milk stash',
+  'action.health': 'Health',
   'action.reminders': 'Reminders',
   'action.settings': 'Settings',
   'action.back': 'Back',
@@ -92,6 +94,7 @@ export const en = {
   'event.diaper.mixed': 'Mixed diaper',
   'event.diaper.dry': 'Dry diaper',
   'event.pumping': 'Pumped',
+  'event.temperature': 'Temperature',
   'event.growth.weight': 'Weight',
   'event.growth.length': 'Length',
   'event.growth.head': 'Head circumference',
@@ -170,6 +173,45 @@ export const en = {
   'growth.curveLabel': 'WHO {percentile}',
   'growth.measuredOn': 'Measured {date}',
   'growth.atAge': 'at {age}',
+
+  // Temperature and medication
+  'health.title': 'Health',
+  'temperature.title': 'Temperature',
+  'temperature.log': 'Log temperature',
+  'temperature.value': 'Reading ({unit})',
+  'temperature.site': 'Taken',
+  'temperature.site.armpit': 'Armpit',
+  'temperature.site.ear': 'Ear',
+  'temperature.site.forehead': 'Forehead',
+  'temperature.site.mouth': 'Mouth',
+  'temperature.site.rectal': 'Rectal',
+  'temperature.save': 'Save reading',
+  'temperature.empty': 'No readings yet.',
+  'temperature.band.normal': 'within the usual range',
+  'temperature.band.raised': 'at or above the {threshold} most guidance calls a fever',
+  'temperature.band.low': 'below {threshold}',
+  'temperature.youngInfant':
+    'For a baby under three months, guidance is to contact a doctor about a temperature this high without waiting. This app cannot assess your baby.',
+  'temperature.siteNote':
+    'Armpit and forehead readings usually come in lower than a rectal one for the same baby, and health services differ on the figures. Yours is the guidance to follow.',
+  'medication.title': 'Medication',
+  'medication.log': 'Log a dose',
+  'medication.name': 'What did you give?',
+  'medication.recent': 'Recently given',
+  'medication.namePlaceholder': 'e.g. Paracetamol',
+  'medication.dose': 'Dose',
+  'medication.dosePlaceholder': 'e.g. 2.5 ml',
+  'medication.save': 'Save dose',
+  'medication.empty': 'Nothing logged yet.',
+  'medication.emptyHint':
+    'Logging a dose gives you a “last given” time to check before the next one.',
+  // `{duration}` is the whole "2h ago" / "just now" phrase, so this template
+  // must not say "ago" itself — that produced "last given just now ago".
+  'medication.lastGiven': 'last given {duration}',
+  'medication.timesGiven.one': '{count} dose logged',
+  'medication.timesGiven.other': '{count} doses logged',
+  'medication.note':
+    'This is a record of what you told it, nothing more. It does not check doses, intervals or interactions — your pharmacist and the bottle do that.',
 
   // Pumping and the milk stash
   'pumping.title': 'Pumping',
@@ -356,6 +398,8 @@ export const en = {
   'toast.stashAdded': '{amount} added to the stash',
   'toast.stashUsed': '{amount} used',
   'toast.stashDiscarded': 'Thrown away',
+  'toast.temperatureSaved': 'Reading saved',
+  'toast.medicationSaved': 'Dose saved',
   'toast.reminderSnoozed': 'Snoozed for {duration}',
   'toast.reminderDone': 'Done · next in {duration}',
   'toast.feedRepeated': 'Last feed repeated',
@@ -376,6 +420,8 @@ export const en = {
   'error.enterLabel': 'Give the reminder a name.',
   'error.enterOutput': 'Enter how much you pumped.',
   'error.enterStashAmount': 'Enter how much you are storing.',
+  'error.enterTemperature': 'Enter a reading a thermometer could give.',
+  'error.enterMedicationName': 'Enter what you gave.',
   'error.enterDuration': 'Enter the length of the feed in minutes.',
   'error.invalidStart': 'That start time is not valid.',
   'error.invalidWake': 'That wake-up time is not valid.',

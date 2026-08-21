@@ -384,6 +384,10 @@
   color: var(--pumping-tint);
 }
 
+.timeline-mark[data-category='health'] {
+  color: var(--health-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -774,6 +778,44 @@
   width: 1.5rem;
   height: 1.5rem;
   accent-color: var(--accent-solid);
+}
+
+/* ── Health ──────────────────────────────────────────────────────────────── */
+
+/* The reading leads, like the growth measurement and the home status do. */
+.health-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.health-band {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text-secondary);
+}
+
+/*
+ * A raised or low reading takes the accent on the *sentence*, never on a
+ * background: the app is reporting where a number sits against a published
+ * figure, and a red panel would be the app forming an opinion.
+ */
+.health-band[data-band='raised'],
+.health-band[data-band='low'] {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.health-headline + .health-band {
+  margin-bottom: var(--space-4);
+}
+
+/* A banner ran flush into the button below it, which read as one block. */
+.banner + .button {
+  margin-top: var(--space-5);
 }
 
 /* ── Milk stash ──────────────────────────────────────────────────────────── */

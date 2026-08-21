@@ -409,6 +409,79 @@ try {
     (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
   )
 
+  console.log('\n▸ Temperature and medication')
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  const tempSheet = page.locator('.sheet')
+  await tempSheet.getByLabel(/Reading/).fill('37.2')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  check(
+    'a normal reading is reported without alarm',
+    (await page.locator('.health-headline').innerText()) === '37.2 °C' &&
+      (await page.locator('.health-band').getAttribute('data-band')) === 'normal',
+  )
+
+  // 38 °C is the figure nearly every health service names, and the baby in this
+  // suite was born recently enough that the under-three-months note applies.
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await tempSheet.getByLabel(/Reading/).fill('38.4')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  check(
+    'a raised reading is compared with the published threshold, not diagnosed',
+    /at or above the 38.0 °C most guidance calls a fever/.test(
+      await page.locator('.health-band').innerText(),
+    ),
+  )
+  check(
+    'and a young baby gets the note every health service singles out',
+    await page.getByText(/under three months/).isVisible(),
+  )
+
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await tempSheet.getByLabel(/Reading/).fill('12')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  check(
+    'a reading no thermometer could give is refused',
+    await page.getByText(/thermometer could give/).isVisible(),
+  )
+  await tempSheet.getByRole('button', { name: 'Close' }).click()
+
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  const medSheet = page.locator('.sheet')
+  await medSheet.getByLabel('What did you give?').fill('Paracetamol')
+  await medSheet.getByLabel('Dose').fill('2.5 ml')
+  await medSheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+
+  // Different spelling of the same bottle: it must group, or "last given" answers
+  // the wrong question at the moment it matters most.
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  await medSheet.getByLabel('What did you give?').fill('  paracetamol ')
+  await medSheet.getByLabel('Dose').fill('5 ml')
+  await medSheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+
+  check(
+    'two spellings of one medicine group into a single entry',
+    (await page.locator('.reminder-row').count()) === 1,
+  )
+  const medRow = page.locator('.reminder-row').first()
+  const medText = await medRow.innerText()
+  check(
+    `showing the latest dose and how many were logged (${medText.split('\n')[1] ?? ''})`,
+    /5 ml · last given/.test(medText) && /2 doses logged/.test(medText),
+  )
+  // "last given just now ago" — the interpolated value already ends in "ago", so
+  // a template that also says it produces the duplication twice over.
+  check('without repeating the word ago', !/ago ago|just now ago/.test(medText))
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'health.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Pumping and the milk stash')
   await page.getByRole('button', { name: 'Log pumping' }).click()
   const pumpSheet = page.locator('.sheet')

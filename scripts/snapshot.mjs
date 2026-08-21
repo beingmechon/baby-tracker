@@ -145,6 +145,15 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  // A temperature reading, so the health screen has a headline to audit.
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await page.locator('.sheet').getByLabel(/Reading/).fill('37.2')
+  await page.locator('.sheet').getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   // Something in the stash, so that screen has rows to audit too.
   await page.getByRole('button', { name: 'Milk stash' }).first().click()
   await page.getByRole('button', { name: 'Add milk' }).click()
@@ -176,6 +185,12 @@ try {
     await page.getByRole('button', { name: 'Reminders' }).click()
     await page.locator('.reminder-row').first().waitFor()
     writeFileSync(join(OUT, `reminders-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Health' }).first().click()
+    await page.locator('.health-headline').waitFor()
+    writeFileSync(join(OUT, `health-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

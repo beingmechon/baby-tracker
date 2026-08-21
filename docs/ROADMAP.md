@@ -57,8 +57,10 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v0.4 — Health and medical
 
-- [ ] Temperature log with age-appropriate fever thresholds
-- [ ] Medication log: name, dose, time, "last given X hours ago", reminders
+- [x] Temperature log, compared against the 38 °C figure health services publish,
+      with the under-three-months case singled out
+- [x] Medication log: name, dose, time, "last given X ago". Reminders are covered
+      by the custom reminders shipped above
 - [ ] Vaccination schedules, country-selectable: India (IAP), US (CDC), UK (NHS),
       WHO default — **help wanted from parents outside the US**
 - [ ] Doctor visits: notes, questions-to-ask list, attached photos and reports
@@ -126,19 +128,13 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## Languages, in priority order
 
-The plumbing is done; a new language is one file in `src/i18n/messages/` plus an
-entry in `locales.ts`. **Help especially wanted.**
+A new language is one file in `src/i18n/messages/` plus an entry in `locales.ts`.
+**Help especially wanted.**
 
-1. **Tamil (ta)** — next up, and the priority.
-2. **Hindi (hi), Telugu (te), Kannada (kn), Malayalam (ml), Bengali (bn), Marathi
-   (mr)** — Indian languages ahead of European ones. India has more births per
-   year than any other country and almost no baby tracker speaks these languages.
+1. **Tamil (ta)**
+2. **Hindi (hi), Telugu (te), Kannada (kn), Malayalam (ml), Bengali (bn),
+   Marathi (mr)**
 3. Everything else, as people bring it.
-
-Spanish shipped first only because it proved the plumbing — plurals, accents,
-placeholder parity and a 24-hour clock — in a language the drift tests could
-check. It is still awaiting native review, and that review is welcome, but it was
-never meant to signal that European languages come first.
 
 ## Always
 

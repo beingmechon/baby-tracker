@@ -61,6 +61,9 @@ This is an early release, deliberately small, and genuinely usable right now:
   Organization's own reference curves. Gain per week between weigh-ins. This is
   the feature most trackers put behind a subscription; here it is just part of the
   app.
+- **Temperature and medication** — readings compared against the figure health
+  services publish rather than diagnosed, and a dose log that answers "when did we
+  last give this?"
 - **Pumping and a milk stash** — per-side output with a session clock, plus fridge
   and freezer stock listed in the order to use it, each container measured against
   its own storage guideline.
@@ -153,7 +156,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 19
+the result is checked by its deterministic AI-tell detector: **0 findings across 22
 screens and 16 rules**, down from 13.
 
 ## Tech

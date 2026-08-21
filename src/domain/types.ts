@@ -21,6 +21,8 @@ export type EventType =
   | 'diaper'
   | 'growth'
   | 'pumping'
+  | 'temperature'
+  | 'medication'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -31,6 +33,9 @@ export type EventType =
 export type Sex = 'male' | 'female'
 
 export type MeasureKind = 'weight' | 'length' | 'head'
+
+/** Where a temperature was taken. It materially changes the number. */
+export type TemperatureSite = 'armpit' | 'ear' | 'forehead' | 'mouth' | 'rectal'
 
 /** Which units measurements are shown and entered in. */
 export type MeasureSystem = 'metric' | 'imperial'
@@ -103,6 +108,29 @@ export interface PumpingEvent extends EventBase {
   durationMs: number
 }
 
+export interface TemperatureEvent extends EventBase {
+  type: 'temperature'
+  /**
+   * Hundredths of a degree Celsius — 37.5 °C is 3750.
+   *
+   * One canonical unit, held as an integer, so a reading typed in Fahrenheit and
+   * read back in Fahrenheit returns what was typed instead of drifting.
+   */
+  celsiusHundredths: number
+  site: TemperatureSite
+}
+
+export interface MedicationEvent extends EventBase {
+  type: 'medication'
+  name: string
+  /**
+   * Free text, deliberately: doses come in millilitres, milligrams, drops and
+   * fractions of a tablet, and a structured amount-plus-unit would be a precision
+   * the app does not actually have.
+   */
+  dose: string
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
@@ -110,6 +138,8 @@ export type BabyEvent =
   | DiaperEvent
   | GrowthEvent
   | PumpingEvent
+  | TemperatureEvent
+  | MedicationEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -130,6 +160,14 @@ export function isGrowth(event: BabyEvent): event is GrowthEvent {
 
 export function isPumping(event: BabyEvent): event is PumpingEvent {
   return event.type === 'pumping'
+}
+
+export function isTemperature(event: BabyEvent): event is TemperatureEvent {
+  return event.type === 'temperature'
+}
+
+export function isMedication(event: BabyEvent): event is MedicationEvent {
+  return event.type === 'medication'
 }
 
 /** Total output of a pumping session. */

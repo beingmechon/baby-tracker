@@ -6,6 +6,37 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — temperature and medication
+
+- **Temperature readings** with the site they were taken at, in °C or °F. Stored
+  as hundredths of a degree Celsius, so a reading typed in Fahrenheit reads back as
+  the number that was typed.
+- **A reading is compared with a published figure, never diagnosed.** 38 °C is what
+  the NHS, the CDC and the WHO all name as a fever, and the screen says that is
+  what it is comparing against. It also says that armpit and forehead readings come
+  in lower than a rectal one, and that health services differ.
+- **The one case worth singling out.** For a baby under three months with a raised
+  reading, the app reports that guidance is to contact a doctor without waiting,
+  and says plainly that it cannot assess anyone. Leaving that unsaid in order to
+  sound less medical would have been the more harmful choice. Age is judged at the
+  reading, not today.
+- **A medication log** with a free-text dose — millilitres, milligrams, drops, half
+  a tablet — because a structured amount would be a precision the app does not
+  have. Doses group by name, case- and space-insensitively, so "Calpol" and
+  "calpol " are one medicine and "last given" answers the question correctly.
+- Readings outside 30–45 °C are refused as a typo or a broken thermometer rather
+  than stored where a doctor might read them.
+
+### Fixed
+
+- **"last given just now ago".** The template said "ago" and so did the value
+  interpolated into it. The same mistake as the diaper toast in v0.2, and the same
+  fix: a phrase goes in whole or not at all.
+- **Two controls in the medication sheet shared one accessible name**, so a screen
+  reader announced "What did you give?" for both the recent-medicine chips and the
+  text field. The chips are labelled "Recently given" now.
+- An important banner sat flush against the button below it and read as one block.
+
 ### Added — pumping and the milk stash
 
 - **Pumping sessions** with a clock and per-side output. Both sides are recorded
@@ -168,11 +199,11 @@ says so on screen.
 
 ### Verified
 
-309 unit tests (up from 156) and 73 browser smoke checks, including the WHO
+329 unit tests (up from 156) and 80 browser smoke checks, including the WHO
 percentile maths against the organization's own published −2SD and +2SD figures, a
 metric-to-imperial round trip through storage, the v1-to-v2 schema migration
 against a genuine version-1 database, and a real language switch. 0 AI-tell
-findings across 19 rendered screens.
+findings across 22 rendered screens.
 
 ## [0.1.1] — 2026-08-17
 

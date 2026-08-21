@@ -1,4 +1,10 @@
 import { G_PER_OZ, gramsToPoundsOunces, mmToInches } from '@/domain/measure'
+import {
+  RAISED_THRESHOLD,
+  LOW_THRESHOLD,
+  fromHundredths,
+  type TemperatureReading,
+} from '@/domain/health'
 import type { ReminderKind, ReminderStatus } from '@/domain/reminders'
 import type { StashLocation, StashStatus } from '@/domain/stash'
 import {
@@ -10,6 +16,7 @@ import {
 import type {
   MeasureKind,
   MeasureSystem,
+  TemperatureSite,
   Timestamp,
   VolumeUnit,
 } from '@/domain/types'
@@ -277,6 +284,67 @@ export function formatStashState(t: Translator, status: StashStatus): string {
     case 'pastGuideline':
       return t.t('stash.pastGuideline', {
         guideline: formatSpan(t, status.guidelineMs),
+      })
+  }
+}
+
+const TEMPERATURE_SITE_NAMES: Record<TemperatureSite, MessageKey> = {
+  armpit: 'temperature.site.armpit',
+  ear: 'temperature.site.ear',
+  forehead: 'temperature.site.forehead',
+  mouth: 'temperature.site.mouth',
+  rectal: 'temperature.site.rectal',
+}
+
+export function temperatureSiteName(t: Translator, site: TemperatureSite): string {
+  return t.t(TEMPERATURE_SITE_NAMES[site])
+}
+
+/** Which scale a measurement system reads temperatures in. */
+export function temperatureUnit(system: MeasureSystem): 'c' | 'f' {
+  return system === 'imperial' ? 'f' : 'c'
+}
+
+export function temperatureUnitSymbol(system: MeasureSystem): string {
+  return system === 'imperial' ? '°F' : '°C'
+}
+
+/** `37.6 °C` / `99.7 °F`, in the reader's scale. */
+export function formatTemperature(
+  t: Translator,
+  hundredths: number,
+  system: MeasureSystem,
+): string {
+  const unit = temperatureUnit(system)
+  return `${t.number(fromHundredths(hundredths, unit), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} ${temperatureUnitSymbol(system)}`
+}
+
+/**
+ * Where a reading sits, in words, with the threshold quoted in the reader's own
+ * scale.
+ *
+ * Phrased as a comparison with a published figure — "at or above the 38.0 °C most
+ * guidance calls a fever" — rather than as a verdict. The app is reporting a
+ * threshold, not deciding anything about a baby.
+ */
+export function formatTemperatureBand(
+  t: Translator,
+  reading: TemperatureReading,
+  system: MeasureSystem,
+): string {
+  switch (reading.band) {
+    case 'normal':
+      return t.t('temperature.band.normal')
+    case 'raised':
+      return t.t('temperature.band.raised', {
+        threshold: formatTemperature(t, RAISED_THRESHOLD, system),
+      })
+    case 'low':
+      return t.t('temperature.band.low', {
+        threshold: formatTemperature(t, LOW_THRESHOLD, system),
       })
   }
 }

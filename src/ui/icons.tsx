@@ -59,6 +59,16 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+/** A thermometer: the health screen covers temperature and medicine. */
+export function HealthIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M13.5 13.6V5a1.75 1.75 0 0 0-3.5 0v8.6a3.5 3.5 0 1 0 3.5 0Z" />
+      <path d="M16.5 7.5h3M16.5 10.5h2" />
+    </svg>
+  )
+}
+
 /** A bottle under a funnel: expressing into a container, not a machine. */
 export function PumpIcon({ size = 22, className }: IconProps) {
   return (

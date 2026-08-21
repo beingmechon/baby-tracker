@@ -11,6 +11,7 @@ import {
   BottleIcon,
   DiaperIcon,
   GrowthIcon,
+  HealthIcon,
   NursingIcon,
   PumpIcon,
   SleepIcon,
@@ -38,6 +39,9 @@ function iconFor(event: BabyEvent) {
       return <GrowthIcon size={16} />
     case 'pumping':
       return <PumpIcon size={16} />
+    case 'temperature':
+    case 'medication':
+      return <HealthIcon size={16} />
   }
 }
 

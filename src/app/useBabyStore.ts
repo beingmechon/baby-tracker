@@ -11,6 +11,7 @@ import type {
   Id,
   MeasureKind,
   SleepEvent,
+  TemperatureSite,
   Timestamp,
 } from '@/domain/types'
 import { useRepository } from './repositoryContext'
@@ -49,6 +50,16 @@ export interface BabyStore {
     leftMl: number
     rightMl: number
     durationMs: number
+    startedAt: Timestamp
+  }): Promise<void>
+  logTemperature(input: {
+    celsiusHundredths: number
+    site: TemperatureSite
+    startedAt: Timestamp
+  }): Promise<void>
+  logMedication(input: {
+    name: string
+    dose: string
     startedAt: Timestamp
   }): Promise<void>
   startSleep(startedAt: Timestamp): Promise<void>
@@ -189,6 +200,10 @@ export function useBabyStore(
       addEvent({ type: 'growth', measure, value, startedAt }),
     logPumping: ({ leftMl, rightMl, durationMs, startedAt }) =>
       addEvent({ type: 'pumping', leftMl, rightMl, durationMs, startedAt }),
+    logTemperature: ({ celsiusHundredths, site, startedAt }) =>
+      addEvent({ type: 'temperature', celsiusHundredths, site, startedAt }),
+    logMedication: ({ name, dose, startedAt }) =>
+      addEvent({ type: 'medication', name, dose, startedAt }),
 
     startSleep: async (startedAt) => {
       // Only ever one sleep runs at a time; the button that calls this is hidden

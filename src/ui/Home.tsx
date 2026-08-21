@@ -54,6 +54,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   GrowthIcon,
+  HealthIcon,
   NursingIcon,
   PumpIcon,
   RepeatIcon,
@@ -69,6 +70,7 @@ interface HomeProps {
   onOpenGrowth: () => void
   onOpenReminders: () => void
   onOpenStash: () => void
+  onOpenHealth: () => void
   onSwitchBaby: (babyId: string) => void
 }
 
@@ -90,6 +92,7 @@ export function Home({
   onOpenGrowth,
   onOpenReminders,
   onOpenStash,
+  onOpenHealth,
   onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
@@ -477,6 +480,23 @@ export function Home({
           <button type="button" className="action-repeat" onClick={onOpenStash}>
             <PumpIcon size={16} />
             <span>{t.t('stash.title')}</span>
+          </button>
+        </section>
+
+        <section className="section" aria-label={t.t('section.health')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenHealth}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('health.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.health')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenHealth}>
+            <HealthIcon size={16} />
+            <span>{t.t('health.title')}</span>
           </button>
         </section>
 

@@ -9,12 +9,20 @@ import type {
 import {
   formatDuration,
   formatMeasure,
+  formatTemperature,
   formatVolume,
   measureName,
+  temperatureSiteName,
 } from '@/i18n/format'
 import type { MessageKey, Translator } from '@/i18n/locales'
 
-export type Category = 'feed' | 'sleep' | 'diaper' | 'growth' | 'pumping'
+export type Category =
+  | 'feed'
+  | 'sleep'
+  | 'diaper'
+  | 'growth'
+  | 'pumping'
+  | 'health'
 
 export interface EventDescription {
   category: Category
@@ -114,6 +122,22 @@ export function describeEvent(
         live: false,
       }
     }
+
+    case 'temperature':
+      return {
+        category: 'health',
+        title: t.t('event.temperature'),
+        detail: `${formatTemperature(t, event.celsiusHundredths, measureSystem)} · ${temperatureSiteName(t, event.site)}`,
+        live: false,
+      }
+
+    case 'medication':
+      return {
+        category: 'health',
+        title: event.name,
+        detail: event.dose,
+        live: false,
+      }
 
     case 'growth':
       return {

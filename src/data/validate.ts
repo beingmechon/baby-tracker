@@ -1,5 +1,9 @@
 import { isValidInterval, type Reminder, type ReminderKind } from '@/domain/reminders'
 import {
+  TEMPERATURE_SITES,
+  isValidTemperature,
+} from '@/domain/health'
+import {
   STASH_LOCATIONS,
   isValidStashAmount,
   type StashEntry,
@@ -14,6 +18,7 @@ import type {
   MeasureKind,
   Sex,
   SleepKind,
+  TemperatureSite,
 } from '@/domain/types'
 
 /**
@@ -126,6 +131,20 @@ export function parseEvent(value: unknown): BabyEvent | null {
       const kind = oneOf(value.kind, DIAPER_KINDS)
       if (kind === null) return null
       return { ...base, type: 'diaper', kind }
+    }
+    case 'temperature': {
+      const site = oneOf<TemperatureSite>(value.site, TEMPERATURE_SITES)
+      const celsiusHundredths = finiteNumber(value.celsiusHundredths)
+      if (site === null || celsiusHundredths === null) return null
+      // A reading outside human range is a typo or a broken thermometer, and
+      // storing it would put a nonsense figure in front of a doctor.
+      if (!isValidTemperature(celsiusHundredths)) return null
+      return { ...base, type: 'temperature', site, celsiusHundredths }
+    }
+    case 'medication': {
+      const name = str(value.name)
+      if (name === null) return null
+      return { ...base, type: 'medication', name, dose: str(value.dose) ?? '' }
     }
     case 'pumping': {
       const leftMl = nonNegative(value.leftMl)

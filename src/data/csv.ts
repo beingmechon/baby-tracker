@@ -115,6 +115,37 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         ...growthColumns(event),
         note,
       ]
+    case 'temperature':
+      return [
+        ...base,
+        'temperature',
+        event.site,
+        '',
+        '',
+        '',
+        round(event.celsiusHundredths / 100, 1),
+        'C',
+        round((event.celsiusHundredths / 100) * (9 / 5) + 32, 1),
+        'F',
+        note,
+      ]
+    case 'medication':
+      // The dose goes in `detail` because it is free text — millilitres, drops or
+      // a fraction of a tablet — and forcing it into a numeric column would
+      // invent a precision the app does not have.
+      return [
+        ...base,
+        'medication',
+        `${event.name}: ${event.dose}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
     case 'pumping': {
       const total = event.leftMl + event.rightMl
       // The total goes in the same amount columns as a bottle so a spreadsheet can
