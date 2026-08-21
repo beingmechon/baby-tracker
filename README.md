@@ -16,6 +16,7 @@ to sign up to, because there is no server.
 </p>
 <p align="center">
   <img src="docs/screenshots/patterns.png" alt="The patterns screen: a 24-hour clock face with midnight at the top, sleep drawn as an arc on the rim and feeds and diapers as tick marks, the day's total sleep set in the middle of the ring, and a seven-day bar chart of nights and naps below it." width="30%">
+  <img src="docs/screenshots/handover.png" alt="The handover screen: a Right Now ledger giving the times of the last sleep, feed and diaper change, the totals for the chosen window below it, and the whole thing rendered as a plain-text message ready to copy." width="30%">
 </p>
 
 ---
@@ -75,6 +76,10 @@ This is an early release, deliberately small, and genuinely usable right now:
   few data points), a 24-hour day wheel, a week of nights and naps stacked, the
   trend against last week, and cluster feeding named when it happens. All of it
   computed on the device. This is the $69-a-year feature.
+- **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
+  and when they last ate, slept and were changed, then copy it as a plain-text
+  message or print it for a nursery. Copying puts text on your clipboard; nothing
+  is sent anywhere.
 - **More than one baby** — switch from the app bar; each one's log, growth and
   reminders are entirely their own.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
@@ -164,7 +169,7 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 25
+the result is checked by its deterministic AI-tell detector: **0 findings across 28
 screens and 16 rules**, down from 13.
 
 ## Tech

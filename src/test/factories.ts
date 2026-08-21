@@ -5,9 +5,12 @@ import type {
   DiaperKind,
   GrowthEvent,
   MeasureKind,
+  MedicationEvent,
   NursingEvent,
   SleepEvent,
   SleepKind,
+  TemperatureEvent,
+  TemperatureSite,
   Timestamp,
 } from '@/domain/types'
 
@@ -131,6 +134,40 @@ export function pumping(
     leftMl,
     rightMl,
     durationMs,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function temperature(
+  startedAt: Timestamp,
+  celsiusHundredths: number,
+  site: TemperatureSite = 'armpit',
+): TemperatureEvent {
+  return {
+    id: nextId('temperature'),
+    babyId: BABY_ID,
+    type: 'temperature',
+    startedAt,
+    celsiusHundredths,
+    site,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function medication(
+  startedAt: Timestamp,
+  name: string,
+  dose = '',
+): MedicationEvent {
+  return {
+    id: nextId('medication'),
+    babyId: BABY_ID,
+    type: 'medication',
+    startedAt,
+    name,
+    dose,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

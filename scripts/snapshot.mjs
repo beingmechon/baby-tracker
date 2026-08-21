@@ -206,6 +206,12 @@ try {
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+    await page.getByRole('button', { name: 'What to tell the next person' }).click()
+    await page.locator('.handover-text').waitFor()
+    writeFileSync(join(OUT, `handover-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
     await page.getByRole('button', { name: /Mira/ }).click()
     await page.locator('.baby-row').first().waitFor()
     writeFileSync(join(OUT, `babies-${theme}.html`), await serialize(page))

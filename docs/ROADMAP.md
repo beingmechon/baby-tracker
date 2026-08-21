@@ -48,8 +48,10 @@ to use it with a real baby at 4am.
 - [ ] End-to-end encrypted relay as an alternative to self-hosting
 - [ ] Roles: edit vs view-only
 - [ ] Who-logged-what audit trail
-- [ ] Handover summary: "since your shift: 2 feeds, 1 nap, 3 diapers"
-- [ ] Daycare report: a printable or shareable daily summary
+- [x] Handover summary: "since your shift: 2 feeds, 1 nap, 3 diapers", with a
+      window you choose and the time of the last of each thing
+- [x] Daycare report: a printable or shareable daily summary — copy as plain text
+      for a message, or print / save as PDF
 - [ ] Import from other apps (Baby Tracker, Huckleberry CSV)
 
 The store already sits behind a single `Repository` interface and every event

@@ -6,6 +6,44 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — the handover
+
+- **A handover screen**, for the thing that actually happens at the door: pick a
+  shift — the last 4, 8 or 12 hours, or today — and see it in one screen.
+- **"Right now" comes first, before any count.** When they last ate, whether they
+  are asleep or when they woke, when they were last changed. Someone standing in a
+  doorway with a bag over one shoulder needs those three times; "3 feeds" is
+  context, not an instruction.
+- **The last of each thing is reported even when it falls outside the window.** "No
+  feeds in the last four hours" is useless. "Last fed at 09:15" is the same fact
+  stated so the next person can act on it.
+- **Copy as a message.** The handover renders as plain text — no markdown, no
+  emoji, no table — because it gets pasted into WhatsApp or read out loud. The text
+  is shown on screen rather than hidden behind the button, so a parent can read
+  what they are about to send and select it by hand if the clipboard is refused.
+  Copying reports honestly whether the browser allowed it.
+- **Print or save as PDF**, because nurseries and childminders ask for paper. The
+  print stylesheet drops the app bar and every button and forces black on white:
+  printing a night-mode page as it appears would empty an ink cartridge.
+- **Doses are listed, not counted.** "2 doses" is the wrong thing to hand over —
+  the next caregiver needs to know what was given and when, so they do not give it
+  again. Temperature readings likewise.
+- The daily summary now also aggregates pumping, medication and temperature, which
+  is what made all of the above a summary rather than a second implementation.
+
+### Fixed
+
+- **The handover message could contain a double blank line**, which reads as a
+  broken message once it lands in someone's chat. It was built by pushing
+  separators between blocks as they were added; it is now three blocks joined by
+  one blank line each, so the gap cannot happen. Caught by its own test.
+- **One medicine listed twice under two spellings.** The health screen has grouped
+  "Calpol" and "calpol " as one bottle since v0.4, but the handover listed raw
+  names — and two spellings side by side reads as two different things having been
+  given, which is the one mistake a handover must not make. The grouping key is now
+  shared, and each administration keeps its own line and time.
+
+
 ### Added — sleep patterns, the day wheel and the week
 
 - **The next nap, predicted from this baby's own log.** The median gap between

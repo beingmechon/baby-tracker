@@ -78,6 +78,11 @@ try {
     timezoneId: 'Asia/Kolkata',
     locale: 'en-GB',
   })
+  // The handover screen reads the clipboard back to prove it wrote what was on
+  // screen. Without the permission, Chromium blocks `readText()` forever waiting
+  // on a prompt that never appears in a headless run.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE })
+
   const page = await context.newPage()
 
   const consoleErrors = []
@@ -800,6 +805,108 @@ try {
     'and there is no walking into tomorrow',
     await page.getByRole('button', { name: 'Next day' }).isDisabled(),
   )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Handover')
+  await page.getByRole('button', { name: 'What to tell the next person' }).click()
+  await page.getByText('Right now').waitFor()
+  check(
+    'the handover screen opens',
+    (await page.locator('.appbar-name').innerText()) === 'Handover',
+  )
+  check(
+    'it leads with what someone in a doorway needs, not with counts',
+    // The labels are uppercased in CSS, so innerText comes back shouting.
+    /since/i.test(await page.locator('.rule-label').first().innerText()) &&
+      /right now/i.test(await page.locator('.rule-label').nth(1).innerText()),
+  )
+  const rightNow = await page.locator('.handover-facts').first().innerText()
+  check(
+    `it dates the last feed, sleep and diaper (${rightNow.replace(/\n/g, ' · ')})`,
+    /Last fed at \d/.test(rightNow) &&
+      /Last diaper at \d/.test(rightNow) &&
+      /(Awake since|Asleep since) \d/.test(rightNow),
+  )
+  const messageText = await page.locator('.handover-text').innerText()
+  check(
+    'the message is shown, not hidden behind the copy button',
+    messageText.startsWith('Mira'),
+  )
+  check(
+    'and it is plain text a person can read out — no markup, no emoji',
+    !/[*_#`|]/.test(messageText) && !/\p{Extended_Pictographic}/u.test(messageText),
+  )
+  check(
+    'with no double gap that would read as broken in a chat',
+    !/\n\s*\n\s*\n/.test(messageText),
+  )
+
+  // Narrowing the window has to change the counts, or the control does nothing.
+  const todayText = messageText
+  await page.getByRole('button', { name: 'Last 4h' }).click()
+  const fourHourText = await page.locator('.handover-text').innerText()
+  check('choosing a shorter window rewrites the message', fourHourText !== todayText)
+  check(
+    'and the screen says which moment it is counting from',
+    /Since \d/.test(await page.locator('.page').innerText()),
+  )
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'handover.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Copy as a message' }).click()
+  const copyToast = await page.locator('.toast').innerText()
+  check(
+    `copying reports what actually happened (${copyToast.replace(/\n/g, ' ')})`,
+    /Copied|would not let/.test(copyToast),
+  )
+  check(
+    'the clipboard holds exactly what the screen showed',
+    // Only assertable when the browser allowed the write; the refusal path is
+    // covered by the toast check above.
+    !/Copied/.test(copyToast) ||
+      (await page.evaluate(() => navigator.clipboard.readText())) ===
+        (await page.locator('.handover-text').innerText()),
+  )
+  check(
+    'one medicine is listed under one spelling, however it was typed',
+    await page.evaluate(() => {
+      const cell = [...document.querySelectorAll('.handover-fact')].find((row) =>
+        /given/i.test(row.querySelector('dt')?.textContent ?? ''),
+      )
+      if (cell === undefined) return false
+      const names = [...cell.querySelectorAll('.handover-line')].map(
+        (line) => (line.textContent ?? '').split(' ')[0],
+      )
+      return names.length > 1 && new Set(names).size === 1
+    }),
+  )
+  check(
+    'the screen says copying is all that happens',
+    await page.getByText(/on your clipboard and nothing else/).isVisible(),
+  )
+  // What prints is the facts. A dark theme printed as-is is a solid black page.
+  await page.emulateMedia({ media: 'print' })
+  check(
+    'printing drops the app bar and the buttons',
+    await page.evaluate(() => {
+      const hidden = (selector) => {
+        const el = document.querySelector(selector)
+        return el === null || getComputedStyle(el).display === 'none'
+      }
+      return hidden('.appbar') && hidden('.button') && hidden('.segmented')
+    }),
+  )
+  check(
+    'and prints black on white whatever the screen theme is',
+    await page.evaluate(() => {
+      const body = getComputedStyle(document.body)
+      return body.backgroundColor === 'rgb(255, 255, 255)' && body.color === 'rgb(0, 0, 0)'
+    }),
+  )
+  await page.emulateMedia({ media: 'screen' })
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

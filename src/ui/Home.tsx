@@ -62,6 +62,7 @@ import {
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
+  HandoverIcon,
   WheelIcon,
 } from './icons'
 
@@ -75,6 +76,7 @@ interface HomeProps {
   onOpenStash: () => void
   onOpenHealth: () => void
   onOpenPatterns: () => void
+  onOpenHandover: () => void
   onSwitchBaby: (babyId: string) => void
 }
 
@@ -98,6 +100,7 @@ export function Home({
   onOpenStash,
   onOpenHealth,
   onOpenPatterns,
+  onOpenHandover,
   onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
@@ -522,6 +525,25 @@ export function Home({
           <button type="button" className="action-repeat" onClick={onOpenPatterns}>
             <WheelIcon size={16} />
             <span>{t.t('patterns.dayWheel')}</span>
+          </button>
+        </section>
+
+        {/* Its own section rather than a row under Patterns: handing over is a
+            thing a parent comes to the app to do, not a chart to look at. */}
+        <section className="section" aria-label={t.t('handover.title')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenHandover}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('handover.title')}</span>
+              </button>
+            }
+          >
+            {t.t('handover.title')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenHandover}>
+            <HandoverIcon size={16} />
+            <span>{t.t('handover.subtitle')}</span>
           </button>
         </section>
 

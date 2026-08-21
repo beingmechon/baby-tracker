@@ -142,6 +142,17 @@ export interface MedicationSummary {
  * bottle would answer it wrongly. The display name is whichever spelling was used
  * most recently, so correcting it once corrects it everywhere.
  */
+/**
+ * The grouping key for a medication name.
+ *
+ * Exported because anything that shows medication names has to group them the same
+ * way. Two screens disagreeing about whether "Calpol" and "calpol" are one bottle
+ * is worse than either answer.
+ */
+export function medicationKey(name: string): string {
+  return name.trim().toLocaleLowerCase()
+}
+
 export function medicationSummaries(
   events: readonly BabyEvent[],
 ): MedicationSummary[] {
@@ -149,7 +160,7 @@ export function medicationSummaries(
 
   for (const event of events) {
     if (event.type !== 'medication') continue
-    const key = event.name.trim().toLocaleLowerCase()
+    const key = medicationKey(event.name)
     if (key.length === 0) continue
 
     const existing = byKey.get(key)

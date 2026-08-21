@@ -72,6 +72,12 @@ be deliberate about email, cloud drives and messaging apps.
 CSV exports are deliberately hardened against spreadsheet formula injection, so a
 file you hand to a doctor cannot execute anything when opened.
 
+The same applies to the handover screen. "Copy as a message" puts plain text on
+your clipboard and nothing else happens — no request is made, and the app does not
+know or care where you paste it. Once it is in a message or on a nursery's
+whiteboard, it is out of this app's hands. "Print or save as PDF" opens your own
+device's print dialog; the app never sees the result.
+
 ## Children's data
 
 The whole app is about a child, and the data is unusually sensitive. This is

@@ -1411,6 +1411,131 @@
   color: var(--text-secondary);
 }
 
+/* ── Handover ────────────────────────────────────────────────────────────── */
+
+/*
+ * A ledger of facts: label at the left, value at the right, one hairline between
+ * rows. The same shape as the daily summary and the stash, because a parent
+ * reading this at the door should not have to learn a new layout.
+ */
+.handover-facts {
+  margin: 0;
+}
+
+.handover-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.handover-fact:last-child {
+  border-bottom: none;
+}
+
+.handover-fact dt {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.handover-fact dd {
+  margin: 0;
+  font-size: var(--text-0);
+  text-align: right;
+}
+
+.handover-fact dd.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Several doses or readings in one cell, each on its own line. */
+.handover-line {
+  display: block;
+}
+
+.handover-line + .handover-line {
+  margin-top: var(--space-1);
+}
+
+/*
+ * The message itself, shown rather than hidden behind the copy button — a parent
+ * should be able to read what they are about to send, and select it by hand when
+ * the clipboard is unavailable. Body face, not monospace: it is a sentence someone
+ * will read, not code.
+ */
+.handover-text {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-5);
+  font-family: var(--font-body);
+  font-size: var(--text-0);
+  line-height: var(--leading-body);
+  white-space: pre-wrap;
+  background: var(--surface);
+  border-left: 2px solid var(--border-strong);
+  overflow-x: auto;
+}
+
+.handover-text + .button {
+  margin-bottom: var(--space-4);
+}
+
+/*
+ * ── Print ────────────────────────────────────────────────────────────────────
+ *
+ * Nurseries and childminders ask for paper, and "save as PDF" goes through the
+ * same path. What prints is the facts and nothing else: no app bar, no buttons,
+ * no theme. Black on white regardless of the theme on screen, because a night-mode
+ * page prints as a solid dark rectangle and empties an ink cartridge.
+ */
+@media print {
+  :root {
+    --background: #fff;
+    --surface: #fff;
+    --surface-hover: #fff;
+    --surface-active: #fff;
+    --text: #000;
+    --text-secondary: #333;
+    --border-subtle: #bbb;
+    --border: #999;
+    --border-strong: #666;
+    --accent-solid: #000;
+    --accent-text: #000;
+  }
+
+  .appbar,
+  .button,
+  .icon-button,
+  .segmented,
+  .toast,
+  .action,
+  .actions {
+    display: none !important;
+  }
+
+  .page {
+    gap: var(--space-7);
+    padding: 0;
+  }
+
+  .handover-text {
+    padding: 0;
+    border-left: none;
+  }
+
+  /* A page break inside a fact turns one line into two half-lines. */
+  .handover-fact,
+  .section {
+    break-inside: avoid;
+  }
+}
+
 /* ── Misc ────────────────────────────────────────────────────────────────── */
 
 .empty {

@@ -178,3 +178,33 @@ export function ShieldIcon({ size = 20, className }: IconProps) {
     </svg>
   )
 }
+
+export function CopyIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+    </svg>
+  )
+}
+
+export function PrintIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M7 9V3.5h10V9" />
+      <path d="M7 17H4.5V9h15v8H17" />
+      <rect x="7" y="14" width="10" height="6.5" rx="1" />
+    </svg>
+  )
+}
+
+export function HandoverIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M3 13.5c1.8-1.4 3.4-1.4 5 0l2.5 2.2" />
+      <path d="M21 13.5c-1.8-1.4-3.4-1.4-5 0l-2.5 2.2" />
+      <path d="M12 4.5v5" />
+      <path d="M9.5 7 12 4.5 14.5 7" />
+    </svg>
+  )
+}
