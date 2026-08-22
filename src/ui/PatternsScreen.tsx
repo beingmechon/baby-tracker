@@ -65,7 +65,10 @@ export function PatternsScreen({
     () => dayWheel(events, dayAnchor, now),
     [events, dayAnchor, now],
   );
-  const week = useMemo(() => dailyTotals(events, now), [events, now]);
+  // Seven days or thirty, from the same function. A month is where a routine
+  // settling — or failing to — becomes visible, and a week is too short to show it.
+  const [span, setSpan] = useState<7 | 30>(7);
+  const week = useMemo(() => dailyTotals(events, now, span), [events, now, span]);
   const trend = useMemo(() => nightSleepTrend(events, now), [events, now]);
   const cluster = useMemo(() => detectFeedCluster(events, now), [events, now]);
   const deviation = useMemo(() => detectDeviation(events, now), [events, now]);
@@ -179,7 +182,32 @@ export function PatternsScreen({
             </section>
 
             <section className="section">
-              <RuleLabel>{t.t("patterns.week")}</RuleLabel>
+              <RuleLabel
+                actions={
+                  <div
+                    className="span-toggle"
+                    role="group"
+                    aria-label={t.t("patterns.span")}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={span === 7}
+                      onClick={() => setSpan(7)}
+                    >
+                      {t.t("patterns.span7")}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={span === 30}
+                      onClick={() => setSpan(30)}
+                    >
+                      {t.t("patterns.span30")}
+                    </button>
+                  </div>
+                }
+              >
+                {span === 7 ? t.t("patterns.week") : t.t("patterns.month")}
+              </RuleLabel>
               {observedPeak === 0 ? (
                 // Seven empty columns is a chart of nothing. One sentence says the
                 // same thing and does not look like a rendering failure.
@@ -187,8 +215,12 @@ export function PatternsScreen({
               ) : (
                 <div
                   className="week-bars"
+                  data-span={span}
                   role="img"
+                  // Names the span: a screen-reader user hearing "daily sleep"
+                  // needs to know whether it covers a week or a month.
                   aria-label={t.t("patterns.weekLabel", {
+                    days: t.number(span),
                     low: formatDuration(
                       t,
                       Math.min(...week.map((day) => day.sleepMs)),
@@ -212,11 +244,15 @@ export function PatternsScreen({
                           style={{ height: `${(day.nightMs / scale) * 100}%` }}
                         />
                       </div>
-                      <span className="week-bar-label">
-                        {new Intl.DateTimeFormat(t.locale, {
-                          weekday: "narrow",
-                        }).format(new Date(day.dayStart))}
-                      </span>
+                      {/* Dropped at thirty days: thirty weekday initials is a grey
+                          smear rather than an axis. */}
+                      {span === 7 && (
+                        <span className="week-bar-label">
+                          {new Intl.DateTimeFormat(t.locale, {
+                            weekday: "narrow",
+                          }).format(new Date(day.dayStart))}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -6,6 +6,32 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added
+
+- **A thirty-day view on the daily-sleep chart**, toggled from the section rule. A
+  week is too short to show a routine settling — or failing to; a month is where that
+  becomes visible. The weekday initials are dropped at that length, because thirty of
+  them is a grey smear rather than an axis.
+- The chart's text alternative now names the span it covers, so a screen-reader user
+  hearing "daily sleep" knows whether it is a week or a month.
+- **PDF export** is marked shipped: the print path on the handover and symptom
+  screens is what "save as PDF" uses. Bundling a PDF writer would be a large
+  dependency doing what the operating system already does.
+
+### Changed — the roadmap says why the blocked things are blocked
+
+- **Voice logging is blocked, not merely unstarted.** Chrome's Web Speech API sends
+  audio to Google's servers to be transcribed, which is exactly what this app
+  promises not to do. It waits for genuinely on-device recognition in a browser, or
+  an offline model in the Android shell.
+- The REST API, Home Assistant and MCP items are re-scoped as depending on the v0.3
+  sync server, because every one of them needs a server and this app does not have
+  one.
+- The CDC milestone checklist is split out as needing sourcing, under the same rule
+  that governed the WHO growth tables: developmental milestones shown to a worried
+  parent get transcribed exactly or not at all.
+
+
 ### Added — activities and potty training
 
 - **Tummy time, counted against a goal you set yourself.** The screen says the

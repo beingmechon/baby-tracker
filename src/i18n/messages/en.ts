@@ -201,8 +201,12 @@ export const en = {
   'patterns.legend.feed': 'Feeds',
   'patterns.legend.diaper': 'Diapers',
   'patterns.week': 'The last seven days',
+  'patterns.month': 'The last thirty days',
+  'patterns.span': 'How far back',
+  'patterns.span7': '7d',
+  'patterns.span30': '30d',
   'patterns.weekLabel':
-    'Daily sleep for the last seven days, {low} to {high} per day.',
+    'Daily sleep over the last {days} days, {low} to {high} per day.',
   'patterns.noData': 'Not enough logged yet to see a pattern.',
   'patterns.noDataHint':
     'A few days of sleep is all it takes. Everything here is worked out from your own log, on this device.',

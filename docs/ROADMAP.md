@@ -88,7 +88,8 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
       run named on screen once it is one
 - [x] 24-hour circular "day wheel" visualisation
 - [x] Weekly pattern chart, with night and naps stacked
-- [ ] Monthly pattern charts
+- [x] Monthly pattern charts — the same daily-sleep chart over thirty days, which
+      is where a routine settling or failing to settle becomes visible
 - [x] Trends: "sleeping 40min longer at night than last week"
 - [x] Gentle deviation nudges — informational, never diagnostic
 
@@ -109,13 +110,24 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 - [x] Activities: tummy time with a daily goal you set yourself, bath, walks,
       playtime, reading
 - [ ] User-defined activity types
-- [ ] Milestones: CDC checklist by age, a photo per milestone
+- [ ] Milestones: a keepsake list (first smile, first tooth, first steps) with a
+      photo each
+- [ ] The CDC "Learn the Signs" checklist by age — **needs sourcing.** Developmental
+      milestones shown to a worried parent have to be transcribed exactly or not at
+      all, same rule as the WHO growth tables
 - [ ] Photo journal / timeline
-- [ ] Voice logging: "log 120ml bottle", on-device speech
-- [ ] Public REST API and webhooks
-- [ ] Home Assistant integration
-- [ ] MCP server so AI assistants can log and query
-- [ ] PDF export for paediatrician visits
+- [ ] Voice logging: "log 120ml bottle". **Blocked, and worth saying why.** The
+      Web Speech API in Chrome sends audio to Google's servers to be transcribed,
+      which is precisely what this app promises not to do. It arrives when browsers
+      expose genuinely on-device recognition, or in the Android shell with an
+      offline model — not before, and not quietly
+- [ ] Public REST API and webhooks — needs the v0.3 sync server first
+- [ ] Home Assistant integration — needs the v0.3 sync server first
+- [ ] MCP server so AI assistants can log and query — needs the v0.3 sync server first
+- [x] PDF export for paediatrician visits — via the print path on the handover and
+      symptom screens, which "save as PDF" uses. A second PDF writer bundled into
+      the app would be a large dependency doing what the operating system already
+      does
 
 ## v1.x — Platform depth
 

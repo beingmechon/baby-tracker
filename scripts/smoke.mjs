@@ -751,6 +751,25 @@ try {
     'the week reads as seven columns, one per day',
     (await page.locator('.week-bar').count()) === 7,
   )
+  await page.getByRole('button', { name: '30d', exact: true }).click()
+  check(
+    'and thirty when the longer span is chosen',
+    (await page.locator('.week-bar').count()) === 30,
+  )
+  check(
+    'the heading follows the span rather than still saying seven days',
+    /thirty days/i.test(await page.locator('.rule-label').nth(1).innerText()),
+  )
+  check(
+    'thirty weekday initials are dropped rather than smeared along the axis',
+    (await page.locator('.week-bar-label').count()) === 0,
+  )
+  await page.getByRole('button', { name: '7d', exact: true }).click()
+  check(
+    'and switching back restores the week',
+    (await page.locator('.week-bar').count()) === 7 &&
+      (await page.locator('.week-bar-label').count()) === 7,
+  )
   check(
     'a day with nothing logged is an empty column rather than a drawn bar',
     await page.evaluate(() => {
@@ -760,7 +779,7 @@ try {
   )
   check(
     'the week chart carries a text alternative for a screen reader',
-    /Daily sleep for the last seven days/.test(
+    /Daily sleep over the last 7 days/.test(
       (await page.locator('.week-bars').getAttribute('aria-label')) ?? '',
     ),
   )

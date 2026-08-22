@@ -191,7 +191,12 @@ export const es: Messages = {
   'patterns.legend.feed': 'Tomas',
   'patterns.legend.diaper': 'Pañales',
   'patterns.week': 'Los últimos siete días',
-  'patterns.weekLabel': 'Sueño diario de los últimos siete días, de {low} a {high} al día.',
+  'patterns.month': 'Los últimos treinta días',
+  'patterns.span': 'Hasta cuándo atrás',
+  'patterns.span7': '7 d',
+  'patterns.span30': '30 d',
+  'patterns.weekLabel':
+    'Sueño diario de los últimos {days} días, de {low} a {high} al día.',
   'patterns.noData': 'Aún no hay suficiente registrado para ver un patrón.',
   'patterns.noDataHint':
     'Basta con unos días de sueño. Todo lo de aquí se calcula con tu propio registro, en este dispositivo.',

@@ -1396,6 +1396,35 @@
   align-items: center;
 }
 
+/* Thirty bars need a hairline gap or they merge into one block. */
+.week-bars[data-span='30'] {
+  gap: 1px;
+}
+
+/*
+ * A toggle in the rule, not a second segmented control: this is a change of view
+ * rather than a choice being recorded, and it sits where the label already is.
+ */
+.span-toggle {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.span-toggle button {
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  font-size: var(--text--1);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+}
+
+.span-toggle button[aria-pressed='true'] {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--surface-active);
+}
+
 /*
  * Bottom-anchored, and no track fill: an empty day is an empty column, which is
  * the truth about it. A filled grey track would draw a bar where nothing was
