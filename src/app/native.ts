@@ -56,47 +56,68 @@ interface LocalNotificationsPlugin {
   cancel: (options: { notifications: { id: number }[] }) => Promise<void>
 }
 
-let cached: LocalNotificationsPlugin | null | undefined
+let loaded: LocalNotificationsPlugin | undefined
 
 /**
- * Loads the plugin, once, and only on a device.
+ * Loads the plugin on demand, on a device only.
  *
- * `undefined` means "not tried yet"; `null` means tried and unavailable, so a
- * failed load is not retried on every reminder tick.
+ * Only a *successful* load is remembered. An earlier version cached the failure
+ * too, which meant a single call made before the native bridge finished injecting
+ * itself — or one transient import error — turned notifications off for the rest of
+ * the session with no way back.
  */
 async function plugin(): Promise<LocalNotificationsPlugin | null> {
-  if (cached !== undefined) return cached
-  if (!isNativeApp()) {
-    cached = null
-    return null
-  }
+  if (loaded !== undefined) return loaded
+  if (!isNativeApp()) return null
   try {
     const module = await import('@capacitor/local-notifications')
-    cached = module.LocalNotifications as unknown as LocalNotificationsPlugin
+    loaded = module.LocalNotifications as unknown as LocalNotificationsPlugin
+    return loaded
   } catch {
-    // A shell without the plugin is not a state we ship, but it must not throw.
-    cached = null
-  }
-  return cached
-}
-
-export async function nativeNotificationsGranted(): Promise<boolean> {
-  const notifications = await plugin()
-  if (notifications === null) return false
-  try {
-    return (await notifications.checkPermissions()).display === 'granted'
-  } catch {
-    return false
+    // A shell without the plugin is not a state we ship, but it must not throw,
+    // and it must not be remembered as permanent.
+    return null
   }
 }
 
-export async function requestNativeNotifications(): Promise<boolean> {
+/**
+ * The four states this app distinguishes, which is one more than a boolean.
+ *
+ * The distinction that matters is `denied` versus `default`. Android will not show
+ * the permission dialog again once it has been refused, so an app that reports a
+ * refusal as "not asked yet" leaves the parent tapping a button that cannot do
+ * anything — which is precisely the bug this replaced. `prompt-with-rationale` is
+ * Android's "they said no once, you may explain yourself": still askable, so still
+ * `default`.
+ */
+export type NativePermission = 'granted' | 'denied' | 'default'
+
+export function mapNativePermission(display: string): NativePermission {
+  if (display === 'granted') return 'granted'
+  if (display === 'denied') return 'denied'
+  // 'prompt', 'prompt-with-rationale', and anything a future plugin version adds.
+  return 'default'
+}
+
+/** What the OS currently thinks, or null when there is no shell to ask. */
+export async function nativeNotificationState(): Promise<NativePermission | null> {
   const notifications = await plugin()
-  if (notifications === null) return false
+  if (notifications === null) return null
   try {
-    return (await notifications.requestPermissions()).display === 'granted'
+    return mapNativePermission((await notifications.checkPermissions()).display)
   } catch {
-    return false
+    return null
+  }
+}
+
+/** Asks. Only ever from a real tap, and only when the state is still askable. */
+export async function requestNativeNotifications(): Promise<NativePermission | null> {
+  const notifications = await plugin()
+  if (notifications === null) return null
+  try {
+    return mapNativePermission((await notifications.requestPermissions()).display)
+  } catch {
+    return null
   }
 }
 

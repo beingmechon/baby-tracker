@@ -99,7 +99,7 @@ the vendored fonts already have.
 | Permission | Why |
 | --- | --- |
 | `INTERNET` | Required by the WebView host. Nothing is fetched: the app serves its own bundled files over an `https://` scheme so the WebView stays a secure context, which is what IndexedDB and the clipboard need. There is no code in the app that can reach the network. |
-| `POST_NOTIFICATIONS` | Reminders. Requested from a button the user pressed, never on launch. |
+| `POST_NOTIFICATIONS` | Reminders. Requested from a button the user pressed, never on launch. Android asks once: if it is refused, the app cannot ask again, so the screen stops offering a button that would do nothing and points at Settings → Apps → Baby Tracker → Notifications instead. |
 | `RECEIVE_BOOT_COMPLETED` | Re-registers pending reminder alarms after a reboot, or they would silently vanish. |
 | `WAKE_LOCK` | Lets a reminder fire while the phone is asleep, which is when it matters. |
 | `SCHEDULE_EXACT_ALARM` | Lets a reminder land at the minute it is due rather than whenever Android next wakes up. User-grantable, and denying it makes reminders approximate rather than broken — the plugin falls back to an inexact alarm. |

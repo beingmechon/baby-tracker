@@ -21,7 +21,7 @@
  * handover itself. Nothing is sent anywhere to make it work: the alarm is held by
  * the phone.
  */
-import { isNativeApp, nativeNotificationsGranted, requestNativeNotifications } from './native'
+import { isNativeApp, nativeNotificationState, requestNativeNotifications } from './native'
 
 export type NotificationPermissionState = 'unsupported' | 'default' | 'granted' | 'denied'
 
@@ -57,7 +57,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  */
 export async function resolveNotificationState(): Promise<NotificationPermissionState> {
   if (isNativeApp()) {
-    return (await nativeNotificationsGranted()) ? 'granted' : 'default'
+    // A refusal is reported as a refusal. Collapsing it to "not asked yet" left the
+    // button on screen for a prompt Android will never show again.
+    return (await nativeNotificationState()) ?? 'unsupported'
   }
   return notificationState()
 }
@@ -65,7 +67,7 @@ export async function resolveNotificationState(): Promise<NotificationPermission
 /** Asks whichever platform is actually in charge. Only ever from a real tap. */
 export async function askForNotifications(): Promise<NotificationPermissionState> {
   if (isNativeApp()) {
-    return (await requestNativeNotifications()) ? 'granted' : 'denied'
+    return (await requestNativeNotifications()) ?? 'unsupported'
   }
   return requestNotificationPermission()
 }

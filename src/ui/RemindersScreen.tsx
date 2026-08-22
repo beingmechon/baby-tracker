@@ -20,11 +20,25 @@ interface RemindersScreenProps {
   onBack: () => void
 }
 
+/**
+ * What to say about each state, per platform.
+ *
+ * The denied case has to differ. On the web the browser holds the switch; in the
+ * Android shell it is the operating system, it will not ask again, and telling a
+ * parent to look in their "browser settings" sends them somewhere that does not
+ * exist. Getting this wrong is how a working feature looks broken.
+ */
 const PERMISSION_NOTES: Record<NotificationPermissionState, MessageKey | null> = {
   granted: 'reminders.notificationsGranted',
   denied: 'reminders.notificationsDenied',
   unsupported: 'reminders.notificationsUnsupported',
   default: null,
+}
+
+const NATIVE_PERMISSION_NOTES: Partial<
+  Record<NotificationPermissionState, MessageKey>
+> = {
+  denied: 'reminders.notificationsDeniedNative',
 }
 
 /** Managing reminders, and the one place notification permission is requested. */
@@ -48,7 +62,9 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  const permissionNote = PERMISSION_NOTES[permission]
+  const permissionNote = isNativeApp()
+    ? NATIVE_PERMISSION_NOTES[permission] ?? PERMISSION_NOTES[permission]
+    : PERMISSION_NOTES[permission]
 
   return (
     <>

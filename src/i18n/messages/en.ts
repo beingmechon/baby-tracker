@@ -615,6 +615,8 @@ export const en = {
   'reminders.notifications': 'Notifications',
   'reminders.notificationsAsk': 'Allow notifications',
   'reminders.notificationsGranted': 'Notifications are on for this device.',
+  'reminders.notificationsDeniedNative':
+    'Android is blocking notifications for this app, and it will not ask again. Turn them on in Settings → Apps → Baby Tracker → Notifications, then come back to this screen.',
   'reminders.notificationsDenied':
     'Notifications are blocked in your browser settings. Reminders still appear on this screen and on the home screen.',
   'reminders.notificationsUnsupported':

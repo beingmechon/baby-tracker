@@ -602,6 +602,8 @@ export const es: Messages = {
   'reminders.notifications': 'Notificaciones',
   'reminders.notificationsAsk': 'Permitir notificaciones',
   'reminders.notificationsGranted': 'Las notificaciones están activadas en este dispositivo.',
+  'reminders.notificationsDeniedNative':
+    'Android está bloqueando las notificaciones de esta aplicación y no volverá a preguntar. Actívalas en Ajustes → Aplicaciones → Baby Tracker → Notificaciones y vuelve a esta pantalla.',
   'reminders.notificationsDenied':
     'Las notificaciones están bloqueadas en los ajustes del navegador. Los recordatorios siguen apareciendo en esta pantalla y en la pantalla de inicio.',
   'reminders.notificationsUnsupported':
