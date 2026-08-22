@@ -18,6 +18,7 @@ import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
 import { nextVisit } from '@/domain/illness'
+import { cleanTogetherIds, logTargets } from '@/domain/together'
 import { predictNextNap } from '@/domain/patterns'
 import { SNOOZE_MS } from '@/domain/reminders'
 import { isToday, selectEventsForDay } from '@/domain/select'
@@ -166,6 +167,18 @@ export function Home({
 
   const appointment = useMemo(() => nextVisit(events, now), [events, now])
 
+  // The other babies a feed or a diaper will also be written for, by name.
+  const alsoLoggingFor = useMemo(() => {
+    const group = cleanTogetherIds(
+      settings.togetherIds,
+      store.babies.map((baby) => baby.id),
+    )
+    return logTargets(activeBaby?.id ?? null, group, 'diaper')
+      .slice(1)
+      .map((id) => store.babies.find((baby) => baby.id === id)?.name ?? '')
+      .filter((name) => name !== '')
+  }, [settings.togetherIds, store.babies, activeBaby])
+
   const dayEvents = useMemo(
     () => selectEventsForDay(events, dayAnchor, now),
     [events, dayAnchor, now],
@@ -309,6 +322,15 @@ export function Home({
 
         <section className="section" aria-label={t.t('section.log')}>
           <RuleLabel>{t.t('section.log')}</RuleLabel>
+          {/* Said before the buttons, not after: a parent about to tap needs to
+              know the tap lands twice. */}
+          {alsoLoggingFor.length > 0 && (
+            <p className="field-note">
+              {t.t('log.together', {
+                names: [activeBaby.name, ...alsoLoggingFor].join(' · '),
+              })}
+            </p>
+          )}
           <div className="actions">
             <button
               type="button"

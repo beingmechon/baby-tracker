@@ -65,7 +65,8 @@ This is an early release, deliberately small, and genuinely usable right now:
   circumference, in metric or imperial, plotted against the World Health
   Organization's own reference curves. Gain per week between weigh-ins. This is
   the feature most trackers put behind a subscription; here it is just part of the
-  app.
+  app. Birth measurements plot as the first point, so "back to birth weight yet?"
+  has an answer.
 - **Temperature and medication** — readings compared against the figure health
   services publish rather than diagnosed, and a dose log that answers "when did we
   last give this?"
@@ -87,7 +88,9 @@ This is an early release, deliberately small, and genuinely usable right now:
   message or print it for a nursery. Copying puts text on your clipboard; nothing
   is sent anywhere.
 - **More than one baby** — switch from the app bar; each one's log, growth and
-  reminders are entirely their own.
+  reminders are entirely their own. **Twins mode** makes one tap log a feed or a
+  diaper for both. Weights, temperatures, symptoms, medicine, pumping and sleep are
+  never copied: those belong to one child.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
   counted from your own log rather than from when the reminder last went off. On
   Android they are handed to the OS, so a closed app still wakes you — with no

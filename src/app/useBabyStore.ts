@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ExportBundle, ImportResult, NewEvent } from '@/data/repository'
 import { findLastFeed } from '@/domain/feeds'
 import { classifySleep, findSleepInProgress, type NightWindow } from '@/domain/sleep'
+import { cleanTogetherIds, logTargets } from '@/domain/together'
 import type {
   Baby,
   BabyEvent,
@@ -109,9 +110,15 @@ function messageFor(error: unknown): string {
  * actually saved — the property that matters most in an app whose whole promise
  * is that your data is safe on your own device.
  */
+/**
+ * @param togetherIds Babies logged together — twins mode. Every point-in-time
+ *   event written for the active baby is written for the others too. Empty is off,
+ *   which is the ordinary single-baby path unchanged.
+ */
 export function useBabyStore(
   activeBabyId: Id | null,
   nightWindow: NightWindow,
+  togetherIds: readonly Id[] = [],
 ): BabyStore {
   const repository = useRepository()
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -137,6 +144,9 @@ export function useBabyStore(
   }, [babies, activeBabyId])
 
   const activeId = activeBaby?.id ?? null
+  // Recomputed from the loaded babies so a group naming a deleted baby is pruned
+  // before anything is written for an id that no longer exists.
+  const babyIds = useMemo(() => babies.map((baby) => baby.id), [babies])
   const events = loaded.babyId === activeId ? loaded.events : NO_EVENTS
 
   const reload = useCallback(async () => {
@@ -181,12 +191,30 @@ export function useBabyStore(
     [reload],
   )
 
+  /**
+   * Writes one event for every baby it belongs to.
+   *
+   * One baby normally; both twins when the group is on. Written sequentially with
+   * the baby on screen first, and *not* wrapped in a transaction: if the second
+   * write fails, the first is still a true record of something that happened, and
+   * rolling it back would discard a real event to preserve a symmetry nobody asked
+   * for. The error surfaces either way.
+   */
   const addEvent = useCallback(
     async (event: NewEvent) => {
-      if (activeId === null) throw new Error('No baby selected')
-      await mutate(() => repository.addEvent(activeId, event))
+      const targets = logTargets(
+        activeId,
+        cleanTogetherIds(togetherIds, babyIds),
+        event.type,
+      )
+      if (targets.length === 0) throw new Error('No baby selected')
+      await mutate(async () => {
+        for (const babyId of targets) {
+          await repository.addEvent(babyId, event)
+        }
+      })
     },
-    [activeId, mutate, repository],
+    [activeId, babyIds, togetherIds, mutate, repository],
   )
 
   const sleepInProgress = useMemo(() => findSleepInProgress(events), [events])

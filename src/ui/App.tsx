@@ -95,7 +95,11 @@ function AppContent({
   // clock for running timers.
   const now = useNow(20_000)
 
-  const store = useBabyStore(settings.activeBabyId, settings.nightWindow)
+  const store = useBabyStore(
+    settings.activeBabyId,
+    settings.nightWindow,
+    settings.togetherIds,
+  )
 
   /**
    * Raising the notification for a due reminder. Held in a ref-stable callback so

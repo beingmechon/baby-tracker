@@ -165,6 +165,11 @@ export const en = {
     'No WHO reference data for this measurement and age yet.',
   'growth.referenceNote':
     'Percentiles come from the WHO Child Growth Standards. They describe populations, not your baby — worth discussing with your doctor, never a diagnosis.',
+  'growth.sinceBirth': '{change} since birth',
+  'growth.addBirth': 'Add the birth measurements',
+  'growth.addBirthNote':
+    'Dated to the day of birth, so it plots as the first point and answers the question every appointment opens with.',
+  'growth.birthTitle': 'At birth',
   'growth.history': 'History',
   'growth.chart': 'Against the WHO reference',
   'growth.chartDescription':
@@ -176,6 +181,7 @@ export const en = {
   'growth.axisAge': 'Age (months)',
   'growth.curveLabel': 'WHO {percentile}',
   'growth.measuredOn': 'Measured {date}',
+  'growth.atBirthLabel': 'at birth',
   'growth.atAge': 'at {age}',
 
   // Patterns
@@ -520,6 +526,12 @@ export const en = {
   'settings.wakeGuidance': 'Show wake-window guidance',
   'settings.wakeGuidanceNote':
     'Typical wake windows by age, shown for information only. Babies vary enormously — this is never advice.',
+  'settings.together': 'Log for more than one baby',
+  'settings.togetherNote':
+    'Tick two or more. A feed or a diaper logged for one of them is logged for all of them, so you tap once instead of twice at 4am. Whoever is not ticked is unaffected.',
+  'settings.togetherExcluded':
+    'Weights, temperatures, symptoms, medicine and pumping are never copied — those belong to one child, and a dose recorded against a baby who did not have it would be the worst mistake this app could make. Sleep is not copied either: twins do not wake at the same minute.',
+  'log.together': 'Logging for {names}',
   'settings.data': 'Your data',
   'settings.dataNote':
     'Everything is stored on this device only. There is no account, no server and no analytics. Exports are yours to keep.',

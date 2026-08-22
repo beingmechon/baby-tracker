@@ -442,6 +442,39 @@ export function SettingsScreen({
           </div>
         </section>
 
+        {/*
+          * Twins mode. Only shown once there is more than one baby to group, so a
+          * single-baby household never sees a setting that could not do anything.
+          */}
+        {store.babies.length > 1 && (
+          <section className="section">
+            <RuleLabel>{t.t('settings.together')}</RuleLabel>
+            <div className="settings-group">
+              {store.babies.map((baby) => (
+                <div className="switch-row" key={baby.id}>
+                  <span className="switch-row-label">{baby.name}</span>
+                  <input
+                    type="checkbox"
+                    checked={settings.togetherIds.includes(baby.id)}
+                    onChange={(e) =>
+                      onChange({
+                        togetherIds: e.target.checked
+                          ? [...settings.togetherIds, baby.id]
+                          : settings.togetherIds.filter((id) => id !== baby.id),
+                      })
+                    }
+                    aria-label={baby.name}
+                  />
+                </div>
+              ))}
+              <p className="field-note">{t.t('settings.togetherNote')}</p>
+              {/* The exclusions, stated where the setting is turned on rather than
+                  discovered later by a parent wondering why a dose did not copy. */}
+              <p className="field-note">{t.t('settings.togetherExcluded')}</p>
+            </div>
+          </section>
+        )}
+
         <section className="section">
           <RuleLabel>{t.t('settings.data')}</RuleLabel>
           <div className="settings-group">

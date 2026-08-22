@@ -12,6 +12,12 @@ interface GrowthSheetProps {
   initialMeasure: MeasureKind
   /** The last reading of each kind, shown so a typo is obvious before saving. */
   lastValues: Partial<Record<MeasureKind, number>>
+  /**
+   * Titles the sheet as the birth measurement. The screen, not the sheet, decides
+   * what date that means — this only changes what the sheet calls itself, so a
+   * parent cannot be halfway through typing and unsure which entry they are making.
+   */
+  atBirth?: boolean
   onSave: (input: { measure: MeasureKind; value: number }) => Promise<void>
   onClose: () => void
 }
@@ -21,6 +27,7 @@ interface GrowthSheetProps {
 export function GrowthSheet({
   system,
   initialMeasure,
+  atBirth = false,
   lastValues,
   onSave,
   onClose,
@@ -49,7 +56,10 @@ export function GrowthSheet({
   }
 
   return (
-    <Sheet title={t.t('growth.title')} onClose={onClose}>
+    <Sheet
+      title={atBirth ? t.t('growth.birthTitle') : t.t('growth.title')}
+      onClose={onClose}
+    >
       <div className="field">
         <span className="field-label" id="growth-measure-label">
           {t.t('growth.measure')}

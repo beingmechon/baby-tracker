@@ -127,6 +127,18 @@ export function overlapMs(
   return Math.max(0, Math.min(end, windowEnd) - Math.max(start, windowStart))
 }
 
+/**
+ * Local midnight on the birth date, or null if there is no usable date.
+ *
+ * Exported because birth measurements are stored as ordinary growth events dated
+ * at birth — which needs a timestamp — rather than as extra fields on the baby.
+ * That way the birth weight lands on the chart, feeds the gain-per-week maths and
+ * exports to CSV with no special case anywhere.
+ */
+export function birthTimestamp(birthDate: string | null): Timestamp | null {
+  return parseBirthDate(birthDate)?.getTime() ?? null
+}
+
 /** Parses a `YYYY-MM-DD` birth date into local midnight, or null if invalid. */
 function parseBirthDate(birthDate: string | null): Date | null {
   if (!birthDate) return null

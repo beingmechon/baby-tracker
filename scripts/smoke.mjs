@@ -1112,6 +1112,131 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Twins mode')
+  // Two babies already exist by this point in the run only if the earlier block
+  // left them; it deletes one, so add a second here.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  await sheet.getByRole('button', { name: 'Add a baby' }).click()
+  await sheet.getByLabel('Name', { exact: true }).fill('Rafi')
+  await sheet.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  check(
+    'the log-for-both setting appears once there is more than one baby',
+    await page.getByText('Log for more than one baby').isVisible(),
+  )
+  check(
+    'and says what it will never copy',
+    /never copied/.test(await page.locator('.page').innerText()),
+  )
+  const group = page.locator('.settings-group').filter({
+    has: page.getByLabel('Rafi', { exact: true }),
+  })
+  await group.getByLabel('Mira', { exact: true }).check()
+  await group.getByLabel('Rafi', { exact: true }).check()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  check(
+    'the log section says a tap will land on both',
+    /Logging for .*Mira.*Rafi|Logging for .*Rafi.*Mira/.test(
+      await page.locator('.page').innerText(),
+    ),
+  )
+
+  const wetBefore = await page.locator('.timeline-row', { hasText: 'Wet diaper' }).count()
+  await page.getByRole('button', { name: 'Wet' }).click()
+  await page.getByText('Wet diaper logged').waitFor()
+  check(
+    'one tap logs the diaper for the baby on screen',
+    (await page.locator('.timeline-row', { hasText: 'Wet diaper' }).count()) ===
+      wetBefore + 1,
+  )
+  await page.getByRole('button', { name: /Rafi|Mira/ }).first().click()
+  await sheet.getByRole('button', { name: /Rafi/ }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'and for the other one too, without a second tap',
+    await page.locator('.timeline-row', { hasText: 'Wet diaper' }).first().isVisible(),
+  )
+
+  // The line that matters most: a dose must never appear against a baby who did
+  // not receive it.
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  await sheet.getByLabel('What did you give?').fill('Ibuprofen')
+  await sheet.getByLabel('Dose', { exact: true }).fill('2.5 ml')
+  await sheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+  check(
+    'a dose is recorded for the baby it was given to',
+    await page.getByText('Ibuprofen').first().isVisible(),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Mira|Rafi/ }).first().click()
+  await sheet.getByRole('button', { name: /Mira/ }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).waitFor()
+  check(
+    'but NOT for the sibling — a copied dose would be a false medical record',
+    await page.evaluate(() => !document.body.innerText.includes('Ibuprofen')),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Birth measurements')
+  await page.getByRole('button', { name: 'Growth', exact: true }).click()
+  await page.getByRole('button', { name: 'Add the birth measurements' }).click()
+  check(
+    'the sheet says which entry is being made',
+    /At birth/.test(await sheet.innerText()),
+  )
+  await sheet.getByLabel('Value (kg)').fill('3.2')
+  await sheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  // With only two readings the previous one *is* the birth one, so "since Jun 20"
+  // and "since birth" would be the same sentence twice.
+  check(
+    'the ledger does not repeat itself when the previous reading is the birth one',
+    !/since birth/i.test(await page.locator('.ledger').innerText()),
+  )
+  check(
+    'and the offer to add them is gone once they are recorded',
+    (await page.getByRole('button', { name: 'Add the birth measurements' }).count()) === 0,
+  )
+  check(
+    'the birth measurement plots as a point on the chart',
+    (await page.locator('.chart-point').count()) >= 2,
+  )
+  // Two phrases composed into one is this project's most repeated bug: "Wet diaper
+  // diaper", "just now ago", and here "at born today".
+  const history = await page.locator('.timeline').last().innerText()
+  check(
+    `the birth row reads "at birth", not "at born today" (${history.split('\n').slice(-1)[0] ?? ''})`,
+    /at birth/.test(history) && !/born today/.test(history),
+  )
+  // A third reading makes "since birth" say something the row above it does not.
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  await sheet.getByLabel('Value (kg)').fill('5.9')
+  await sheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  const ledger = await page.locator('.ledger').innerText()
+  check(
+    `the ledger reports the gain since birth once it adds something (${
+      ledger.split('\n').find((line) => /since birth/i.test(line)) ?? ''
+    })`,
+    /\+2\.7 kg since birth/.test(ledger),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'growth-birth.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions
   // and the screenshots do not depend on what time the suite happens to run.

@@ -6,6 +6,51 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — twins mode and birth measurements
+
+- **Twins mode.** Tick two or more babies in Settings and one tap logs a feed or a
+  diaper for all of them. Twin parents are the most sleep-deprived users this app
+  has and the least served by every tracker on the market; logging the same change
+  twice, from two screens, at 4am is the friction that makes a parent stop logging.
+- **A group, not a direction.** "These babies are logged together" reads the same
+  whichever twin is on screen, where an "also log for…" setting attached to one baby
+  would mean something different depending on which one you had open. A baby outside
+  the group is unaffected, so twins plus an older child works with the setting left
+  on permanently.
+- **A shared action fans out; a record about one body never does.** Feeds and
+  diapers copy. Weights, temperatures, symptoms and **medicine** do not — a
+  duplicated dose would put a record in a second child's medical log saying they
+  received a drug they did not receive, which is the most consequential mistake this
+  app could make. Pumping stays out because it is the parent's output and copying it
+  would double-count the milk in the stash. Sleep stays out because a running timer
+  belongs to one baby and twins do not wake at the same minute. The rule is stated
+  in the settings screen, next to the switch, and asserted in the browser suite.
+- **Birth measurements as an explicit baseline**, stored as ordinary growth events
+  dated at birth rather than as extra fields on the baby — so they plot as the first
+  point on the chart, feed the gain-per-week maths, and export to CSV with no
+  special case anywhere. The growth screen offers to add them only when there is a
+  birth date to date them with and nothing recorded yet.
+- **"+2.4 kg since birth"** in the growth ledger: the comparison every appointment
+  opens with, and the one a chart of two dots cannot show. Negative in the first
+  fortnight, which is normal and is not hidden.
+
+### Fixed
+
+- **"at born today"** in the growth history — the birth row was running its own date
+  through the age formatter, composing a phrase inside a phrase. It says "at birth".
+  Third instance of this fault after "Wet diaper diaper" and "just now ago", and now
+  guarded in the browser suite alongside them.
+- **The ledger said the same thing twice.** With only two readings the previous one
+  *is* the birth measurement, so "+2.4 kg since Jun 20" and "+2.4 kg since birth"
+  were one sentence printed twice. The birth row appears only when it adds something.
+- **Saving a measurement from the growth screen confirmed nothing** — the same action
+  from the home screen showed a toast, so a weight typed on the growth screen looked
+  like it had been swallowed. Long-standing; found because the birth-measurement flow
+  exists only there.
+- A duplicate ISO-birth-date parser in the growth screen, which was a second
+  implementation of the validated one in `domain/time.ts`. There is one now.
+
+
 ### Added — a real Android app
 
 - **The same web build, in a Capacitor shell.** No second codebase, no separate

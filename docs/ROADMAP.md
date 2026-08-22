@@ -29,7 +29,9 @@ to use it with a real baby at 4am.
 - [x] WHO percentile charts — weight-for-age to 5 years, length-for-age to 2
       years, both sexes, from the WHO's own LMS tables. CDC (2y+) still to source
 - [x] Growth velocity (gain per week between weigh-ins)
-- [ ] Birth stats as an explicit baseline
+- [x] Birth stats as an explicit baseline — stored as growth events dated at
+      birth, so they plot as the first point and answer "back to birth weight
+      yet?" without a second data model
 - [ ] Premature baby support: corrected age and Fenton preterm charts
 - [x] Interval reminders: next feed, diaper, pumping, custom (vitamin D drops,
       tummy time), anchored to your own log
@@ -44,7 +46,9 @@ to use it with a real baby at 4am.
 ## v0.3 — Multiple caregivers
 
 - [x] Multiple children, with a switcher on the app bar
-- [ ] Twins mode: one action that logs the same thing for both
+- [x] Twins mode: one action that logs the same thing for both. Feeds and diapers
+      fan out; weights, temperatures, symptoms, medicine, pumping and sleep never
+      do — a duplicated dose would be a false medical record
 - [ ] Self-hosted sync server (Docker image, Postgres or SQLite)
 - [ ] End-to-end encrypted relay as an alternative to self-hosting
 - [ ] Roles: edit vs view-only

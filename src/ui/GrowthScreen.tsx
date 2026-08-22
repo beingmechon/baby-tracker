@@ -4,13 +4,15 @@ import type { BabyStore } from '@/app/useBabyStore'
 import {
   MEASURE_KINDS,
   ageInMonthsExact,
+  birthMeasurement,
+  changeSinceBirth,
   growthChange,
   growthSeries,
   latestMeasurements,
   monthsBetween,
   percentileFor,
 } from '@/domain/growth'
-import { describeAge, startOfLocalDay } from '@/domain/time'
+import { birthTimestamp, describeAge } from '@/domain/time'
 import type { BabyEvent, MeasureKind, Timestamp } from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
 import {
@@ -26,7 +28,7 @@ import { EventEditSheet } from './EventEditSheet'
 import { GrowthChart } from './GrowthChart'
 import { GrowthSheet } from './GrowthSheet'
 import { RuleLabel } from './RuleLabel'
-import { BackIcon } from './icons'
+import { BackIcon, CheckIcon } from './icons'
 
 interface GrowthScreenProps {
   store: BabyStore
@@ -35,15 +37,6 @@ interface GrowthScreenProps {
   onBack: () => void
 }
 
-
-/** Local midnight on an ISO birth date, for plotting ages. */
-function birthTimestampOf(birthDate: string | null): number | null {
-  if (birthDate === null) return null
-  const [year, month, day] = birthDate.split('-').map(Number)
-  if (year === undefined || month === undefined || day === undefined) return null
-  const parsed = new Date(year, month - 1, day)
-  return Number.isNaN(parsed.getTime()) ? null : startOfLocalDay(parsed.getTime())
-}
 
 /**
  * The growth screen: one measurement at a time, as a ledger and a curve.
@@ -58,16 +51,30 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
   const [measure, setMeasure] = useState<MeasureKind>('weight')
   // The sheets live here rather than in the shell so that logging opens on
   // whichever measurement is being looked at.
-  const [logging, setLogging] = useState(false)
+  // 'now' is an ordinary measurement; 'birth' writes at the birth date instead.
+  const [logging, setLogging] = useState<'now' | 'birth' | null>(null)
+  // Saving from this screen confirmed nothing, while the same action from the home
+  // screen did — so a measurement typed here looked like it had been swallowed.
+  const [toast, setToast] = useState<string | null>(null)
   const [editing, setEditing] = useState<BabyEvent | null>(null)
   const system = settings.measureSystem
 
   const series = useMemo(() => growthSeries(events, measure), [events, measure])
   const change = useMemo(() => growthChange(events, measure), [events, measure])
+  const birthDate = activeBaby?.birthDate ?? null
+  const birthAt = useMemo(() => birthTimestamp(birthDate), [birthDate])
+  const atBirth = useMemo(
+    () => birthMeasurement(events, measure, birthDate),
+    [events, measure, birthDate],
+  )
+  const sinceBirth = useMemo(
+    () => changeSinceBirth(events, measure, birthDate),
+    [events, measure, birthDate],
+  )
 
   if (activeBaby === null) return null
 
-  const birthTimestamp = birthTimestampOf(activeBaby.birthDate)
+
   const latest = series[series.length - 1] ?? null
 
   /**
@@ -76,12 +83,12 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
    * would show a healthy baby sliding down the chart for no reason.
    */
   const percentile =
-    latest === null || activeBaby.sex === null || birthTimestamp === null
+    latest === null || activeBaby.sex === null || birthAt === null
       ? null
       : percentileFor({
           measure,
           sex: activeBaby.sex,
-          ageMonths: monthsBetween(birthTimestamp, latest.startedAt),
+          ageMonths: monthsBetween(birthAt, latest.startedAt),
           value: latest.value,
         })
 
@@ -161,6 +168,21 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
                   </dd>
                 </div>
               )}
+              {/* Suppressed when the previous reading *is* the birth measurement:
+                  "+2.4 kg since Jun 20" and "+2.4 kg since birth" are then the
+                  same sentence twice. */}
+              {sinceBirth !== null && sinceBirth.from.startedAt !== change?.from && (
+                <div className="ledger-row">
+                  <dt className="ledger-term">
+                    {t.t('growth.sinceBirth', {
+                      change: formatMeasureDelta(t, sinceBirth.delta, measure, system),
+                    })}
+                  </dt>
+                  <dd className="ledger-note num">
+                    {formatMeasure(t, sinceBirth.from.value, measure, system)}
+                  </dd>
+                </div>
+              )}
               <div className="ledger-row">
                 <dt className="ledger-term">{t.t('growth.percentileLabel')}</dt>
                 <dd className="ledger-note">
@@ -181,7 +203,7 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
             measure={measure}
             system={system}
             series={series}
-            birthTimestamp={birthTimestamp}
+            birthTimestamp={birthAt}
             sex={activeBaby.sex}
           />
           <p className="field-note">
@@ -212,16 +234,21 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
                     <span className="timeline-title num">
                       {formatMeasure(t, event.value, measure, system)}
                     </span>
-                    {birthTimestamp !== null && (
+                    {/* The birth row says "at birth". Running it through the age
+                        formatter produced "at born today", a phrase inside a
+                        phrase — the same fault as "just now ago" in v0.4. */}
+                    {birthAt !== null && (
                       <span className="timeline-detail">
                         {' · '}
-                        {t.t('growth.atAge', {
-                          age:
-                            formatAge(
-                              t,
-                              describeAge(activeBaby.birthDate, event.startedAt),
-                            ) ?? '',
-                        })}
+                        {event.id === atBirth?.id
+                          ? t.t('growth.atBirthLabel')
+                          : t.t('growth.atAge', {
+                              age:
+                                formatAge(
+                                  t,
+                                  describeAge(activeBaby.birthDate, event.startedAt),
+                                ) ?? '',
+                            })}
                       </span>
                     )}
                   </span>
@@ -236,23 +263,57 @@ export function GrowthScreen({ store, settings, now, onBack }: GrowthScreenProps
           type="button"
           className="button"
           data-variant="primary"
-          onClick={() => setLogging(true)}
+          onClick={() => setLogging('now')}
         >
           {t.t('growth.add')}
         </button>
+
+        {/*
+          * Offered only when it is both possible and missing: there has to be a
+          * birth date to date the entry, and no point asking for something already
+          * recorded. It is the comparison every appointment asks about — "back to
+          * birth weight yet?" — and the one a chart of two dots cannot show.
+          */}
+        {birthAt !== null && atBirth === null && (
+          <>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setLogging('birth')}
+            >
+              {t.t('growth.addBirth')}
+            </button>
+            <p className="field-note">{t.t('growth.addBirthNote')}</p>
+          </>
+        )}
       </main>
 
-      {logging && (
+      {logging !== null && (
         <GrowthSheet
           system={system}
           initialMeasure={measure}
-          lastValues={latestMeasurements(events)}
+          // A birth entry starts blank: prefilling it with today's weight would
+          // invite saving the wrong number against the wrong date.
+          lastValues={logging === 'birth' ? {} : latestMeasurements(events)}
+          atBirth={logging === 'birth'}
           onSave={async (input) => {
-            await store.logGrowth({ ...input, startedAt: Date.now() })
-            setLogging(false)
+            await store.logGrowth({
+              ...input,
+              startedAt: logging === 'birth' && birthAt !== null ? birthAt : Date.now(),
+            })
+            setLogging(null)
+            setToast(t.t('toast.growthSaved'))
+            globalThis.setTimeout(() => setToast(null), 2200)
           }}
-          onClose={() => setLogging(false)}
+          onClose={() => setLogging(null)}
         />
+      )}
+
+      {toast !== null && (
+        <div className="toast" role="status" aria-live="polite">
+          <CheckIcon size={16} />
+          <span>{toast}</span>
+        </div>
       )}
 
       {editing !== null && (

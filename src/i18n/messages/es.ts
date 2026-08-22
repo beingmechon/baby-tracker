@@ -156,6 +156,11 @@ export const es: Messages = {
     'Todavía no hay datos de referencia de la OMS para esta medida y edad.',
   'growth.referenceNote':
     'Los percentiles provienen de los Patrones de Crecimiento Infantil de la OMS. Describen poblaciones, no a tu bebé: conviene comentarlo con tu médico, nunca es un diagnóstico.',
+  'growth.sinceBirth': '{change} desde el nacimiento',
+  'growth.addBirth': 'Añadir las medidas de nacimiento',
+  'growth.addBirthNote':
+    'Con la fecha del nacimiento, así aparece como el primer punto y responde a la pregunta con la que empieza cada cita.',
+  'growth.birthTitle': 'Al nacer',
   'growth.history': 'Historial',
   'growth.chart': 'Frente a la referencia de la OMS',
   'growth.chartDescription':
@@ -167,6 +172,7 @@ export const es: Messages = {
   'growth.axisAge': 'Edad (meses)',
   'growth.curveLabel': 'OMS {percentile}',
   'growth.measuredOn': 'Medido el {date}',
+  'growth.atBirthLabel': 'al nacer',
   'growth.atAge': 'a los {age}',
 
   'patterns.title': 'Patrones',
@@ -504,6 +510,12 @@ export const es: Messages = {
   'settings.wakeGuidance': 'Mostrar orientación de ventanas de sueño',
   'settings.wakeGuidanceNote':
     'Ventanas de sueño habituales por edad, solo a título informativo. Cada bebé es muy distinto: esto nunca es un consejo.',
+  'settings.together': 'Registrar para más de un bebé',
+  'settings.togetherNote':
+    'Marca dos o más. Una toma o un pañal registrado para uno se registra para todos, así tocas una vez en vez de dos a las 4 de la mañana. A quien no esté marcado no le afecta.',
+  'settings.togetherExcluded':
+    'Los pesos, las temperaturas, los síntomas, la medicación y la extracción nunca se copian: son de un solo niño, y registrar una dosis en un bebé que no la tomó sería el peor error posible de esta aplicación. El sueño tampoco se copia: los gemelos no se despiertan en el mismo minuto.',
+  'log.together': 'Registrando para {names}',
   'settings.data': 'Tus datos',
   'settings.dataNote':
     'Todo se guarda solo en este dispositivo. No hay cuenta, ni servidor, ni analítica. Las exportaciones son tuyas.',

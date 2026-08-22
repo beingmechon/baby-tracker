@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { at, growth } from '@/test/factories'
 import type { BabyEvent } from '../types'
-import { growthChange, growthSeries, latestMeasurement } from './series'
+import {
+  birthMeasurement,
+  changeSinceBirth,
+  growthChange,
+  growthSeries,
+  latestMeasurement,
+} from './series'
 
 describe('growthSeries', () => {
   it('picks one measurement kind and orders it oldest first', () => {
@@ -79,5 +85,69 @@ describe('growthChange', () => {
       growth(at(2026, 1, 15), 'length', 520),
     ]
     expect(growthChange(events, 'weight')).toBeNull()
+  })
+})
+
+describe('birthMeasurement', () => {
+  const BIRTH = '2026-01-01'
+
+  it('finds the measurement taken on the birth day', () => {
+    const events = [
+      growth(at(2026, 1, 1, 14, 30), 'weight', 3200),
+      growth(at(2026, 1, 8, 9, 0), 'weight', 3400),
+    ]
+    expect(birthMeasurement(events, 'weight', BIRTH)?.value).toBe(3200)
+  })
+
+  it('matches the whole day, not an exact instant', () => {
+    // A parent entering it later types a date, and the sheet fills in a time.
+    const events = [growth(at(2026, 1, 1, 23, 59), 'weight', 3200)]
+    expect(birthMeasurement(events, 'weight', BIRTH)?.value).toBe(3200)
+  })
+
+  it('is null when the only measurement is from another day', () => {
+    const events = [growth(at(2026, 1, 2, 9, 0), 'weight', 3200)]
+    expect(birthMeasurement(events, 'weight', BIRTH)).toBeNull()
+  })
+
+  it('is null without a birth date, rather than guessing the earliest entry', () => {
+    const events = [growth(at(2026, 1, 1, 9, 0), 'weight', 3200)]
+    expect(birthMeasurement(events, 'weight', null)).toBeNull()
+  })
+
+  it('keeps the measures apart', () => {
+    const events = [growth(at(2026, 1, 1, 9, 0), 'weight', 3200)]
+    expect(birthMeasurement(events, 'length', BIRTH)).toBeNull()
+  })
+})
+
+describe('changeSinceBirth', () => {
+  const BIRTH = '2026-01-01'
+
+  it('is the gain from birth to the latest reading', () => {
+    const events = [
+      growth(at(2026, 1, 1, 9, 0), 'weight', 3200),
+      growth(at(2026, 1, 8, 9, 0), 'weight', 3050),
+      growth(at(2026, 2, 1, 9, 0), 'weight', 4100),
+    ]
+    expect(changeSinceBirth(events, 'weight', BIRTH)?.delta).toBe(900)
+  })
+
+  it('is negative in the first fortnight, which is normal and must not be hidden', () => {
+    const events = [
+      growth(at(2026, 1, 1, 9, 0), 'weight', 3200),
+      growth(at(2026, 1, 4, 9, 0), 'weight', 3020),
+    ]
+    expect(changeSinceBirth(events, 'weight', BIRTH)?.delta).toBe(-180)
+  })
+
+  it('is null when the birth measurement is the only one', () => {
+    const events = [growth(at(2026, 1, 1, 9, 0), 'weight', 3200)]
+    expect(changeSinceBirth(events, 'weight', BIRTH)).toBeNull()
+  })
+
+  it('is null with no birth measurement to compare against', () => {
+    const events = [growth(at(2026, 1, 8, 9, 0), 'weight', 3400)]
+    expect(changeSinceBirth(events, 'weight', BIRTH)).toBeNull()
   })
 })
