@@ -314,6 +314,22 @@ describe('reminders', () => {
     })
   })
 
+  it('accepts an anchor so a reminder can be due when the parent asked', async () => {
+    // The sheet's "first reminder at 6pm" arrives with the creation rather than as a
+    // second write, so a reminder is never briefly on the wrong schedule.
+    const baby = await seedBaby()
+    const reminder = await repo.addReminder(baby.id, {
+      kind: 'custom',
+      label: 'Iron drops',
+      intervalMs: 100 * MINUTE_MS,
+      enabled: true,
+      lastDoneAt: clock - 40 * MINUTE_MS,
+    })
+    expect(reminder.lastDoneAt).toBe(clock - 40 * MINUTE_MS)
+    expect(reminder.snoozedUntil).toBeNull()
+    expect(reminder.lastAlertedAt).toBeNull()
+  })
+
   it('scopes the list to one baby, oldest first', async () => {
     const mira = await seedBaby('Mira')
     const arun = await seedBaby('Arun')

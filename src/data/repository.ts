@@ -18,10 +18,15 @@ export type NewEvent = DistributiveOmit<
 >
 
 /** A new reminder. The three state timestamps all start null. */
-export type NewReminder = Pick<
-  Reminder,
-  'kind' | 'label' | 'intervalMs' | 'enabled'
->
+/**
+ * A reminder as the sheet describes it.
+ *
+ * The anchor fields are optional and default to null, which is the "follow the log"
+ * behaviour every reminder had before the sheet could ask when the first one is due.
+ * Letting them come in with the creation avoids writing the row twice.
+ */
+export type NewReminder = Pick<Reminder, 'kind' | 'label' | 'intervalMs' | 'enabled'> &
+  Partial<Pick<Reminder, 'lastDoneAt' | 'snoozedUntil'>>
 
 export type NewStashEntry = Pick<
   StashEntry,

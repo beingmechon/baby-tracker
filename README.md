@@ -105,9 +105,11 @@ This is an early release, deliberately small, and genuinely usable right now:
   diaper for both. Weights, temperatures, symptoms, medicine, pumping and sleep are
   never copied: those belong to one child.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
-  counted from your own log rather than from when the reminder last went off. On
-  Android they are handed to the OS, so a closed app still wakes you — with no
-  server anywhere, because the alarm is held by your phone.
+  counted from your own log rather than from when the reminder last went off. Pick
+  an interval from the list or type your own, and say when the first one is due:
+  after the last feed, an interval from now, or at a time you choose. On Android
+  they are handed to the OS, so a closed app still wakes you — with no server
+  anywhere, because the alarm is held by your phone.
 - **Your language** — every string is translatable, with plurals, locale-aware
   clocks and numbers, and a language picker.
 - **Your data is yours** — full JSON backup, CSV export for the paediatrician,

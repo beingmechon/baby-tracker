@@ -4,7 +4,9 @@ import { HOUR_MS, MINUTE_MS } from './time'
 import {
   alertedPatch,
   donePatch,
+  firstDuePatch,
   isValidInterval,
+  nextOccurrenceOf,
   reminderStatus,
   reminderStatuses,
   shouldAlert,
@@ -269,5 +271,89 @@ describe('every kind is handled', () => {
       const status = reminderStatus(reminder({ kind }), [], CREATED)
       expect(status.dueAt, kind).toBe(CREATED + 3 * HOUR_MS)
     }
+  })
+})
+
+describe('firstDuePatch', () => {
+  const NOW = at(2026, 5, 10, 14, 0)
+
+  it('counts from now when asked to', () => {
+    expect(firstDuePatch('now', 3 * HOUR_MS, NOW)).toEqual({
+      lastDoneAt: NOW,
+      snoozedUntil: null,
+    })
+  })
+
+  it('anchors backwards so the first occurrence lands on the chosen time', () => {
+    // To be due at 18:00 with a 3h interval, the anchor is 15:00.
+    const target = at(2026, 5, 10, 18, 0)
+    expect(firstDuePatch('at', 3 * HOUR_MS, NOW, target)).toEqual({
+      lastDoneAt: target - 3 * HOUR_MS,
+      snoozedUntil: null,
+    })
+  })
+
+  it('falls back to following the log when no time is given', () => {
+    expect(firstDuePatch('at', 3 * HOUR_MS, NOW, null)).toEqual({
+      lastDoneAt: null,
+      snoozedUntil: null,
+    })
+  })
+
+  it('clears the anchor for the log mode, so the last real event decides', () => {
+    expect(firstDuePatch('log', 3 * HOUR_MS, NOW)).toEqual({
+      lastDoneAt: null,
+      snoozedUntil: null,
+    })
+  })
+
+  it('clears a snooze in every mode, so an old deferral cannot outrank the choice', () => {
+    for (const mode of ['log', 'now', 'at'] as const) {
+      expect(firstDuePatch(mode, HOUR_MS, NOW, NOW + HOUR_MS).snoozedUntil).toBeNull()
+    }
+  })
+
+  it('actually produces the requested due time when fed back through the status', () => {
+    // The end-to-end property, rather than trusting the arithmetic above.
+    const target = at(2026, 5, 10, 18, 0)
+    const patch = firstDuePatch('at', 3 * HOUR_MS, NOW, target)
+    const reminder: Reminder = {
+      id: 'r1',
+      babyId: 'b1',
+      kind: 'custom',
+      label: 'Vitamin D',
+      intervalMs: 3 * HOUR_MS,
+      enabled: true,
+      lastDoneAt: patch.lastDoneAt ?? null,
+      lastAlertedAt: null,
+      snoozedUntil: null,
+      createdAt: NOW - 10 * HOUR_MS,
+      updatedAt: NOW,
+    }
+    expect(reminderStatus(reminder, [], NOW).dueAt).toBe(target)
+  })
+})
+
+describe('nextOccurrenceOf', () => {
+  it('is later today when the time has not passed', () => {
+    const now = at(2026, 5, 10, 14, 0)
+    expect(nextOccurrenceOf(18, 0, now)).toBe(at(2026, 5, 10, 18, 0))
+  })
+
+  it('is tomorrow when it already has', () => {
+    // Setting "18:00" at 8pm means tomorrow evening, not two hours ago — a first
+    // occurrence in the past would fire the moment it was saved.
+    const now = at(2026, 5, 10, 20, 0)
+    expect(nextOccurrenceOf(18, 0, now)).toBe(at(2026, 5, 11, 18, 0))
+  })
+
+  it('treats the exact current minute as already passed', () => {
+    const now = at(2026, 5, 10, 18, 0)
+    expect(nextOccurrenceOf(18, 0, now)).toBe(at(2026, 5, 11, 18, 0))
+  })
+
+  it('crosses a month boundary', () => {
+    const now = at(2026, 5, 31, 23, 30)
+    expect(nextOccurrenceOf(9, 0, now)).toBe(at(2026, 6, 1, 9, 0))
   })
 })

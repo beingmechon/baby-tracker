@@ -36,6 +36,8 @@ to use it with a real baby at 4am.
 - [x] Interval reminders: next feed, diaper, pumping, custom (vitamin D drops,
       tummy time), anchored to your own log
 - [x] Snoozeable reminders, with mark-done and per-reminder on/off
+- [x] Any interval, typed in minutes, for the schedules no list anticipates, and a
+      first-due choice: after the last one, an interval from now, or a clock time
 - [ ] Home screen widgets for zero-open logging
 - [x] Waking a *closed* app when a reminder falls due. Impossible for a serverless
       PWA — web push needs a server holding a subscription, and Notification

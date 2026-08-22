@@ -234,9 +234,9 @@ export class IndexedDbRepository implements Repository {
       ...reminder,
       id: this.generateId(),
       babyId,
-      lastDoneAt: null,
+      lastDoneAt: reminder.lastDoneAt ?? null,
       lastAlertedAt: null,
-      snoozedUntil: null,
+      snoozedUntil: reminder.snoozedUntil ?? null,
       createdAt: timestamp,
       updatedAt: timestamp,
     }

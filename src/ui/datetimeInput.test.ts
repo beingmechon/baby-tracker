@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { at } from '@/test/factories'
 import {
   fromDateTimeInputs,
+  fromTimeInput,
   minutesInputToMs,
   msToMinutesInput,
   toDateInputValue,
@@ -64,5 +65,24 @@ describe('duration inputs', () => {
     expect(minutesInputToMs('-3')).toBeNull()
     expect(minutesInputToMs('abc')).toBeNull()
     expect(minutesInputToMs('')).toBeNull()
+  })
+})
+
+describe('fromTimeInput', () => {
+  it('reads an hour and a minute', () => {
+    expect(fromTimeInput('18:30')).toEqual({ hour: 18, minute: 30 })
+    expect(fromTimeInput('00:00')).toEqual({ hour: 0, minute: 0 })
+  })
+
+  it('tolerates the seconds some browsers add', () => {
+    expect(fromTimeInput('06:15:00')).toEqual({ hour: 6, minute: 15 })
+  })
+
+  it('rejects anything a time picker would not produce', () => {
+    // Empty is the common one: a cleared field must not become midnight.
+    expect(fromTimeInput('')).toBeNull()
+    expect(fromTimeInput('6:15')).toBeNull()
+    expect(fromTimeInput('24:00')).toBeNull()
+    expect(fromTimeInput('12:60')).toBeNull()
   })
 })

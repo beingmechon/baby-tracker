@@ -200,6 +200,66 @@ export function donePatch(now: Timestamp): Partial<Reminder> {
 }
 
 /**
+ * When a reminder should first come due, as chosen in the sheet.
+ *
+ *   - `log`   — the existing behaviour: an interval after the last feed/change/pump.
+ *   - `now`   — an interval from this moment, whatever the log says.
+ *   - `at`    — at a particular clock time, and every interval after that.
+ */
+export type FirstDue = 'log' | 'now' | 'at'
+
+/**
+ * The patch that makes a reminder first come due when the parent asked.
+ *
+ * All three modes are expressed through `lastDoneAt`, which is the field
+ * `anchorFor` already treats as "the interval counts afresh from here" — so there is
+ * no new column and no second mechanism competing with the first. To be due at `T`
+ * the anchor is simply set to `T - interval`.
+ *
+ * The honest limitation, which the sheet states: for a feed, diaper or pumping
+ * reminder a *newer* logged event still wins, because `anchorFor` takes the latest of
+ * the two. That is the right behaviour — a reminder to feed should follow the actual
+ * feeds — but it does mean "at 6pm every day" is only exact for a custom reminder,
+ * which has no event to be re-anchored by.
+ */
+export interface FirstDueAnchor {
+  lastDoneAt: Timestamp | null
+  /** Always cleared: a snooze belongs to the occurrence being replaced. */
+  snoozedUntil: null
+}
+
+export function firstDuePatch(
+  mode: FirstDue,
+  intervalMs: number,
+  now: Timestamp,
+  atTime: Timestamp | null = null,
+): FirstDueAnchor {
+  if (mode === 'now') return { lastDoneAt: now, snoozedUntil: null }
+  if (mode === 'at' && atTime !== null) {
+    return { lastDoneAt: atTime - intervalMs, snoozedUntil: null }
+  }
+  // Back to following the log: clearing the anchor lets the last real event decide.
+  return { lastDoneAt: null, snoozedUntil: null }
+}
+
+/**
+ * The next occurrence of a wall-clock time, today or tomorrow.
+ *
+ * A parent setting "18:00" at 8pm means tomorrow evening, not two hours ago — and a
+ * reminder whose first occurrence is in the past would fire the moment it was saved.
+ */
+export function nextOccurrenceOf(
+  hour: number,
+  minute: number,
+  now: Timestamp,
+): Timestamp {
+  const candidate = new Date(now)
+  candidate.setHours(hour, minute, 0, 0)
+  if (candidate.getTime() <= now) candidate.setDate(candidate.getDate() + 1)
+  return candidate.getTime()
+}
+
+/**
  * A reminder needs a real interval. Below a minute it would be due again before
  * the notification cleared, which is a way of breaking someone's phone rather
  * than a preference to respect.

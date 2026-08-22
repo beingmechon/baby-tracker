@@ -417,6 +417,59 @@ try {
     editedState.includes('every 12h'),
   )
 
+  // A prescription every 100 minutes, first dose this evening: neither the interval
+  // nor the start time is expressible with the picker's list alone.
+  await page.getByRole('button', { name: 'Add a reminder' }).click()
+  await reminderSheet
+    .getByLabel('Remind me about')
+    .selectOption({ label: 'Something else' })
+  await reminderSheet.getByLabel('Name').fill('Iron drops')
+  await reminderSheet.getByLabel('Every').selectOption({ label: 'Another interval…' })
+  await reminderSheet.getByLabel('Minutes between reminders').fill('100')
+  await reminderSheet
+    .getByLabel('The first reminder')
+    .selectOption({ label: 'At a time I choose' })
+  // Six hours from the page's own wall clock, read from the page rather than
+  // assumed: the pinned instant is UTC and the context runs in another timezone.
+  const dueAt = await page.evaluate(() => {
+    const target = new Date()
+    target.setHours(target.getHours() + 6)
+    const pad = (value) => `${value}`.padStart(2, '0')
+    return `${pad(target.getHours())}:${pad(target.getMinutes())}`
+  })
+  await reminderSheet.getByLabel('Due at').fill(dueAt)
+  await reminderSheet.getByRole('button', { name: 'Save reminder' }).click()
+
+  // Waiting on the row rather than the toast: the toast repeats, so waiting for it
+  // can resolve against the one still on screen from the edit above.
+  const ironRow = page.locator('.reminder-row', { hasText: 'Iron drops' })
+  await ironRow.waitFor()
+  const ironState = await ironRow.locator('.reminder-state').innerText()
+  check(
+    `a typed interval is kept exactly as typed (${ironState})`,
+    ironState.includes('every 1h 40m'),
+  )
+  // Six hours out, give or take the seconds the run itself takes. An
+  // interval-from-now reminder would read "in 1h 40m", which is what tells the two
+  // apart — the chosen time is being honoured, not the interval.
+  check(
+    `and the first alert lands at the time chosen (${ironState})`,
+    /^in (6h|5h 5\dm)/.test(ironState),
+  )
+
+  // Reopening it must show the interval that was typed, in the field that can edit
+  // it — a value the sheet merely preserved would be invisible and unchangeable.
+  await ironRow.getByRole('button', { name: /Iron drops/ }).click()
+  check(
+    'reopening a typed interval shows it in the minutes field',
+    (await reminderSheet.getByLabel('Minutes between reminders').inputValue()) === '100',
+  )
+  check(
+    'and leaves the schedule alone by default',
+    (await reminderSheet.getByLabel('The first reminder').inputValue()) === 'keep',
+  )
+  await reminderSheet.getByRole('button', { name: 'Close' }).click()
+
   await settle(page)
   await page.screenshot({ path: join(SHOTS, 'reminders.png'), fullPage: true })
 
@@ -632,10 +685,10 @@ try {
     (await page.locator('.appbar-name').innerText()) === 'Mira' &&
       (await page.locator('.timeline-row').count()) === feedRowsForMira,
   )
-  await page.locator('.reminder-row').nth(1).waitFor()
+  await page.locator('.reminder-row').nth(2).waitFor()
   check(
     'and their reminders',
-    (await page.locator('.reminder-row').count()) === 2,
+    (await page.locator('.reminder-row').count()) === 3,
   )
 
   // The switcher marks who is open rather than relying on position.
@@ -1644,7 +1697,7 @@ try {
   )
   check(
     'so are the reminders',
-    (await page.locator('.reminder-row').count()) === 2,
+    (await page.locator('.reminder-row').count()) === 3,
   )
 
   console.log('\n▸ Offline')

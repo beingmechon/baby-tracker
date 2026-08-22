@@ -53,3 +53,18 @@ export function minutesInputToMs(value: string): number | null {
   if (!Number.isFinite(minutes) || minutes < 0) return null
   return Math.round(minutes * 60_000)
 }
+
+/**
+ * The hour and minute from a `<input type="time">` value.
+ *
+ * Separate from `fromDateTimeInputs` because a reminder set for "18:00" has no date:
+ * it means the next 6pm, whenever that is, which is a question for the domain.
+ */
+export function fromTimeInput(time: string): { hour: number; minute: number } | null {
+  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(time)
+  if (match === null) return null
+  const hour = Number(match[1])
+  const minute = Number(match[2])
+  if (hour > 23 || minute > 59) return null
+  return { hour, minute }
+}
