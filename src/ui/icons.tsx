@@ -220,3 +220,13 @@ export function DiaryIcon({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function FoodIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6 3.5v7a2.5 2.5 0 0 0 5 0v-7" />
+      <path d="M8.5 13v7.5" />
+      <path d="M17.5 3.5c2 1.6 2.6 4.2 1.6 6.4-.6 1.3-1.6 2-1.6 2v8.6" />
+    </svg>
+  )
+}

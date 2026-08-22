@@ -169,6 +169,17 @@ try {
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
+  // A food with an allergen tag, so the solids screen has a populated ledger.
+  await page.getByRole('button', { name: 'Log a food' }).first().click()
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await page.locator('.sheet').getByLabel('What did you offer?').fill('Scrambled egg')
+  await page.locator('.sheet').getByRole('button', { name: 'Ate some' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Egg', exact: true }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   // A symptom and an appointment, so the illness screen has episodes and a
   // question list to audit rather than two empty states.
   await page.getByRole('button', { name: 'Symptoms and visits' }).first().click()
@@ -231,6 +242,12 @@ try {
     await page.getByRole('button', { name: 'The day, round the clock' }).click()
     await page.locator('.wheel').waitFor()
     writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Log a food' }).first().click()
+    await page.locator('.allergen').first().waitFor()
+    writeFileSync(join(OUT, `food-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

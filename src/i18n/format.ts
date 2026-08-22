@@ -14,6 +14,8 @@ import {
   type AgeDescription,
 } from '@/domain/time'
 import type {
+  Allergen,
+  FoodAcceptance,
   MeasureKind,
   MeasureSystem,
   SymptomImpression,
@@ -320,6 +322,35 @@ export function symptomImpressionName(
     case 'severe':
       return t.t('symptom.impression.severe')
   }
+}
+
+const FOOD_ACCEPTANCE_NAMES: Record<FoodAcceptance, MessageKey> = {
+  refused: 'food.acceptance.refused',
+  tasted: 'food.acceptance.tasted',
+  some: 'food.acceptance.some',
+  most: 'food.acceptance.most',
+  all: 'food.acceptance.all',
+}
+
+/** How much went in, in the words a parent would use rather than a percentage. */
+export function foodAcceptanceName(t: Translator, acceptance: FoodAcceptance): string {
+  return t.t(FOOD_ACCEPTANCE_NAMES[acceptance])
+}
+
+const ALLERGEN_NAMES: Record<Allergen, MessageKey> = {
+  milk: 'allergen.milk',
+  egg: 'allergen.egg',
+  peanut: 'allergen.peanut',
+  treeNut: 'allergen.treeNut',
+  wheat: 'allergen.wheat',
+  soy: 'allergen.soy',
+  fish: 'allergen.fish',
+  shellfish: 'allergen.shellfish',
+  sesame: 'allergen.sesame',
+}
+
+export function allergenName(t: Translator, allergen: Allergen): string {
+  return t.t(ALLERGEN_NAMES[allergen])
 }
 
 export function temperatureUnit(system: MeasureSystem): 'c' | 'f' {

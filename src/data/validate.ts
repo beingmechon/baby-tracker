@@ -18,6 +18,8 @@ import type {
   MeasureKind,
   Sex,
   SleepKind,
+  Allergen,
+  FoodAcceptance,
   SymptomImpression,
   VisitQuestion,
   TemperatureSite,
@@ -59,6 +61,24 @@ const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
 const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
 const IMPRESSIONS: readonly SymptomImpression[] = ['mild', 'moderate', 'severe']
+const ACCEPTANCES: readonly FoodAcceptance[] = [
+  'refused',
+  'tasted',
+  'some',
+  'most',
+  'all',
+]
+const ALLERGENS: readonly Allergen[] = [
+  'milk',
+  'egg',
+  'peanut',
+  'treeNut',
+  'wheat',
+  'soy',
+  'fish',
+  'shellfish',
+  'sesame',
+]
 
 /**
  * A cap on the questions list from a file.
@@ -177,6 +197,26 @@ export function parseEvent(value: unknown): BabyEvent | null {
       // render as an empty word next to it.
       if (name === null || impression === null) return null
       return { ...base, type: 'symptom', name, impression }
+    }
+    case 'food': {
+      const name = str(value.name)
+      const acceptance = oneOf<FoodAcceptance>(value.acceptance, ACCEPTANCES)
+      if (name === null || acceptance === null) return null
+      return {
+        ...base,
+        type: 'food',
+        name,
+        acceptance,
+        // Unknown allergen names are dropped rather than failing the whole entry:
+        // a file from a future version that knows about celery should still import
+        // its food log, minus the tag this version cannot name.
+        allergens: Array.isArray(value.allergens)
+          ? value.allergens.filter((entry): entry is Allergen =>
+              (ALLERGENS as readonly string[]).includes(entry as string),
+            )
+          : [],
+        reaction: value.reaction === true,
+      }
     }
     case 'visit': {
       const reason = str(value.reason)

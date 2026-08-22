@@ -7,7 +7,10 @@ import type {
   MeasureKind,
   MedicationEvent,
   NursingEvent,
+  Allergen,
   DoctorVisitEvent,
+  FoodAcceptance,
+  FoodEvent,
   SymptomEvent,
   SymptomImpression,
   VisitQuestion,
@@ -212,6 +215,27 @@ export function visit(
     who,
     note,
     questions,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function food(
+  startedAt: Timestamp,
+  name: string,
+  allergens: Allergen[] = [],
+  acceptance: FoodAcceptance = 'some',
+  reaction = false,
+): FoodEvent {
+  return {
+    id: nextId('food'),
+    babyId: BABY_ID,
+    type: 'food',
+    startedAt,
+    name,
+    acceptance,
+    allergens,
+    reaction,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

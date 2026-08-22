@@ -189,6 +189,24 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         '',
         note,
       ]
+    case 'food':
+      return [
+        ...base,
+        'food',
+        event.allergens.length === 0
+          ? `${event.name}: ${event.acceptance}`
+          : `${event.name}: ${event.acceptance} (${event.allergens.join(', ')})`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        // A reaction has to be legible in a spreadsheet a doctor might scan, so it
+        // is a word in the note rather than a flag in a column nobody reads.
+        joinNotes(event.reaction ? 'reaction noted' : '', note),
+      ]
     case 'visit': {
       const asked = event.questions.filter((question) => question.asked).length
       return [

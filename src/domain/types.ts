@@ -25,6 +25,7 @@ export type EventType =
   | 'medication'
   | 'symptom'
   | 'visit'
+  | 'food'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -47,6 +48,33 @@ export type TemperatureSite = 'armpit' | 'ear' | 'forehead' | 'mouth' | 'rectal'
  * app never acts on it: nothing is triaged, ranked or flagged from this value.
  */
 export type SymptomImpression = 'mild' | 'moderate' | 'severe'
+
+/**
+ * The nine major food allergens named in United States federal law — the eight of
+ * the Food Allergen Labeling and Consumer Protection Act of 2004, plus sesame,
+ * added by the FASTER Act with effect from January 2023.
+ *
+ * A published regulatory list, not medical advice and not this project's opinion
+ * about what any child should eat. It is here because "which of the nine have we
+ * introduced?" is a question parents are asked and cannot answer from memory, and
+ * because a list defined by statute is one this app can carry without inventing
+ * anything. Other countries name more — celery, mustard, lupin and molluscs in the
+ * EU and UK, for instance — and adding them is a matter of extending this list;
+ * see docs/ROADMAP.md.
+ */
+export type Allergen =
+  | 'milk'
+  | 'egg'
+  | 'peanut'
+  | 'treeNut'
+  | 'wheat'
+  | 'soy'
+  | 'fish'
+  | 'shellfish'
+  | 'sesame'
+
+/** How much of it actually went in, as the parent saw it. */
+export type FoodAcceptance = 'refused' | 'tasted' | 'some' | 'most' | 'all'
 
 /** Which units measurements are shown and entered in. */
 export type MeasureSystem = 'metric' | 'imperial'
@@ -182,6 +210,27 @@ export interface VisitQuestion {
   asked: boolean
 }
 
+export interface FoodEvent extends EventBase {
+  type: 'food'
+  name: string
+  acceptance: FoodAcceptance
+  /**
+   * Which of the nine the parent says this food contained.
+   *
+   * Chosen by them, never inferred from the name. The app has no food-composition
+   * database and will not pretend to: guessing that hummus contains sesame is right,
+   * guessing that a supermarket biscuit does not contain egg is how an app tells a
+   * parent something dangerous and untrue.
+   */
+  allergens: Allergen[]
+  /**
+   * Whether the parent noticed a reaction. Deliberately a flag and not a severity
+   * scale — grading a reaction is triage, and this app does not triage. What it
+   * looked like goes in the inherited `note`.
+   */
+  reaction: boolean
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
@@ -193,6 +242,7 @@ export type BabyEvent =
   | MedicationEvent
   | SymptomEvent
   | DoctorVisitEvent
+  | FoodEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -229,6 +279,10 @@ export function isSymptom(event: BabyEvent): event is SymptomEvent {
 
 export function isDoctorVisit(event: BabyEvent): event is DoctorVisitEvent {
   return event.type === 'visit'
+}
+
+export function isFood(event: BabyEvent): event is FoodEvent {
+  return event.type === 'food'
 }
 
 /** Total output of a pumping session. */

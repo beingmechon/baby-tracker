@@ -18,6 +18,7 @@ import { plannedAlerts, samePlan, type PlannedAlert } from '@/domain/scheduling'
 import type { ReminderStatus } from '@/domain/reminders'
 import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
+import { FoodScreen } from './FoodScreen'
 import { HealthScreen } from './HealthScreen'
 import { IllnessScreen } from './IllnessScreen'
 import { HandoverScreen } from './HandoverScreen'
@@ -84,6 +85,7 @@ function AppContent({
     | 'patterns'
     | 'handover'
     | 'illness'
+    | 'food'
     | 'settings'
   >('home')
   const prefersDark = usePrefersDark()
@@ -261,6 +263,14 @@ function AppContent({
     )
   }
 
+  if (screen === 'food') {
+    return (
+      <div className="app">
+        <FoodScreen store={store} now={now} onBack={() => setScreen('home')} />
+      </div>
+    )
+  }
+
   if (screen === 'illness') {
     return (
       <div className="app">
@@ -322,6 +332,7 @@ function AppContent({
         onOpenPatterns={() => setScreen('patterns')}
         onOpenHandover={() => setScreen('handover')}
         onOpenIllness={() => setScreen('illness')}
+        onOpenFood={() => setScreen('food')}
         onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>

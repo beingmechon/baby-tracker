@@ -94,10 +94,15 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v1.0 — Toddler and ecosystem
 
-- [ ] Solid foods log: food tried, amount, reaction/allergy tag
-- [ ] Allergen introduction tracker for the big nine, with introduced /
-      tolerated / reacted status
-- [ ] Food library with age-appropriate serving guidance
+- [x] Solid foods log: food tried, how much went in, reaction and allergen tags
+- [x] Allergen introduction tracker for the nine named in US federal law, with
+      not-offered / no-reaction-noted / reaction-noted status. Deliberately *not*
+      "tolerated": tolerance is a clinical conclusion, and the app reports the
+      count instead of drawing it. EU and UK lists name more — celery, mustard,
+      lupin, molluscs — and adding them is one list in `domain/types.ts`
+- [ ] Food library with age-appropriate serving guidance — **needs a real
+      source.** Serving sizes and choking guidance for infants are exactly the
+      kind of data this project will not invent
 - [ ] Potty training: attempts, successes, reminders, streaks
 - [ ] Chores and routines as the child grows
 - [ ] Activities: tummy time with a daily goal, bath, walks, playtime, plus

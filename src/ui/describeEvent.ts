@@ -11,6 +11,7 @@ import {
   formatMeasure,
   formatTemperature,
   formatVolume,
+  foodAcceptanceName,
   measureName,
   symptomImpressionName,
   temperatureSiteName,
@@ -24,6 +25,9 @@ export type Category =
   | 'growth'
   | 'pumping'
   | 'health'
+  // Solids get their own tint rather than sharing the milk one: "did she eat?" and
+  // "did she drink?" are different questions once weaning starts.
+  | 'food'
 
 export interface EventDescription {
   category: Category
@@ -145,6 +149,19 @@ export function describeEvent(
         category: 'health',
         title: event.name,
         detail: symptomImpressionName(t, event.impression),
+        live: false,
+      }
+
+    case 'food':
+      return {
+        category: 'food',
+        title: event.name,
+        detail: [
+          foodAcceptanceName(t, event.acceptance),
+          event.reaction ? t.t('food.reactionShort') : '',
+        ]
+          .filter((part) => part !== '')
+          .join(' · '),
         live: false,
       }
 

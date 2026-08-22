@@ -6,6 +6,52 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — solids and the nine major allergens
+
+- **A solids log**: what you offered, how much actually went in, and which of the
+  nine major allergens it contained.
+- **An allergen ledger** answering the question asked at every appointment from six
+  months that no parent can answer from memory: has she had egg? peanut? when? Nine
+  rows, each showing not-offered / no-reaction-noted / reaction-noted, how many
+  times, and which food it was in.
+- **The app never infers what is in a food.** Allergens are tagged by the parent, and
+  the sheet says so where they tag. There is no food-composition database here and
+  there will not be one: guessing that hummus contains sesame happens to be right,
+  and guessing that a supermarket biscuit contains no egg is how an app tells a
+  parent something dangerous and untrue. The browser suite asserts that logging
+  "Peanut butter toast" untagged leaves peanut showing as not offered.
+- **"No reaction noted", never "tolerated".** Tolerance is a clinical conclusion
+  drawn from a controlled introduction; what the app knows is that a food was offered
+  n times and nobody wrote down a reaction. There is no threshold above which it
+  declares a child tolerant, because inventing one would be inventing medicine.
+- **A reaction is a flag, not a severity.** Grading a reaction is triage. What it
+  looked like goes in the note, and ticking the box surfaces the one thing worth
+  saying out loud — that breathing trouble, facial swelling or repeated vomiting
+  after a food is emergency care, not an app. Shown only when the box is ticked: an
+  emergency instruction printed under every ordinary banana teaches a parent to stop
+  reading it.
+- A logged reaction stays flagged even if later offerings went fine. Silently
+  clearing it would be the worst kind of helpful.
+- The list is the nine named in United States federal law — the eight of the 2004
+  labelling act plus sesame, added in 2023 — and the screen says so, along with the
+  fact that other countries name more and that what to introduce when is a
+  conversation with a doctor.
+
+### Fixed
+
+- **"last offered 0 minutes ago"** — the span formatter renders a sub-minute gap as
+  "0 minutes", where the elapsed-time formatter already says "just now". Swapped, and
+  the phrase no longer supplies its own "ago" on top of a value that ends in one.
+  Fourth instance of that composition fault; guarded in the suite with the others.
+- **Two notes in a row ran together as one wall of grey.** Consecutive field notes
+  are separate points and are now spaced as such — everywhere, not just here.
+- The nine allergen rows were padded to thumb height despite nothing in them being
+  tappable, which cost half a screen for no benefit.
+- A reaction flag collected by the food sheet was never passed to the store — caught
+  before it shipped, but it was written as though deliberate, with a comment
+  rationalising it.
+
+
 ### Added — twins mode and birth measurements
 
 - **Twins mode.** Tick two or more babies in Settings and one tap logs a feed or a

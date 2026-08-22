@@ -388,6 +388,10 @@
   color: var(--health-tint);
 }
 
+.timeline-mark[data-category='food'] {
+  color: var(--food-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -542,6 +546,11 @@
 .field-note {
   font-size: var(--text--1);
   color: var(--text-secondary);
+}
+
+/* Two notes in a row ran together as one wall of grey. They are separate points. */
+.field-note + .field-note {
+  margin-top: var(--space-3);
 }
 
 /*
@@ -1672,6 +1681,186 @@
 .question-row input {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* ── Solids and allergens ────────────────────────────────────────────────── */
+
+/*
+ * The nine, as a ledger rather than a grid of coloured tiles.
+ *
+ * A traffic-light grid was the obvious design and the wrong one: green for
+ * "no reaction noted" would read as the app certifying a food safe, which is a
+ * clinical conclusion it is in no position to draw. Rows of words say what is
+ * actually known.
+ */
+.allergen-count {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-2);
+  font-weight: 600;
+  margin-bottom: var(--space-5);
+}
+
+.allergens {
+  margin: 0 0 var(--space-5);
+}
+
+/* No `min-height: var(--tap)`: nothing in this row is tappable, and nine rows
+   padded for a thumb in the dark is half a screen of nothing. */
+.allergen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.allergen:last-child {
+  border-bottom: none;
+}
+
+.allergen-name {
+  font-size: var(--text-0);
+  font-weight: 500;
+}
+
+.allergen-state {
+  margin: 0;
+  text-align: right;
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/* Not offered yet is the quietest state: it is the default, not a warning. */
+.allergen[data-state='notTried'] .allergen-name,
+.allergen[data-state='notTried'] .allergen-state {
+  color: var(--text-secondary);
+}
+
+.allergen-verdict {
+  display: block;
+  color: var(--text);
+}
+
+/*
+ * A logged reaction takes the accent on the words, never a red panel. Same rule as
+ * a raised temperature: the app is repeating what the parent wrote down, and a red
+ * block would be it forming an opinion.
+ */
+.allergen[data-state='reacted'] .allergen-verdict {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.allergen-detail {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.food-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-6);
+}
+
+.food-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.food-row:last-child {
+  border-bottom: none;
+}
+
+.food-name {
+  display: block;
+  font-size: var(--text-0);
+  font-weight: 500;
+}
+
+.food-meta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.food-flag {
+  flex: 0 0 auto;
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+/*
+ * A column of choices rather than a segmented row: five options do not fit across
+ * a phone, and "Ate most" truncated to "Ate m…" is worse than a taller control.
+ */
+.stack-choices {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.choice {
+  min-height: var(--tap);
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-0);
+  text-align: left;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-subtle);
+  transition: background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+
+.choice:first-child {
+  border-top: none;
+}
+
+.choice[aria-pressed='true'] {
+  color: var(--text);
+  background: var(--surface-active);
+  font-weight: 600;
+}
+
+/* Nine multi-select tags, wrapping. Not chips: chips are one-of-three and sized
+   for a thumb in the dark; these are read before they are tapped. */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.tag {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  transition: background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+
+.tag[aria-pressed='true'] {
+  color: var(--accent-on-solid);
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  font-weight: 600;
 }
 
 /*

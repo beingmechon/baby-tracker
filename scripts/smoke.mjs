@@ -1112,6 +1112,106 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Solids and allergens')
+  await page.getByRole('button', { name: 'Log a food' }).first().click()
+  await page.getByRole('button', { name: 'The nine major allergens' }).waitFor().catch(() => {})
+  check(
+    'the allergen ledger lists all nine before anything is logged',
+    (await page.locator('.allergen').count()) === 9,
+  )
+  check(
+    'and shows none of them as offered',
+    (await page.locator(".allergen[data-state='notTried']").count()) === 9 &&
+      /0 of 9/.test(await page.locator('.allergen-count').innerText()),
+  )
+  check(
+    'it says where the list comes from and what it is not',
+    /federal law/.test(await page.locator('.page').innerText()) &&
+      /not a plan/.test(await page.locator('.page').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Scrambled egg')
+  await sheet.getByRole('button', { name: 'Ate some' }).click()
+  await sheet.getByRole('button', { name: 'Egg', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator(".allergen[data-state='noReaction']").first().waitFor()
+
+  check(
+    'a tagged food moves that allergen off "not offered"',
+    (await page
+      .locator(".allergen[data-state='noReaction']")
+      .filter({ hasText: 'Egg' })
+      .count()) === 1,
+  )
+  check(
+    'and the count follows',
+    /1 of 9/.test(await page.locator('.allergen-count').innerText()),
+  )
+  check(
+    'the wording is "no reaction noted", never a claim that it is tolerated',
+    /No reaction noted/.test(await page.locator('.allergens').innerText()) &&
+      !/tolerat/i.test(await page.locator('.page').innerText()),
+  )
+
+  // The line this feature must not cross: the app has no food database.
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Peanut butter toast')
+  await sheet.getByRole('button', { name: 'Tasted it' }).click()
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator('.food-row').nth(1).waitFor()
+  check(
+    'an untagged food never infers its own allergens from the name',
+    (await page
+      .locator(".allergen[data-state='notTried']")
+      .filter({ hasText: 'Peanut' })
+      .count()) === 1,
+  )
+
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Yoghurt')
+  await sheet.getByRole('button', { name: 'Milk', exact: true }).click()
+  await sheet.getByLabel('Did you notice a reaction?').check()
+  check(
+    'ticking a reaction surfaces the emergency guidance, and only then',
+    /emergency care/.test(await sheet.innerText()),
+  )
+  await sheet.getByLabel('Anything else').fill('a few spots around the mouth')
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  // Waiting on the state itself, not on a toast whose text repeats: the previous
+  // "Food saved" is still on screen, so waiting for it resolves instantly and every
+  // assertion after it races the write.
+  await page.locator(".allergen[data-state='reacted']").first().waitFor()
+  check(
+    'a reaction is reported against the allergen it was tagged with',
+    (await page
+      .locator(".allergen[data-state='reacted']")
+      .filter({ hasText: 'Milk' })
+      .count()) === 1,
+  )
+  check(
+    'and says it is repeating the log rather than assessing it',
+    /not making an assessment/.test(await page.locator('.page').innerText()),
+  )
+  check(
+    'the food itself carries the flag too',
+    await page.locator('.food-row[data-reacted="true"]').first().isVisible(),
+  )
+  // `formatSpan` renders a sub-minute gap as "0 minutes"; the phrase has to use the
+  // formatter that says "just now" — and must not add its own "ago" on top.
+  const foodMeta = await page.locator('.food-meta').first().innerText()
+  check(
+    `a food just logged reads as just now, not "0 minutes ago" (${foodMeta})`,
+    !/0 minutes/.test(foodMeta) && !/ago ago|just now ago/.test(foodMeta),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'food.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Twins mode')
   // Two babies already exist by this point in the run only if the earlier block
   // left them; it deletes one, so add a second here.

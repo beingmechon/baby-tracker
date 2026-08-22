@@ -66,6 +66,7 @@ import {
   SettingsIcon,
   SleepIcon,
   DiaryIcon,
+  FoodIcon,
   HandoverIcon,
   WheelIcon,
 } from './icons'
@@ -80,6 +81,7 @@ interface HomeProps {
   onOpenStash: () => void
   onOpenHealth: () => void
   onOpenIllness: () => void
+  onOpenFood: () => void
   onOpenPatterns: () => void
   onOpenHandover: () => void
   onSwitchBaby: (babyId: string) => void
@@ -105,6 +107,7 @@ export function Home({
   onOpenStash,
   onOpenHealth,
   onOpenIllness,
+  onOpenFood,
   onOpenPatterns,
   onOpenHandover,
   onSwitchBaby,
@@ -573,6 +576,26 @@ export function Home({
           <button type="button" className="action-repeat" onClick={onOpenHandover}>
             <HandoverIcon size={16} />
             <span>{t.t('handover.subtitle')}</span>
+          </button>
+        </section>
+
+        {/* Weaning is its own section rather than a row under Health: solids are
+            not a medical matter, and a parent looking for "has she had egg?" is not
+            looking under a thermometer. */}
+        <section className="section" aria-label={t.t('section.food')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenFood}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('food.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.food')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenFood}>
+            <FoodIcon size={16} />
+            <span>{t.t('food.log')}</span>
           </button>
         </section>
 

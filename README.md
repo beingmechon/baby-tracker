@@ -83,6 +83,11 @@ This is an early release, deliberately small, and genuinely usable right now:
   of twelve scattered lines. Appointments can be dated in the future with the
   questions you thought of at 3am, ticked off in the room, and printed with the
   last two weeks of symptoms. It records; it does not assess.
+- **Solids and the nine major allergens** — log what you offered and how it went,
+  and see at a glance which of the nine have been introduced. You tag what a food
+  contains; the app never guesses from the name, because no food database could know
+  what is in the biscuit in your cupboard. It says "no reaction noted", never
+  "tolerated".
 - **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
   and when they last ate, slept and were changed, then copy it as a plain-text
   message or print it for a nursery. Copying puts text on your clipboard; nothing
