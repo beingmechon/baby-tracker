@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   completeTimer,
   elapsedMs,
@@ -17,12 +17,16 @@ import type { ReminderStore } from '@/app/useReminders'
 import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
+import { nextVisit } from '@/domain/illness'
+import { cleanTogetherIds, logTargets } from '@/domain/together'
+import { predictNextNap } from '@/domain/patterns'
 import { SNOOZE_MS } from '@/domain/reminders'
 import { isToday, selectEventsForDay } from '@/domain/select'
 import { summarizeDay } from '@/domain/summary'
 import {
   addDays,
   describeAge,
+  formatClock,
   formatStopwatch,
   localDateKey,
   startOfLocalDay,
@@ -33,14 +37,17 @@ import {
   formatAge,
   formatDuration,
   formatMeasure,
+  formatSpan,
   formatVolume,
   measureName,
 } from '@/i18n/format'
+import { BabySwitcherSheet } from './BabySwitcherSheet'
 import { BottleSheet } from './BottleSheet'
 import { DaySummary } from './DaySummary'
 import { EventEditSheet } from './EventEditSheet'
 import { GrowthSheet } from './GrowthSheet'
 import { NursingSheet } from './NursingSheet'
+import { PumpingSheet } from './PumpingSheet'
 import { ReminderList } from './ReminderList'
 import { RuleLabel } from './RuleLabel'
 import { StatusHeadline } from './StatusHeadline'
@@ -52,10 +59,17 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   GrowthIcon,
+  HealthIcon,
   NursingIcon,
+  PumpIcon,
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
+  ActivityIcon,
+  DiaryIcon,
+  FoodIcon,
+  HandoverIcon,
+  WheelIcon,
 } from './icons'
 
 interface HomeProps {
@@ -65,6 +79,14 @@ interface HomeProps {
   onOpenSettings: () => void
   onOpenGrowth: () => void
   onOpenReminders: () => void
+  onOpenStash: () => void
+  onOpenHealth: () => void
+  onOpenIllness: () => void
+  onOpenFood: () => void
+  onOpenActivity: () => void
+  onOpenPatterns: () => void
+  onOpenHandover: () => void
+  onSwitchBaby: (babyId: string) => void
 }
 
 const QUICK_DIAPERS = [
@@ -84,14 +106,22 @@ export function Home({
   onOpenSettings,
   onOpenGrowth,
   onOpenReminders,
+  onOpenStash,
+  onOpenHealth,
+  onOpenIllness,
+  onOpenFood,
+  onOpenActivity,
+  onOpenPatterns,
+  onOpenHandover,
+  onSwitchBaby,
 }: HomeProps) {
   const t = useTranslator()
   const { activeBaby, events, sleepInProgress } = store
 
   const [nursingTimer, setNursingTimer] = useState<NursingTimerState | null>(null)
-  const [openSheet, setOpenSheet] = useState<'nursing' | 'bottle' | 'growth' | null>(
-    null,
-  )
+  const [openSheet, setOpenSheet] = useState<
+    'nursing' | 'bottle' | 'growth' | 'babies' | 'pumping' | null
+  >(null)
   const [editing, setEditing] = useState<BabyEvent | null>(null)
   const [dayAnchor, setDayAnchor] = useState<Timestamp>(() => startOfLocalDay(Date.now()))
   const [toast, setToast] = useState<string | null>(null)
@@ -101,14 +131,29 @@ export function Home({
   const nursingRunning = nursingTimer !== null && isRunning(nursingTimer)
   const now = useNow(sleepInProgress !== null || nursingRunning ? 1000 : 20_000)
 
-  // Restore a nursing timer left running when the app was last closed.
-  useEffect(() => {
-    setNursingTimer(loadTimer())
-  }, [])
+  const activeBabyId = activeBaby?.id ?? null
 
+  // Restore a nursing timer left running when the app was last closed, and swap
+  // to the right one when the baby changes.
   useEffect(() => {
-    saveTimer(nursingTimer)
-  }, [nursingTimer])
+    setNursingTimer(activeBabyId === null ? null : loadTimer(activeBabyId))
+  }, [activeBabyId])
+
+  /**
+   * Persists at the moment of change rather than in an effect on the timer.
+   *
+   * An effect would fire once more after the baby changed but before the reload
+   * had replaced the state, writing one baby's running timer under the other
+   * baby's key. Saving here means the write always uses the baby that was open
+   * when the user touched the timer.
+   */
+  const updateTimer = useCallback(
+    (next: NursingTimerState | null) => {
+      setNursingTimer(next)
+      if (activeBabyId !== null) saveTimer(activeBabyId, next)
+    },
+    [activeBabyId],
+  )
 
   useEffect(() => {
     if (toast === null) return
@@ -120,6 +165,25 @@ export function Home({
   const lastFeed = useMemo(() => findLastFeed(events), [events])
 
   const lastMeasurements = useMemo(() => latestMeasurements(events), [events])
+
+  const napPrediction = useMemo(
+    () => predictNextNap(events, now, settings.nightWindow),
+    [events, now, settings.nightWindow],
+  )
+
+  const appointment = useMemo(() => nextVisit(events, now), [events, now])
+
+  // The other babies a feed or a diaper will also be written for, by name.
+  const alsoLoggingFor = useMemo(() => {
+    const group = cleanTogetherIds(
+      settings.togetherIds,
+      store.babies.map((baby) => baby.id),
+    )
+    return logTargets(activeBaby?.id ?? null, group, 'diaper')
+      .slice(1)
+      .map((id) => store.babies.find((baby) => baby.id === id)?.name ?? '')
+      .filter((name) => name !== '')
+  }, [settings.togetherIds, store.babies, activeBaby])
 
   const dayEvents = useMemo(
     () => selectEventsForDay(events, dayAnchor, now),
@@ -163,7 +227,7 @@ export function Home({
   }
 
   function openNursing() {
-    setNursingTimer((current) => current ?? idleTimer(suggestNextSide(lastSide)))
+    updateTimer(nursingTimer ?? idleTimer(suggestNextSide(lastSide)))
     setOpenSheet('nursing')
   }
 
@@ -174,7 +238,7 @@ export function Home({
       await store.logNursing(completed)
       setToast(t.t('toast.feedSaved'))
     }
-    setNursingTimer(null)
+    updateTimer(null)
     setOpenSheet(null)
     returnToToday()
   }
@@ -192,7 +256,7 @@ export function Home({
         }),
       )
     }
-    setNursingTimer(next)
+    updateTimer(next)
   }
 
   async function repeatLast() {
@@ -214,10 +278,18 @@ export function Home({
   return (
     <>
       <header className="appbar">
-        <div className="appbar-identity">
+        {/* The name is the switcher. With one baby it still opens — that is how a
+            second one gets added — so there is no state where the control
+            disappears and the parent has to hunt through settings. */}
+        <button
+          type="button"
+          className="appbar-identity appbar-switcher"
+          onClick={() => setOpenSheet('babies')}
+        >
           <span className="appbar-name">{activeBaby.name}</span>
           {age !== null && <span className="appbar-age">{age}</span>}
-        </div>
+          <span className="sr-only">{t.t('babies.switch')}</span>
+        </button>
         <button type="button" className="icon-button" onClick={onOpenSettings}>
           <SettingsIcon />
           <span className="sr-only">{t.t('action.settings')}</span>
@@ -239,8 +311,32 @@ export function Home({
           showGuidance={settings.showWakeWindowGuidance}
         />
 
+        {napPrediction !== null && (
+          <button
+            type="button"
+            className="prediction"
+            onClick={onOpenPatterns}
+          >
+            <span className="prediction-label">{t.t('patterns.nextNapLabel')}</span>
+            <span className="prediction-value num">
+              {t.t('patterns.nextNap', {
+                time: formatClock(napPrediction.expectedAt, t.locale),
+              })}
+            </span>
+          </button>
+        )}
+
         <section className="section" aria-label={t.t('section.log')}>
           <RuleLabel>{t.t('section.log')}</RuleLabel>
+          {/* Said before the buttons, not after: a parent about to tap needs to
+              know the tap lands twice. */}
+          {alsoLoggingFor.length > 0 && (
+            <p className="field-note">
+              {t.t('log.together', {
+                names: [activeBaby.name, ...alsoLoggingFor].join(' · '),
+              })}
+            </p>
+          )}
           <div className="actions">
             <button
               type="button"
@@ -291,6 +387,15 @@ export function Home({
               ))}
             </div>
 
+            <button
+              type="button"
+              className="action"
+              onClick={() => setOpenSheet('pumping')}
+            >
+              <PumpIcon size={18} className="action-icon" />
+              <span>{t.t('pumping.log')}</span>
+            </button>
+
             {repeatDetail !== null && (
               <button
                 type="button"
@@ -330,19 +435,21 @@ export function Home({
               // open an editor. Managing them is one deliberate tap away.
               statuses={reminders.statuses}
               onSnooze={(reminder) => {
-                void reminders.snooze(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderSnoozed', {
-                    duration: formatDuration(t, SNOOZE_MS),
-                  }),
+                void reminders.snooze(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderSnoozed', {
+                      duration: formatDuration(t, SNOOZE_MS),
+                    }),
+                  ),
                 )
               }}
               onDone={(reminder) => {
-                void reminders.markDone(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderDone', {
-                    duration: formatDuration(t, reminder.intervalMs),
-                  }),
+                void reminders.markDone(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderDone', {
+                      duration: formatDuration(t, reminder.intervalMs),
+                    }),
+                  ),
                 )
               }}
             />
@@ -422,6 +529,115 @@ export function Home({
           )}
         </section>
 
+        <section className="section" aria-label={t.t('section.stash')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenStash}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('stash.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.stash')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenStash}>
+            <PumpIcon size={16} />
+            <span>{t.t('stash.title')}</span>
+          </button>
+        </section>
+
+        <section className="section" aria-label={t.t('section.patterns')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenPatterns}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('patterns.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.patterns')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenPatterns}>
+            <WheelIcon size={16} />
+            <span>{t.t('patterns.dayWheel')}</span>
+          </button>
+        </section>
+
+        {/* Its own section rather than a row under Patterns: handing over is a
+            thing a parent comes to the app to do, not a chart to look at. */}
+        <section className="section" aria-label={t.t('handover.title')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenHandover}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('handover.title')}</span>
+              </button>
+            }
+          >
+            {t.t('handover.title')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenHandover}>
+            <HandoverIcon size={16} />
+            <span>{t.t('handover.subtitle')}</span>
+          </button>
+        </section>
+
+        {/* Weaning is its own section rather than a row under Health: solids are
+            not a medical matter, and a parent looking for "has she had egg?" is not
+            looking under a thermometer. */}
+        <section className="section" aria-label={t.t('section.food')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenFood}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('food.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.food')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenFood}>
+            <FoodIcon size={16} />
+            <span>{t.t('food.log')}</span>
+          </button>
+          <button type="button" className="action-repeat" onClick={onOpenActivity}>
+            <ActivityIcon size={16} />
+            <span>{t.t('section.activity')}</span>
+          </button>
+        </section>
+
+        <section className="section" aria-label={t.t('section.health')}>
+          <RuleLabel
+            actions={
+              <button type="button" className="icon-button" onClick={onOpenHealth}>
+                <ChevronRightIcon size={18} />
+                <span className="sr-only">{t.t('health.title')}</span>
+              </button>
+            }
+          >
+            {t.t('section.health')}
+          </RuleLabel>
+          <button type="button" className="action-repeat" onClick={onOpenHealth}>
+            <HealthIcon size={16} />
+            <span>{t.t('health.title')}</span>
+          </button>
+          <button type="button" className="action-repeat" onClick={onOpenIllness}>
+            <DiaryIcon size={16} />
+            <span>{t.t('health.symptomsAndVisits')}</span>
+          </button>
+          {/* The one thing about an appointment worth seeing without opening
+              anything: that it is coming, and when. */}
+          {appointment !== null && (
+            <p className="field-note">
+              {appointment.reason}
+              {' · '}
+              {t.t('visit.in', {
+                duration: formatSpan(t, appointment.startedAt - now),
+              })}
+            </p>
+          )}
+        </section>
+
         <section className="section" aria-label={t.t('section.timeline')}>
           <RuleLabel>{t.t('section.timeline')}</RuleLabel>
           <Timeline
@@ -440,15 +656,15 @@ export function Home({
           now={now}
           lastSide={lastSide}
           onToggle={() =>
-            setNursingTimer((current) =>
-              current === null ? null : toggleTimer(current, Date.now()),
+            updateTimer(
+              nursingTimer === null ? null : toggleTimer(nursingTimer, Date.now()),
             )
           }
           onSwitchSide={() => void handleSwitchSide()}
-          onSelectSide={(side: BreastSide) => setNursingTimer(idleTimer(side))}
+          onSelectSide={(side: BreastSide) => updateTimer(idleTimer(side))}
           onSave={() => void saveNursing()}
           onDiscard={() => {
-            setNursingTimer(null)
+            updateTimer(null)
             setOpenSheet(null)
           }}
           onClose={() => setOpenSheet(null)}
@@ -480,6 +696,41 @@ export function Home({
             setToast(t.t('toast.growthSaved'))
             setOpenSheet(null)
             returnToToday()
+          }}
+          onClose={() => setOpenSheet(null)}
+        />
+      )}
+
+      {openSheet === 'pumping' && (
+        <PumpingSheet
+          unit={settings.volumeUnit}
+          now={now}
+          onSave={async (input) => {
+            await store.logPumping({ ...input, startedAt: logAt() })
+            setToast(t.t('toast.pumpingSaved'))
+            setOpenSheet(null)
+            returnToToday()
+          }}
+          onClose={() => setOpenSheet(null)}
+        />
+      )}
+
+      {openSheet === 'babies' && (
+        <BabySwitcherSheet
+          babies={store.babies}
+          activeBabyId={activeBaby.id}
+          now={now}
+          onSwitch={(baby) => {
+            setOpenSheet(null)
+            if (baby.id === activeBaby.id) return
+            onSwitchBaby(baby.id)
+            setToast(t.t('toast.babySwitched', { name: baby.name }))
+          }}
+          onAdd={async (input) => {
+            const baby = await store.createBaby(input)
+            setOpenSheet(null)
+            onSwitchBaby(baby.id)
+            setToast(t.t('toast.babyAdded', { name: baby.name }))
           }}
           onClose={() => setOpenSheet(null)}
         />

@@ -29,26 +29,34 @@ to use it with a real baby at 4am.
 - [x] WHO percentile charts — weight-for-age to 5 years, length-for-age to 2
       years, both sexes, from the WHO's own LMS tables. CDC (2y+) still to source
 - [x] Growth velocity (gain per week between weigh-ins)
-- [ ] Birth stats as an explicit baseline
+- [x] Birth stats as an explicit baseline — stored as growth events dated at
+      birth, so they plot as the first point and answer "back to birth weight
+      yet?" without a second data model
 - [ ] Premature baby support: corrected age and Fenton preterm charts
 - [x] Interval reminders: next feed, diaper, pumping, custom (vitamin D drops,
       tummy time), anchored to your own log
 - [x] Snoozeable reminders, with mark-done and per-reminder on/off
 - [ ] Home screen widgets for zero-open logging
-- [ ] Waking a *closed* app when a reminder falls due. Not possible for a
-      serverless PWA: web push needs a server holding a subscription, and
-      Notification Triggers was withdrawn before it shipped. It would arrive with
-      a native shell (Capacitor) or, opt-in, with the v0.3 sync server.
+- [x] Waking a *closed* app when a reminder falls due. Impossible for a serverless
+      PWA — web push needs a server holding a subscription, and Notification
+      Triggers was withdrawn before it shipped — so the Android shell hands the due
+      times to the OS alarm scheduler instead. Still no server. On the web the old
+      limitation stands, and the screen says which one applies.
 
 ## v0.3 — Multiple caregivers
 
-- [ ] Multiple children, including a twins mode that logs both in one action
+- [x] Multiple children, with a switcher on the app bar
+- [x] Twins mode: one action that logs the same thing for both. Feeds and diapers
+      fan out; weights, temperatures, symptoms, medicine, pumping and sleep never
+      do — a duplicated dose would be a false medical record
 - [ ] Self-hosted sync server (Docker image, Postgres or SQLite)
 - [ ] End-to-end encrypted relay as an alternative to self-hosting
 - [ ] Roles: edit vs view-only
 - [ ] Who-logged-what audit trail
-- [ ] Handover summary: "since your shift: 2 feeds, 1 nap, 3 diapers"
-- [ ] Daycare report: a printable or shareable daily summary
+- [x] Handover summary: "since your shift: 2 feeds, 1 nap, 3 diapers", with a
+      window you choose and the time of the last of each thing
+- [x] Daycare report: a printable or shareable daily summary — copy as plain text
+      for a message, or print / save as PDF
 - [ ] Import from other apps (Baby Tracker, Huckleberry CSV)
 
 The store already sits behind a single `Repository` interface and every event
@@ -56,12 +64,15 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v0.4 — Health and medical
 
-- [ ] Temperature log with age-appropriate fever thresholds
-- [ ] Medication log: name, dose, time, "last given X hours ago", reminders
+- [x] Temperature log, compared against the 38 °C figure health services publish,
+      with the under-three-months case singled out
+- [x] Medication log: name, dose, time, "last given X ago". Reminders are covered
+      by the custom reminders shipped above
 - [ ] Vaccination schedules, country-selectable: India (IAP), US (CDC), UK (NHS),
       WHO default — **help wanted from parents outside the US**
-- [ ] Doctor visits: notes, questions-to-ask list, attached photos and reports
-- [ ] Symptom and illness diary
+- [x] Doctor visits: a reason, who you are seeing, notes and a questions-to-ask
+      list you tick off in the room. Attached photos and reports still to come
+- [x] Symptom and illness diary, grouped into episodes, printable for a visit
 - [ ] Teething tracker with a visual tooth chart
 - [ ] Jaundice / phototherapy log — a common newborn need almost no app covers
 - [ ] Configurable medical trackers (feeding tubes, breathing treatments) for
@@ -69,39 +80,59 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## v0.5 — Patterns and pumping
 
-- [ ] Sleep predictions ("next nap likely around 2:15pm"), pattern-based and
+- [x] Sleep predictions ("next nap likely around 2:15pm"), pattern-based and
       computed on-device. Paywalled elsewhere; free here, permanently.
-- [ ] Pumping: per-side output, session timer
-- [ ] Milk storage inventory: fridge/freezer stock, expiry warnings, oldest-first
-- [ ] Cluster-feeding support: rapid consecutive logs with no friction
-- [ ] 24-hour circular "day wheel" visualisation
-- [ ] Weekly and monthly pattern charts
-- [ ] Trends: "sleeping 40min longer at night than last week"
-- [ ] Gentle deviation nudges — informational, never diagnostic
+- [x] Pumping: per-side output, session timer
+- [x] Milk storage inventory: fridge/freezer stock, expiry warnings, oldest-first
+- [x] Cluster-feeding support: rapid consecutive logs with no friction, and the
+      run named on screen once it is one
+- [x] 24-hour circular "day wheel" visualisation
+- [x] Weekly pattern chart, with night and naps stacked
+- [x] Monthly pattern charts — the same daily-sleep chart over thirty days, which
+      is where a routine settling or failing to settle becomes visible
+- [x] Trends: "sleeping 40min longer at night than last week"
+- [x] Gentle deviation nudges — informational, never diagnostic
 
 ## v1.0 — Toddler and ecosystem
 
-- [ ] Solid foods log: food tried, amount, reaction/allergy tag
-- [ ] Allergen introduction tracker for the big nine, with introduced /
-      tolerated / reacted status
-- [ ] Food library with age-appropriate serving guidance
-- [ ] Potty training: attempts, successes, reminders, streaks
+- [x] Solid foods log: food tried, how much went in, reaction and allergen tags
+- [x] Allergen introduction tracker for the nine named in US federal law, with
+      not-offered / no-reaction-noted / reaction-noted status. Deliberately *not*
+      "tolerated": tolerance is a clinical conclusion, and the app reports the
+      count instead of drawing it. EU and UK lists name more — celery, mustard,
+      lupin, molluscs — and adding them is one list in `domain/types.ts`
+- [ ] Food library with age-appropriate serving guidance — **needs a real
+      source.** Serving sizes and choking guidance for infants are exactly the
+      kind of data this project will not invent
+- [x] Potty training: successes, accidents, sits with nothing, and the best clean
+      run. Reminders are covered by the custom reminders already shipped
 - [ ] Chores and routines as the child grows
-- [ ] Activities: tummy time with a daily goal, bath, walks, playtime, plus
-      user-defined activity types
-- [ ] Milestones: CDC checklist by age, a photo per milestone
+- [x] Activities: tummy time with a daily goal you set yourself, bath, walks,
+      playtime, reading
+- [ ] User-defined activity types
+- [ ] Milestones: a keepsake list (first smile, first tooth, first steps) with a
+      photo each
+- [ ] The CDC "Learn the Signs" checklist by age — **needs sourcing.** Developmental
+      milestones shown to a worried parent have to be transcribed exactly or not at
+      all, same rule as the WHO growth tables
 - [ ] Photo journal / timeline
-- [ ] Voice logging: "log 120ml bottle", on-device speech
-- [ ] Public REST API and webhooks
-- [ ] Home Assistant integration
-- [ ] MCP server so AI assistants can log and query
-- [ ] PDF export for paediatrician visits
+- [ ] Voice logging: "log 120ml bottle". **Blocked, and worth saying why.** The
+      Web Speech API in Chrome sends audio to Google's servers to be transcribed,
+      which is precisely what this app promises not to do. It arrives when browsers
+      expose genuinely on-device recognition, or in the Android shell with an
+      offline model — not before, and not quietly
+- [ ] Public REST API and webhooks — needs the v0.3 sync server first
+- [ ] Home Assistant integration — needs the v0.3 sync server first
+- [ ] MCP server so AI assistants can log and query — needs the v0.3 sync server first
+- [x] PDF export for paediatrician visits — via the print path on the handover and
+      symptom screens, which "save as PDF" uses. A second PDF writer bundled into
+      the app would be a large dependency doing what the operating system already
+      does
 
 ## v1.x — Platform depth
 
-- [ ] Apple Watch and Wear OS quick actions
-- [ ] Live Activities (iOS lock-screen running timers)
-- [ ] Siri Shortcuts and Google Assistant
+- [ ] Wear OS quick actions
+- [ ] Google Assistant shortcuts
 - [ ] On-device AI logging: "she fed 10 min left side then napped" parsed into
       entries
 - [ ] Grafana-friendly data endpoint
@@ -111,6 +142,12 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
       checklists, belly journal
 
 ## Shipped outside the version tracks
+
+- [x] **A real Android app** — the same web build in a Capacitor shell, so
+      reminders are handed to Android's alarm scheduler and arrive whether the app
+      is open, backgrounded or closed. Still no server. Every push builds a debug
+      APK you can download from CI, and the shell is enforced to cost the web build
+      nothing. See [ANDROID.md](ANDROID.md).
 
 - [x] **i18n foundation** — every string extracted to a catalogue, plurals via
       `Intl.PluralRules`, locale-aware clocks and numbers, a language picker, and
@@ -125,19 +162,13 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 
 ## Languages, in priority order
 
-The plumbing is done; a new language is one file in `src/i18n/messages/` plus an
-entry in `locales.ts`. **Help especially wanted.**
+A new language is one file in `src/i18n/messages/` plus an entry in `locales.ts`.
+**Help especially wanted.**
 
-1. **Tamil (ta)** — next up, and the priority.
-2. **Hindi (hi), Telugu (te), Kannada (kn), Malayalam (ml), Bengali (bn), Marathi
-   (mr)** — Indian languages ahead of European ones. India has more births per
-   year than any other country and almost no baby tracker speaks these languages.
+1. **Tamil (ta)**
+2. **Hindi (hi), Telugu (te), Kannada (kn), Malayalam (ml), Bengali (bn),
+   Marathi (mr)**
 3. Everything else, as people bring it.
-
-Spanish shipped first only because it proved the plumbing — plurals, accents,
-placeholder parity and a 24-hour clock — in a language the drift tests could
-check. It is still awaiting native review, and that review is welcome, but it was
-never meant to signal that European languages come first.
 
 ## Always
 
@@ -155,3 +186,9 @@ Things we will not do, so nobody spends time on them:
 - Selling, sharing or aggregating anyone's data
 - Diagnostic claims or medical advice
 - Any paywall on tracking your own baby
+- **An iOS app.** Building one needs a Mac and a paid Apple Developer account
+  renewed every year, and no open-source project should need either in order to
+  ship — nor should a contributor without a Mac be locked out of half the codebase.
+  On iOS the installed PWA works offline and keeps its data; what it cannot do is
+  wake when fully closed, and the app says so rather than pretending otherwise.
+  Anything iOS-only follows from that: Live Activities, Siri, Apple Watch.

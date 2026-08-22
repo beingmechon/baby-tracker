@@ -44,10 +44,28 @@ jobs:
       - name: Check the committed icons match the generator
         # Icons are committed so a plain `npm ci && npm run build` needs no extra
         # step, but a stale commit would ship an icon the source no longer defines.
+        # The Android launcher icons come from the same generator, and shipping
+        # Capacitor's default logo in the launcher is exactly the drift this catches.
         run: |
           npm run icons
-          git diff --exit-code -- public/ || {
+          git diff --exit-code -- public/ android/app/src/main/res/mipmap-* || {
             echo "::error::Icons are stale. Run 'npm run icons' and commit the result."
+            exit 1
+          }
+
+      - name: Check the Android shell costs the web build nothing
+        # The bridge must stay behind its dynamic import, out of the entry, out of
+        # index.html's preloads and out of the precache — while still being present.
+        # The first attempt at this split did the opposite and broke offline.
+        run: npm run check:payload
+
+      - name: Check the Android version matches package.json
+        # Two files claiming a version is two files that disagree eventually, and
+        # the one users see in F-Droid would be the stale one.
+        run: |
+          npm run android:version
+          git diff --exit-code -- android/app/build.gradle || {
+            echo "::error::Android version is stale. Run 'npm run android:version' and commit."
             exit 1
           }
 
@@ -104,3 +122,54 @@ jobs:
           name: screenshots
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: warn
+
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    # Gradle's first run downloads a toolchain. Ten minutes is generous for a
+    # warm cache and enough for a cold one.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The runner image already ships the Android SDK and command-line tools, so
+      # there is nothing to install — only a JDK to select. Installing the SDK
+      # ourselves would add the slowest, least reliable step in the whole file.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      - name: Build the web app
+        run: npm run build
+
+      - name: Copy the web build into the shell
+        # `sync` rather than `copy`: it also refreshes the plugin list, so adding a
+        # Capacitor plugin cannot silently fail to reach the native project.
+        run: |
+          npm run android:version
+          npx cap sync android
+
+      - name: Assemble the debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      # A debug APK is signed with Android's public debug key, so it installs on a
+      # phone with "unknown sources" enabled and nothing else. It is deliberately
+      # not a release build: a release needs a signing key, and a signing key in a
+      # public repository is a key anyone can publish updates with.
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baby-tracker-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

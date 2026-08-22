@@ -7,7 +7,15 @@ import type {
 } from '@/domain/types'
 import { useTranslator } from '@/i18n/context'
 import { describeEvent } from './describeEvent'
-import { BottleIcon, DiaperIcon, GrowthIcon, NursingIcon, SleepIcon } from './icons'
+import {
+  BottleIcon,
+  DiaperIcon,
+  GrowthIcon,
+  HealthIcon,
+  NursingIcon,
+  PumpIcon,
+  SleepIcon,
+} from './icons'
 
 interface TimelineProps {
   events: BabyEvent[]
@@ -29,6 +37,11 @@ function iconFor(event: BabyEvent) {
       return <DiaperIcon size={16} />
     case 'growth':
       return <GrowthIcon size={16} />
+    case 'pumping':
+      return <PumpIcon size={16} />
+    case 'temperature':
+    case 'medication':
+      return <HealthIcon size={16} />
   }
 }
 

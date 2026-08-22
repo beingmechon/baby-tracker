@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   loadSettings,
   resolveLocale,
@@ -11,13 +11,23 @@ import { applyTheme, resolveTheme } from '@/app/theme'
 import { useBabyStore } from '@/app/useBabyStore'
 import { useNow } from '@/app/useNow'
 import { useReminders } from '@/app/useReminders'
+import { useStash } from '@/app/useStash'
 import { showLocalNotification } from '@/app/notifications'
+import { isNativeApp, scheduleNativeAlerts } from '@/app/native'
+import { plannedAlerts, samePlan, type PlannedAlert } from '@/domain/scheduling'
 import type { ReminderStatus } from '@/domain/reminders'
 import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
+import { ActivityScreen } from './ActivityScreen'
+import { FoodScreen } from './FoodScreen'
+import { HealthScreen } from './HealthScreen'
+import { IllnessScreen } from './IllnessScreen'
+import { HandoverScreen } from './HandoverScreen'
+import { PatternsScreen } from './PatternsScreen'
 import { Home } from './Home'
 import { Onboarding } from './Onboarding'
 import { RemindersScreen } from './RemindersScreen'
+import { StashScreen } from './StashScreen'
 import { SettingsScreen } from './SettingsScreen'
 
 /** Tracks the OS light/dark preference so `auto` can follow it. */
@@ -67,9 +77,19 @@ function AppContent({
   updateSettings: (patch: Partial<Settings>) => void
 }) {
   const t = useTranslator()
-  const [screen, setScreen] = useState<'home' | 'growth' | 'reminders' | 'settings'>(
-    'home',
-  )
+  const [screen, setScreen] = useState<
+    | 'home'
+    | 'growth'
+    | 'reminders'
+    | 'stash'
+    | 'health'
+    | 'patterns'
+    | 'handover'
+    | 'illness'
+    | 'food'
+    | 'activity'
+    | 'settings'
+  >('home')
   const prefersDark = usePrefersDark()
 
   // Drives theme switching and the reminder check. Twenty seconds rather than a
@@ -79,7 +99,11 @@ function AppContent({
   // clock for running timers.
   const now = useNow(20_000)
 
-  const store = useBabyStore(settings.activeBabyId, settings.nightWindow)
+  const store = useBabyStore(
+    settings.activeBabyId,
+    settings.nightWindow,
+    settings.togetherIds,
+  )
 
   /**
    * Raising the notification for a due reminder. Held in a ref-stable callback so
@@ -87,6 +111,10 @@ function AppContent({
    */
   const alert = useCallback(
     async ({ reminder }: ReminderStatus) => {
+      // In the Android shell the OS already holds an alarm for this moment, and it
+      // fires whether the app is open, backgrounded or dead. Raising a second
+      // notification from the page would put two of the same thing in the shade.
+      if (isNativeApp()) return
       await showLocalNotification({
         title: reminderName(t, reminder.kind, reminder.label),
         body: t.t('reminders.due'),
@@ -99,12 +127,49 @@ function AppContent({
   )
 
   const reminders = useReminders(store.activeBaby?.id ?? null, store.events, now, alert)
+  const stash = useStash(store.activeBaby?.id ?? null, now)
 
   useEffect(() => {
     applyTheme(
       resolveTheme(settings.themeMode, now, settings.nightWindow, prefersDark),
     )
   }, [settings.themeMode, settings.nightWindow, now, prefersDark])
+
+  /**
+   * Hands the upcoming reminders to Android's alarm scheduler.
+   *
+   * This is the one thing the shell exists for: an alarm the OS holds fires when the
+   * app is closed, which no browser API can do. On the web the effect is a no-op —
+   * `scheduleNativeAlerts` answers false and nothing is loaded.
+   *
+   * The last plan is remembered so an unchanged one is not re-issued. The clock
+   * ticks every twenty seconds; rewriting the same three alarms three times a
+   * minute for months is exactly what shows up in a battery report.
+   */
+  const scheduled = useRef<PlannedAlert[]>([])
+  useEffect(() => {
+    if (!isNativeApp()) return
+    const plan = plannedAlerts(reminders.statuses, now)
+    if (samePlan(plan, scheduled.current)) return
+    scheduled.current = plan
+
+    void scheduleNativeAlerts(
+      plan.map((planItem) => {
+        const status = reminders.statuses.find(
+          (candidate) => candidate.reminder.id === planItem.reminderId,
+        )
+        return {
+          nativeId: planItem.nativeId,
+          at: planItem.at,
+          title:
+            status === undefined
+              ? t.t('app.name')
+              : reminderName(t, status.reminder.kind, status.reminder.label),
+          body: t.t('reminders.due'),
+        }
+      }),
+    )
+  }, [reminders.statuses, now, t])
 
   // Remember which baby is open, so the app returns to the right one.
   useEffect(() => {
@@ -174,6 +239,87 @@ function AppContent({
     )
   }
 
+  if (screen === 'patterns') {
+    return (
+      <div className="app">
+        <PatternsScreen
+          store={store}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
+  if (screen === 'handover') {
+    return (
+      <div className="app">
+        <HandoverScreen
+          store={store}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
+  if (screen === 'activity') {
+    return (
+      <div className="app">
+        <ActivityScreen
+          store={store}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
+  if (screen === 'food') {
+    return (
+      <div className="app">
+        <FoodScreen store={store} now={now} onBack={() => setScreen('home')} />
+      </div>
+    )
+  }
+
+  if (screen === 'illness') {
+    return (
+      <div className="app">
+        <IllnessScreen store={store} now={now} onBack={() => setScreen('home')} />
+      </div>
+    )
+  }
+
+  if (screen === 'health') {
+    return (
+      <div className="app">
+        <HealthScreen
+          store={store}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
+  if (screen === 'stash') {
+    return (
+      <div className="app">
+        <StashScreen
+          stash={stash}
+          settings={settings}
+          now={now}
+          onBack={() => setScreen('home')}
+        />
+      </div>
+    )
+  }
+
   if (screen === 'growth') {
     return (
       <div className="app">
@@ -196,6 +342,14 @@ function AppContent({
         onOpenSettings={() => setScreen('settings')}
         onOpenGrowth={() => setScreen('growth')}
         onOpenReminders={() => setScreen('reminders')}
+        onOpenStash={() => setScreen('stash')}
+        onOpenHealth={() => setScreen('health')}
+        onOpenPatterns={() => setScreen('patterns')}
+        onOpenHandover={() => setScreen('handover')}
+        onOpenIllness={() => setScreen('illness')}
+        onOpenFood={() => setScreen('food')}
+        onOpenActivity={() => setScreen('activity')}
+        onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>
   )

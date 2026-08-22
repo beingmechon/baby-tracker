@@ -1,4 +1,5 @@
 import type { Reminder } from '@/domain/reminders'
+import type { StashEntry } from '@/domain/stash'
 import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 
 /**
@@ -22,6 +23,11 @@ export type NewReminder = Pick<
   'kind' | 'label' | 'intervalMs' | 'enabled'
 >
 
+export type NewStashEntry = Pick<
+  StashEntry,
+  'amountMl' | 'location' | 'expressedAt'
+>
+
 export interface EventQuery {
   /** Inclusive lower bound on `startedAt`. */
   since?: Timestamp
@@ -37,17 +43,19 @@ export interface ExportBundle {
   babies: Baby[]
   events: BabyEvent[]
   /**
-   * Added in v0.2. The version stays 1 on purpose: an older build reading this
-   * file ignores the field and still restores every baby and event, which is
+   * Added after v0.1. The version stays 1 on purpose: an older build reading this
+   * file ignores these fields and still restores every baby and event, which is
    * what a backup is for. A version bump would have made it refuse the file.
    */
   reminders?: Reminder[]
+  stash?: StashEntry[]
 }
 
 export interface ImportResult {
   babiesImported: number
   eventsImported: number
   remindersImported: number
+  stashImported: number
   /** Entries rejected by validation, with a reason, so nothing fails silently. */
   skipped: { reason: string; count: number }[]
 }
@@ -79,6 +87,11 @@ export interface Repository {
   addReminder(babyId: Id, reminder: NewReminder): Promise<Reminder>
   updateReminder(id: Id, patch: Partial<Reminder>): Promise<Reminder>
   deleteReminder(id: Id): Promise<void>
+
+  listStash(babyId: Id): Promise<StashEntry[]>
+  addStash(babyId: Id, entry: NewStashEntry): Promise<StashEntry>
+  updateStash(id: Id, patch: Partial<StashEntry>): Promise<StashEntry>
+  deleteStash(id: Id): Promise<void>
 
   exportAll(): Promise<ExportBundle>
   importBundle(bundle: unknown): Promise<ImportResult>

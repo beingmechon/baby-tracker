@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { MINUTE_MS } from '@/domain/time'
-import { BABY_ID, at, bottle, diaper, growth, nursing, sleep } from '@/test/factories'
+import {
+  BABY_ID,
+  at,
+  bottle,
+  diaper,
+  growth,
+  nursing,
+  pumping,
+  sleep,
+  symptom,
+  visit,
+} from '@/test/factories'
 import { escapeCsvField, toCsv } from './csv'
 import type { ExportBundle } from './repository'
 
@@ -53,6 +64,7 @@ describe('toCsv', () => {
         sleep(at(2026, 1, 15, 11, 0), at(2026, 1, 15, 12, 0)),
         diaper(at(2026, 1, 15, 13, 0), 'wet'),
         growth(at(2026, 1, 15, 14, 0), 'weight', 4500),
+        pumping(at(2026, 1, 15, 15, 0), 60, 80),
       ]),
     )
     const rows = csv.trim().split('\n')
@@ -112,6 +124,50 @@ describe('toCsv', () => {
     const row = csv.trim().split('\n')[1] ?? ''
     expect(row).toContain('"62.5","cm"')
     expect(row).toContain('"24.61","in"')
+  })
+
+  it('records a pumping session with its total and its split', () => {
+    const csv = toCsv(bundle([pumping(at(2026, 1, 15, 9, 0), 60, 80)]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"pumping"')
+    // The total lands in the same columns as a bottle, so a spreadsheet can sum
+    // feeds and output without special-casing the row type.
+    expect(row).toContain('"140"')
+    expect(row).toContain('"left 60 / right 80"')
+  })
+
+  it('records a symptom with the parent’s own impression beside it', () => {
+    const csv = toCsv(bundle([symptom(at(2026, 1, 15, 9, 0), 'Cough', 'moderate')]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"symptom"')
+    expect(row).toContain('"Cough: moderate"')
+  })
+
+  it('records a visit with its questions in the note column', () => {
+    const appointment = visit(
+      at(2026, 1, 15, 9, 0),
+      '8-week check',
+      [
+        { text: 'Is the cough worth worrying about?', asked: true },
+        { text: 'Vitamin D?', asked: false },
+      ],
+      'Dr Rao',
+    )
+    const csv = toCsv(bundle([appointment]))
+    const row = csv.trim().split('\n')[1] ?? ''
+    expect(row).toContain('"visit"')
+    expect(row).toContain('"8-week check — Dr Rao"')
+    expect(row).toContain('questions 1/2')
+    expect(row).toContain('Is the cough worth worrying about?; Vitamin D?')
+  })
+
+  it('exports an event with no note at all', () => {
+    // A regression guard with teeth: `note` is optional on every event, and a
+    // row builder that assumed a string crashed the entire export — one missing
+    // note took the whole CSV down, not just its own row.
+    const bare = symptom(at(2026, 1, 15, 9, 0), 'Rash')
+    delete (bare as { note?: string }).note
+    expect(() => toCsv(bundle([bare]))).not.toThrow()
   })
 
   it('labels an event whose baby is missing rather than dropping the row', () => {

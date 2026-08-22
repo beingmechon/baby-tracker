@@ -78,6 +78,28 @@ try {
     timezoneId: 'Asia/Kolkata',
     locale: 'en-GB',
   })
+  // The handover screen reads the clipboard back to prove it wrote what was on
+  // screen. Without the permission, Chromium blocks `readText()` forever waiting
+  // on a prompt that never appears in a headless run.
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE })
+
+  /*
+   * Pins the wall clock to mid-morning, then lets it run normally.
+   *
+   * The suite logs an event in one section and asserts on it in another, and
+   * several of those assertions are about *today* — the timeline, the day wheel,
+   * the handover window. A run that straddles local midnight moves those events
+   * onto yesterday and the suite fails for reasons that have nothing to do with the
+   * app. That is not hypothetical: it happened at 00:04 IST.
+   *
+   * `install` fixes the starting instant and `resume` lets time flow from there, so
+   * the running-stopwatch assertions still measure real elapsed seconds. The date
+   * is a Friday in the middle of a month, so nothing lands on a week or month
+   * boundary either.
+   */
+  await context.clock.install({ time: new Date('2026-08-21T04:30:00Z') })
+  await context.clock.resume()
+
   const page = await context.newPage()
 
   const consoleErrors = []
@@ -408,6 +430,1026 @@ try {
     'the home screen does not offer a checkbox that could be hit by accident',
     (await page.locator('.reminder-row').first().getByRole('checkbox').count()) === 0,
   )
+
+  console.log('\n▸ Temperature and medication')
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  const tempSheet = page.locator('.sheet')
+  await tempSheet.getByLabel(/Reading/).fill('37.2')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  check(
+    'a normal reading is reported without alarm',
+    (await page.locator('.health-headline').innerText()) === '37.2 °C' &&
+      (await page.locator('.health-band').getAttribute('data-band')) === 'normal',
+  )
+
+  // 38 °C is the figure nearly every health service names, and the baby in this
+  // suite was born recently enough that the under-three-months note applies.
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await tempSheet.getByLabel(/Reading/).fill('38.4')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  check(
+    'a raised reading is compared with the published threshold, not diagnosed',
+    /at or above the 38.0 °C most guidance calls a fever/.test(
+      await page.locator('.health-band').innerText(),
+    ),
+  )
+  check(
+    'and a young baby gets the note every health service singles out',
+    await page.getByText(/under three months/).isVisible(),
+  )
+
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await tempSheet.getByLabel(/Reading/).fill('12')
+  await tempSheet.getByRole('button', { name: 'Save reading' }).click()
+  check(
+    'a reading no thermometer could give is refused',
+    await page.getByText(/thermometer could give/).isVisible(),
+  )
+  await tempSheet.getByRole('button', { name: 'Close' }).click()
+
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  const medSheet = page.locator('.sheet')
+  await medSheet.getByLabel('What did you give?').fill('Paracetamol')
+  await medSheet.getByLabel('Dose').fill('2.5 ml')
+  await medSheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+
+  // Different spelling of the same bottle: it must group, or "last given" answers
+  // the wrong question at the moment it matters most.
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  await medSheet.getByLabel('What did you give?').fill('  paracetamol ')
+  await medSheet.getByLabel('Dose').fill('5 ml')
+  await medSheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+
+  check(
+    'two spellings of one medicine group into a single entry',
+    (await page.locator('.reminder-row').count()) === 1,
+  )
+  const medRow = page.locator('.reminder-row').first()
+  const medText = await medRow.innerText()
+  check(
+    `showing the latest dose and how many were logged (${medText.split('\n')[1] ?? ''})`,
+    /5 ml · last given/.test(medText) && /2 doses logged/.test(medText),
+  )
+  // "last given just now ago" — the interpolated value already ends in "ago", so
+  // a template that also says it produces the duplication twice over.
+  check('without repeating the word ago', !/ago ago|just now ago/.test(medText))
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'health.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Pumping and the milk stash')
+  await page.getByRole('button', { name: 'Log pumping' }).click()
+  const pumpSheet = page.locator('.sheet')
+  await pumpSheet.getByRole('button', { name: 'Start', exact: true }).click()
+  await page.waitForTimeout(1200)
+  await pumpSheet.getByLabel('Left (ml)').fill('60')
+  await pumpSheet.getByLabel('Right (ml)').fill('80')
+  check(
+    'the session totals both sides',
+    (await pumpSheet.getByText(/Total 140 ml/).count()) === 1,
+  )
+  await pumpSheet.getByRole('button', { name: 'Save session' }).click()
+  await page.getByText('Pumping session saved').waitFor()
+
+  const pumpRow = page.locator('.timeline-row', { hasText: 'Pumped' })
+  check(
+    'the session reaches the timeline with its split, not just a total',
+    /140 ml · left 60 ml, right 80 ml/.test(
+      await pumpRow.locator('.timeline-detail').innerText(),
+    ),
+  )
+
+  await page.getByRole('button', { name: 'Milk stash' }).first().click()
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  const stashSheet = page.locator('.sheet')
+  await stashSheet.getByLabel('Amount (ml)').fill('150')
+  await stashSheet.getByRole('button', { name: 'Freezer' }).click()
+  await stashSheet.getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/150 ml added to the stash/).waitFor()
+
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  await stashSheet.getByLabel('Amount (ml)').fill('90')
+  await stashSheet.getByRole('button', { name: 'Fridge' }).click()
+  await stashSheet.getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/90 ml added to the stash/).waitFor()
+
+  check(
+    'the stash totals each shelf',
+    /90 ml in the fridge · 150 ml in the freezer/.test(
+      await page.locator('.field-note.num').innerText(),
+    ),
+  )
+  // The ordering is the feature: fridge milk is on a four-day clock and freezer
+  // milk on a six-month one, so the fridge bottle comes first even though both
+  // were logged moments ago.
+  const firstRow = page.locator('.stash-row').first()
+  check(
+    'the most urgent shelf comes first, not the oldest bag',
+    (await firstRow.locator('.stash-meta').innerText()).startsWith('Fridge'),
+  )
+  check(
+    'and freshly stored milk is not flagged',
+    (await firstRow.getAttribute('data-state')) === 'fresh',
+  )
+  // Six months of freezer life rendered as "4319h 59m" before the coarse span
+  // format existed. Storage life is measured in days and months, not hours.
+  const freezerState = await page
+    .locator('.stash-row')
+    .nth(1)
+    .locator('.stash-state')
+    .innerText()
+  check(
+    `freezer life reads in months, not hours (${freezerState})`,
+    /months? left$/.test(freezerState),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'stash.png') })
+
+  await firstRow.getByRole('button', { name: 'Use it all' }).click()
+  await page.getByText(/90 ml used/).waitFor()
+  check(
+    'using a container up removes it rather than leaving a zero row',
+    (await page.locator('.stash-row').count()) === 1,
+  )
+
+  await page.locator('.stash-row').first().getByRole('button', { name: 'Throw away' }).click()
+  await page.getByText('Nothing stored.').waitFor()
+  check('and throwing the last one away empties the stash', true)
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ More than one baby')
+  // The property that matters: each baby's log is their own. A tracker that
+  // showed one twin's feeds under the other would be worse than no tracker.
+  const feedRowsForMira = await page.locator('.timeline-row').count()
+  await page.getByRole('button', { name: /Mira/ }).click()
+  const babySheet = page.locator('.sheet')
+  await babySheet.getByRole('button', { name: 'Add a baby' }).click()
+  await babySheet.getByLabel('Name').fill('Arun')
+  await babySheet.getByLabel('Date of birth').fill('2026-06-20')
+  await babySheet.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByText('Arun added').waitFor()
+
+  check(
+    'adding a baby switches to them',
+    (await page.locator('.appbar-name').innerText()) === 'Arun',
+  )
+  check(
+    'the new baby starts with an empty timeline',
+    (await page.locator('.timeline-row').count()) === 0 && feedRowsForMira > 0,
+  )
+  check(
+    'and with no reminders of their own',
+    (await page.locator('.reminder-row').count()) === 0,
+  )
+
+  // A measurement logged for the wrong baby would end up on the wrong growth
+  // chart, which is the kind of error a parent would carry to a doctor.
+  await page.getByRole('button', { name: 'Wet' }).click()
+  await page.getByText('Wet diaper logged').waitFor()
+  check(
+    'logging goes to the baby who is open',
+    (await page.locator('.timeline-row').count()) === 1,
+  )
+
+  await page.getByRole('button', { name: /Arun/ }).click()
+  await babySheet.getByRole('button', { name: /Mira/ }).click()
+  await page.getByText(/Now logging for Mira/).waitFor()
+  // The toast fires on the switch; the entries arrive a tick later from storage.
+  // Waiting for the rows rather than sampling them is the difference between a
+  // deterministic check and one that passes on a fast machine.
+  await page.locator('.timeline-row').nth(feedRowsForMira - 1).waitFor()
+  check(
+    'switching back restores that baby’s own entries',
+    (await page.locator('.appbar-name').innerText()) === 'Mira' &&
+      (await page.locator('.timeline-row').count()) === feedRowsForMira,
+  )
+  await page.locator('.reminder-row').nth(1).waitFor()
+  check(
+    'and their reminders',
+    (await page.locator('.reminder-row').count()) === 2,
+  )
+
+  // The switcher marks who is open rather than relying on position.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  check(
+    'the switcher says which baby is open',
+    (await babySheet
+      .locator('.baby-row[aria-pressed="true"]')
+      .locator('.baby-name')
+      .innerText()) === 'Mira',
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'babies.png') })
+  await babySheet.getByRole('button', { name: 'Close' }).click()
+
+  // Deleting a baby takes their entries and leaves the others alone.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  await babySheet.getByRole('button', { name: /Arun/ }).click()
+  await page.getByText(/Now logging for Arun/).waitFor()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Delete this baby' }).click()
+  await page.getByRole('button', { name: 'Delete Arun' }).click()
+  await page.getByText('Arun deleted').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'deleting a baby falls back to the one that remains',
+    (await page.locator('.appbar-name').innerText()) === 'Mira' &&
+      (await page.locator('.timeline-row').count()) === feedRowsForMira,
+  )
+  check(
+    'and the per-baby delete is hidden once only one baby is left',
+    await page.evaluate(() => !document.body.innerText.includes('Delete this baby')),
+  )
+
+  console.log('\n▸ Patterns and the day wheel')
+  // Give the wheel a real sleep to draw. The timer test leaves a sleep a second and
+  // a half long, which is true but invisible, and a chart of it says nothing. The
+  // times are computed in the page from its own clock rather than written as
+  // literals, so this is always a completed sleep in the recent past whatever hour
+  // the suite runs at.
+  const backdated = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const fields = (date) => ({
+      date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    })
+    return {
+      from: fields(new Date(Date.now() - 5 * 60 * 60 * 1000)),
+      to: fields(new Date(Date.now() - 2 * 60 * 60 * 1000)),
+    }
+  })
+  await sleepRow.click()
+  await sheet.getByLabel('Date', { exact: true }).fill(backdated.from.date)
+  await sheet.getByLabel('Time', { exact: true }).fill(backdated.from.time)
+  await sheet.getByLabel('Woke — date').fill(backdated.to.date)
+  await sheet.getByLabel('Woke — time').fill(backdated.to.time)
+  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await page.getByText('Entry updated').waitFor()
+  check(
+    'a sleep can be given the hours it actually happened',
+    /3h/.test(await sleepRow.innerText()),
+  )
+
+  await page.getByRole('button', { name: 'The day, round the clock' }).click()
+  await page.getByRole('img', { name: /24-hour clock face/ }).waitFor()
+  check(
+    'the patterns screen opens on the day wheel',
+    (await page.locator('.appbar-name').innerText()) === 'Patterns',
+  )
+  check(
+    'it does not claim there is nothing logged, because there is',
+    (await page.locator('.empty').count()) === 0,
+  )
+  check(
+    'the wheel draws the day’s sleep as arcs',
+    (await page.locator('.wheel-sleep').count()) >= 1,
+  )
+  const wheelMarks = await page.locator('.wheel-mark').count()
+  check(
+    `feeds and diapers are marked round the rim (${wheelMarks} marks)`,
+    wheelMarks >= 3,
+  )
+  check(
+    'feed and diaper marks carry their own categorical tint, not one colour',
+    await page.evaluate(() => {
+      const colour = (kind) => {
+        const mark = document.querySelector(`.wheel-mark[data-kind="${kind}"]`)
+        return mark === null ? null : getComputedStyle(mark).stroke
+      }
+      const feed = colour('feed')
+      const diaper = colour('diaper')
+      return feed !== null && diaper !== null && feed !== diaper
+    }),
+  )
+  check('the wheel shows where "now" is on today', await page.locator('.wheel-now').isVisible())
+  check(
+    'the hour labels orient the face at midnight, 6, 12 and 18',
+    (await page.locator('.wheel-hour-label').allTextContents()).join(',') === '0,6,12,18',
+  )
+  // The ring is drawn as two arcs precisely because a single sweep back to its own
+  // start renders nothing; this guards that a full-day sleep is visible at all.
+  check(
+    'every arc has a path to draw',
+    await page.evaluate(() =>
+      [...document.querySelectorAll('.wheel-sleep')].every(
+        (arc) => (arc.getAttribute('d') ?? '').length > 0,
+      ),
+    ),
+  )
+
+  check(
+    'the week reads as seven columns, one per day',
+    (await page.locator('.week-bar').count()) === 7,
+  )
+  await page.getByRole('button', { name: '30d', exact: true }).click()
+  check(
+    'and thirty when the longer span is chosen',
+    (await page.locator('.week-bar').count()) === 30,
+  )
+  check(
+    'the heading follows the span rather than still saying seven days',
+    /thirty days/i.test(await page.locator('.rule-label').nth(1).innerText()),
+  )
+  check(
+    'thirty weekday initials are dropped rather than smeared along the axis',
+    (await page.locator('.week-bar-label').count()) === 0,
+  )
+  await page.getByRole('button', { name: '7d', exact: true }).click()
+  check(
+    'and switching back restores the week',
+    (await page.locator('.week-bar').count()) === 7 &&
+      (await page.locator('.week-bar-label').count()) === 7,
+  )
+  check(
+    'a day with nothing logged is an empty column rather than a drawn bar',
+    await page.evaluate(() => {
+      const fills = [...document.querySelectorAll('.week-bar-fill')]
+      return fills.some((fill) => fill.getBoundingClientRect().height < 1)
+    }),
+  )
+  check(
+    'the week chart carries a text alternative for a screen reader',
+    /Daily sleep over the last 7 days/.test(
+      (await page.locator('.week-bars').getAttribute('aria-label')) ?? '',
+    ),
+  )
+  check(
+    'the ring carries the day it encircles, so the hole is not dead space',
+    /\d/.test(await page.locator('.wheel-total').textContent()),
+  )
+  check(
+    'and names what the figure is, with the day’s counts under it',
+    (await page.locator('.wheel-total-label').allTextContents()).join(' ').includes('asleep'),
+  )
+  check(
+    'the screen says where the figures were worked out',
+    await page.getByText(/on this device/).first().isVisible(),
+  )
+
+  // The prediction needs three completed wake windows and a daytime clock, so
+  // whether it appears depends on the log and the hour. Both branches are
+  // asserted rather than one of them being wished for: the maths itself is
+  // covered by src/domain/patterns.test.ts, which owns a fixed clock.
+  const predicted = await page.locator('.patterns-headline').count()
+  if (predicted > 0) {
+    check(
+      'the prediction leads with a clock time',
+      /\d{1,2}[:.]\d{2}/.test(await page.locator('.patterns-headline').innerText()),
+    )
+    check(
+      'and shows its reasoning, not just a number',
+      /wake windows/.test(await page.locator('.patterns-detail, .field-note').first().innerText()) ||
+        (await page.getByText(/wake windows/).first().isVisible()),
+    )
+  } else {
+    check(
+      'with too few wake windows, no prediction is offered at all',
+      (await page.locator('.patterns-headline').count()) === 0,
+    )
+  }
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'patterns.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Previous day' }).click()
+  check(
+    'stepping back a day drops the "now" hand, which belongs to today only',
+    (await page.locator('.wheel-now').count()) === 0,
+  )
+  check(
+    'and the day being shown is named',
+    /\d/.test(
+      await page.locator('section', { has: page.locator('.wheel') }).locator('.rule-label').innerText(),
+    ),
+  )
+  await page.getByRole('button', { name: 'Next day' }).click()
+  check(
+    'stepping forward returns to today',
+    await page.locator('.wheel-now').isVisible(),
+  )
+  check(
+    'and there is no walking into tomorrow',
+    await page.getByRole('button', { name: 'Next day' }).isDisabled(),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Symptoms and doctor visits')
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  check(
+    'the diary opens with nothing in it and says what it is for',
+    // Three empty states: symptoms, visits, and the printable sheet's own history.
+    (await page.locator('.empty').count()) === 3 &&
+      (await page.getByText(/every doctor asks/).isVisible()),
+  )
+
+  // Three entries about one thing on three different days: the episode is the
+  // feature, not the entries.
+  const symptomDays = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const day = (offset) => {
+      const d = new Date(Date.now() - offset * 24 * 60 * 60 * 1000)
+      return {
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      }
+    }
+    return [day(2), day(1)]
+  })
+
+  await page.getByRole('button', { name: 'Log a symptom' }).click()
+  await sheet.getByLabel('What did you notice?').fill('Cough')
+  await sheet.getByRole('button', { name: 'Moderate' }).click()
+  await sheet.getByLabel('Anything else').fill('worse at night')
+  await sheet.getByRole('button', { name: 'Save symptom' }).click()
+  await page.getByText('Symptom saved').waitFor()
+  check(
+    'a symptom reaches the diary as an episode',
+    await page.locator('.episode-name', { hasText: 'Cough' }).isVisible(),
+  )
+  check(
+    'the parent’s own word is shown, and not colour-coded into a verdict',
+    await page.evaluate(() => {
+      const worst = document.querySelector('.episode-worst')
+      const meta = document.querySelector('.episode-meta')
+      if (worst === null || meta === null) return false
+      return (
+        /moderate/i.test(worst.textContent ?? '') &&
+        getComputedStyle(worst).color === getComputedStyle(meta).color
+      )
+    }),
+  )
+  check(
+    'a fresh episode is marked as still being logged',
+    /still being logged/i.test(await page.locator('.episode-meta').innerText()),
+  )
+
+  // Backdate two more entries so the episode spans days and can show a direction.
+  for (const [index, when] of symptomDays.entries()) {
+    await page.getByRole('button', { name: 'Log a symptom' }).click()
+    await sheet.getByLabel('What did you notice?').fill('Cough')
+    await sheet
+      .getByRole('button', { name: index === 0 ? 'Mild' : 'Bad' })
+      .click()
+    await sheet.getByRole('button', { name: 'Save symptom' }).click()
+    await page.getByText('Symptom saved').waitFor()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+    await page.locator('.timeline-row', { hasText: 'Cough' }).first().click()
+    await sheet.getByLabel('Date', { exact: true }).fill(when.date)
+    await sheet.getByLabel('Time', { exact: true }).fill(when.time)
+    await sheet.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByText('Entry updated').waitFor()
+    await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+    await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  }
+
+  check(
+    'three entries about one thing stay one episode, not three',
+    (await page.locator('.episode').count()) === 1,
+  )
+  const episodeMeta = await page.locator('.episode-meta').innerText()
+  check(
+    `the episode says when it started and how many entries (${episodeMeta})`,
+    /first noted/i.test(episodeMeta) && /3 entries/.test(episodeMeta),
+  )
+  check(
+    'and reports the worst the parent called it, not the latest',
+    /bad/i.test(await page.locator('.episode-worst').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Add a visit' }).click()
+  await sheet.getByLabel('What is it for?').fill('8-week check')
+  await sheet.getByLabel(/Who are you seeing/).fill('Dr Rao')
+  const nextWeek = await page.evaluate(() => {
+    const pad = (n) => String(n).padStart(2, '0')
+    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  })
+  await sheet.getByLabel('Date', { exact: true }).fill(nextWeek)
+  const questionFields = sheet.getByLabel(/is this rash worth worrying/)
+  await questionFields.first().fill('Is the cough worth worrying about?')
+  await sheet.getByRole('button', { name: 'Add a question' }).click()
+  await questionFields.nth(1).fill('Should she be on vitamin D?')
+  await sheet.getByRole('button', { name: 'Save visit' }).click()
+  await page.getByText('Visit saved').waitFor()
+
+  check(
+    'a future appointment is filed as coming up, not as history',
+    (await page.locator('.visit-group').first().innerText()).toLowerCase() ===
+      'coming up',
+  )
+  check(
+    'it counts down rather than claiming to have happened',
+    /in \d/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+  check(
+    'the questions came with it',
+    (await page.locator('.question').count()) === 2 &&
+      /0 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+
+  // Clicked rather than `.check()`ed: the box is controlled by state that lands
+  // only once the write resolves, and `.check()` asserts the new state
+  // synchronously. Waiting for the recorded count is the honest assertion anyway.
+  await page.locator('.question-label').first().click()
+  await page.getByText('Ticked off').waitFor()
+  await page.getByText('1 of 2 asked').waitFor()
+  check(
+    'ticking a question off is recorded, not just visual',
+    /1 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+  check(
+    'and an asked question is struck through rather than removed',
+    await page.evaluate(() => {
+      const asked = document.querySelector('.question-label span[data-asked="true"]')
+      return (
+        asked !== null && getComputedStyle(asked).textDecorationLine === 'line-through'
+      )
+    }),
+  )
+  // A reload returns to the home screen — the app has no router, and that is true
+  // of every screen — so walk back in rather than assuming the screen survived.
+  await page.reload()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  check(
+    'the tick survives a restart',
+    /1 of 2 asked/.test(await page.locator('.visit-meta').first().innerText()),
+  )
+
+  const sheetText = await page.locator('.print-sheet').innerText()
+  check(
+    'the printable section carries the recent symptoms',
+    /Cough/.test(sheetText),
+  )
+  // `note` is optional on every event, so an entry without one used to render the
+  // word "undefined" onto the sheet a doctor reads.
+  check(
+    'and an entry with no note leaves a gap, not the word undefined',
+    !/undefined|null/.test(sheetText) &&
+      !/undefined|null/.test(await page.locator('.episodes').innerText()),
+  )
+  check(
+    'a span in the diary reads as elapsed time, not a bare number of days',
+    /first noted .* ago/i.test(await page.locator('.episode-meta').innerText()),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'illness.png'), fullPage: true })
+
+  await page.emulateMedia({ media: 'print' })
+  check(
+    'a printed question list has an outlined box to tick with a pen',
+    await page.evaluate(() => {
+      const box = document.querySelector('.question-label input[type="checkbox"]')
+      if (box === null) return false
+      const style = getComputedStyle(box)
+      return (
+        style.appearance === 'none' && style.backgroundColor === 'rgb(255, 255, 255)'
+      )
+    }),
+  )
+  await page.emulateMedia({ media: 'screen' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'the home screen says an appointment is coming',
+    await page.getByText(/8-week check/).isVisible(),
+  )
+
+  console.log('\n▸ Handover')
+  await page.getByRole('button', { name: 'What to tell the next person' }).click()
+  await page.getByText('Right now').waitFor()
+  check(
+    'the handover screen opens',
+    (await page.locator('.appbar-name').innerText()) === 'Handover',
+  )
+  check(
+    'it leads with what someone in a doorway needs, not with counts',
+    // The labels are uppercased in CSS, so innerText comes back shouting.
+    /since/i.test(await page.locator('.rule-label').first().innerText()) &&
+      /right now/i.test(await page.locator('.rule-label').nth(1).innerText()),
+  )
+  const rightNow = await page.locator('.handover-facts').first().innerText()
+  check(
+    `it dates the last feed, sleep and diaper (${rightNow.replace(/\n/g, ' · ')})`,
+    /Last fed at \d/.test(rightNow) &&
+      /Last diaper at \d/.test(rightNow) &&
+      /(Awake since|Asleep since) \d/.test(rightNow),
+  )
+  const messageText = await page.locator('.handover-text').innerText()
+  check(
+    'the message is shown, not hidden behind the copy button',
+    messageText.startsWith('Mira'),
+  )
+  check(
+    'and it is plain text a person can read out — no markup, no emoji',
+    !/[*_#`|]/.test(messageText) && !/\p{Extended_Pictographic}/u.test(messageText),
+  )
+  check(
+    'with no double gap that would read as broken in a chat',
+    !/\n\s*\n\s*\n/.test(messageText),
+  )
+
+  // Narrowing the window has to change the counts, or the control does nothing.
+  const todayText = messageText
+  await page.getByRole('button', { name: 'Last 4h' }).click()
+  const fourHourText = await page.locator('.handover-text').innerText()
+  check('choosing a shorter window rewrites the message', fourHourText !== todayText)
+  check(
+    'and the screen says which moment it is counting from',
+    /Since \d/.test(await page.locator('.page').innerText()),
+  )
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'handover.png'), fullPage: true })
+
+  await page.getByRole('button', { name: 'Copy as a message' }).click()
+  const copyToast = await page.locator('.toast').innerText()
+  check(
+    `copying reports what actually happened (${copyToast.replace(/\n/g, ' ')})`,
+    /Copied|would not let/.test(copyToast),
+  )
+  check(
+    'the clipboard holds exactly what the screen showed',
+    // Only assertable when the browser allowed the write; the refusal path is
+    // covered by the toast check above.
+    !/Copied/.test(copyToast) ||
+      (await page.evaluate(() => navigator.clipboard.readText())) ===
+        (await page.locator('.handover-text').innerText()),
+  )
+  check(
+    'one medicine is listed under one spelling, however it was typed',
+    await page.evaluate(() => {
+      const cell = [...document.querySelectorAll('.handover-fact')].find((row) =>
+        /given/i.test(row.querySelector('dt')?.textContent ?? ''),
+      )
+      if (cell === undefined) return false
+      const names = [...cell.querySelectorAll('.handover-line')].map(
+        (line) => (line.textContent ?? '').split(' ')[0],
+      )
+      return names.length > 1 && new Set(names).size === 1
+    }),
+  )
+  check(
+    'the screen says copying is all that happens',
+    await page.getByText(/on your clipboard and nothing else/).isVisible(),
+  )
+  // What prints is the facts. A dark theme printed as-is is a solid black page.
+  await page.emulateMedia({ media: 'print' })
+  check(
+    'printing drops the app bar and the buttons',
+    await page.evaluate(() => {
+      const hidden = (selector) => {
+        const el = document.querySelector(selector)
+        return el === null || getComputedStyle(el).display === 'none'
+      }
+      return hidden('.appbar') && hidden('.button') && hidden('.segmented')
+    }),
+  )
+  check(
+    'and prints black on white whatever the screen theme is',
+    await page.evaluate(() => {
+      const body = getComputedStyle(document.body)
+      return body.backgroundColor === 'rgb(255, 255, 255)' && body.color === 'rgb(0, 0, 0)'
+    }),
+  )
+  await page.emulateMedia({ media: 'screen' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Activities and potty')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByLabel('Daily tummy-time goal (minutes)').fill('30')
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+  await page.getByRole('button', { name: 'Log an activity' }).waitFor()
+  check(
+    'the tummy-time goal counts down from the parent’s own number',
+    /30m to go/.test(await page.locator('.activity-goal').innerText()),
+  )
+  check(
+    'and says the number is theirs, not the app’s advice',
+    /not the app/.test(await page.locator('.page').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await sheet.getByRole('button', { name: 'Tummy time' }).click()
+  await sheet.getByLabel('How long? (minutes)').fill('12')
+  await sheet.getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator('.activity-headline').waitFor()
+  check(
+    `tummy time adds up (${await page.locator('.activity-headline').innerText()})`,
+    /12m/.test(await page.locator('.activity-headline').innerText()),
+  )
+  check(
+    'and the goal reports what is left',
+    /18m to go/.test(await page.locator('.activity-goal').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await sheet.getByRole('button', { name: 'Bath' }).click()
+  await sheet.getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  check(
+    'an untimed activity is counted without inventing a duration',
+    await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.handover-fact')]
+      const bath = rows.find((row) => /Bath/.test(row.textContent ?? ''))
+      return bath !== undefined && !/\dm|\dh/.test(bath.querySelector('dd')?.textContent ?? '')
+    }),
+  )
+
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await sheet.getByRole('button', { name: 'Wee' }).click()
+  check(
+    'the place is offered for a success',
+    await sheet.getByRole('button', { name: 'Toilet' }).isVisible(),
+  )
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  check(
+    'a success is counted',
+    /1 success/.test(await page.locator('.handover-facts').last().innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await sheet.getByRole('button', { name: 'Accident' }).click()
+  check(
+    'but not for an accident, where "on the potty" would be a contradiction',
+    (await sheet.getByRole('button', { name: 'Toilet' }).count()) === 0,
+  )
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  const pottyFacts = await page.locator('.handover-facts').last().innerText()
+  check(
+    `an accident is counted separately (${pottyFacts.replace(/\n/g, ' · ')})`,
+    /1 accident/.test(pottyFacts),
+  )
+  check(
+    'and today no longer counts as a clean run',
+    /No full day yet/.test(pottyFacts),
+  )
+  check(
+    'the screen says the numbers are not a verdict',
+    /not a scoreboard/.test(await page.locator('.page').innerText()),
+  )
+  // A label long enough to push its value onto two lines reads as a broken row.
+  check(
+    'no ledger value is wrapped mid-phrase by an over-long label',
+    await page.evaluate(() =>
+      [...document.querySelectorAll('.handover-fact dd')].every((value) => {
+        const style = getComputedStyle(value)
+        const lineHeight = Number.parseFloat(style.lineHeight) || 20
+        return value.getBoundingClientRect().height < lineHeight * 1.6
+      }),
+    ),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'activity.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Solids and allergens')
+  await page.getByRole('button', { name: 'Log a food' }).first().click()
+  await page.getByRole('button', { name: 'The nine major allergens' }).waitFor().catch(() => {})
+  check(
+    'the allergen ledger lists all nine before anything is logged',
+    (await page.locator('.allergen').count()) === 9,
+  )
+  check(
+    'and shows none of them as offered',
+    (await page.locator(".allergen[data-state='notTried']").count()) === 9 &&
+      /0 of 9/.test(await page.locator('.allergen-count').innerText()),
+  )
+  check(
+    'it says where the list comes from and what it is not',
+    /federal law/.test(await page.locator('.page').innerText()) &&
+      /not a plan/.test(await page.locator('.page').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Scrambled egg')
+  await sheet.getByRole('button', { name: 'Ate some' }).click()
+  await sheet.getByRole('button', { name: 'Egg', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator(".allergen[data-state='noReaction']").first().waitFor()
+
+  check(
+    'a tagged food moves that allergen off "not offered"',
+    (await page
+      .locator(".allergen[data-state='noReaction']")
+      .filter({ hasText: 'Egg' })
+      .count()) === 1,
+  )
+  check(
+    'and the count follows',
+    /1 of 9/.test(await page.locator('.allergen-count').innerText()),
+  )
+  check(
+    'the wording is "no reaction noted", never a claim that it is tolerated',
+    /No reaction noted/.test(await page.locator('.allergens').innerText()) &&
+      !/tolerat/i.test(await page.locator('.page').innerText()),
+  )
+
+  // The line this feature must not cross: the app has no food database.
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Peanut butter toast')
+  await sheet.getByRole('button', { name: 'Tasted it' }).click()
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator('.food-row').nth(1).waitFor()
+  check(
+    'an untagged food never infers its own allergens from the name',
+    (await page
+      .locator(".allergen[data-state='notTried']")
+      .filter({ hasText: 'Peanut' })
+      .count()) === 1,
+  )
+
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await sheet.getByLabel('What did you offer?').fill('Yoghurt')
+  await sheet.getByRole('button', { name: 'Milk', exact: true }).click()
+  await sheet.getByLabel('Did you notice a reaction?').check()
+  check(
+    'ticking a reaction surfaces the emergency guidance, and only then',
+    /emergency care/.test(await sheet.innerText()),
+  )
+  await sheet.getByLabel('Anything else').fill('a few spots around the mouth')
+  await sheet.getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  // Waiting on the state itself, not on a toast whose text repeats: the previous
+  // "Food saved" is still on screen, so waiting for it resolves instantly and every
+  // assertion after it races the write.
+  await page.locator(".allergen[data-state='reacted']").first().waitFor()
+  check(
+    'a reaction is reported against the allergen it was tagged with',
+    (await page
+      .locator(".allergen[data-state='reacted']")
+      .filter({ hasText: 'Milk' })
+      .count()) === 1,
+  )
+  check(
+    'and says it is repeating the log rather than assessing it',
+    /not making an assessment/.test(await page.locator('.page').innerText()),
+  )
+  check(
+    'the food itself carries the flag too',
+    await page.locator('.food-row[data-reacted="true"]').first().isVisible(),
+  )
+  // `formatSpan` renders a sub-minute gap as "0 minutes"; the phrase has to use the
+  // formatter that says "just now" — and must not add its own "ago" on top.
+  const foodMeta = await page.locator('.food-meta').first().innerText()
+  check(
+    `a food just logged reads as just now, not "0 minutes ago" (${foodMeta})`,
+    !/0 minutes/.test(foodMeta) && !/ago ago|just now ago/.test(foodMeta),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'food.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Twins mode')
+  // Two babies already exist by this point in the run only if the earlier block
+  // left them; it deletes one, so add a second here.
+  await page.getByRole('button', { name: /Mira/ }).click()
+  await sheet.getByRole('button', { name: 'Add a baby' }).click()
+  await sheet.getByLabel('Name', { exact: true }).fill('Rafi')
+  await sheet.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  check(
+    'the log-for-both setting appears once there is more than one baby',
+    await page.getByText('Log for more than one baby').isVisible(),
+  )
+  check(
+    'and says what it will never copy',
+    /never copied/.test(await page.locator('.page').innerText()),
+  )
+  const group = page.locator('.settings-group').filter({
+    has: page.getByLabel('Rafi', { exact: true }),
+  })
+  await group.getByLabel('Mira', { exact: true }).check()
+  await group.getByLabel('Rafi', { exact: true }).check()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  check(
+    'the log section says a tap will land on both',
+    /Logging for .*Mira.*Rafi|Logging for .*Rafi.*Mira/.test(
+      await page.locator('.page').innerText(),
+    ),
+  )
+
+  const wetBefore = await page.locator('.timeline-row', { hasText: 'Wet diaper' }).count()
+  await page.getByRole('button', { name: 'Wet' }).click()
+  await page.getByText('Wet diaper logged').waitFor()
+  check(
+    'one tap logs the diaper for the baby on screen',
+    (await page.locator('.timeline-row', { hasText: 'Wet diaper' }).count()) ===
+      wetBefore + 1,
+  )
+  await page.getByRole('button', { name: /Rafi|Mira/ }).first().click()
+  await sheet.getByRole('button', { name: /Rafi/ }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  check(
+    'and for the other one too, without a second tap',
+    await page.locator('.timeline-row', { hasText: 'Wet diaper' }).first().isVisible(),
+  )
+
+  // The line that matters most: a dose must never appear against a baby who did
+  // not receive it.
+  await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+  await page.getByRole('button', { name: 'Log a symptom' }).waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log a dose' }).click()
+  await sheet.getByLabel('What did you give?').fill('Ibuprofen')
+  await sheet.getByLabel('Dose', { exact: true }).fill('2.5 ml')
+  await sheet.getByRole('button', { name: 'Save dose' }).click()
+  await page.getByText('Dose saved').waitFor()
+  check(
+    'a dose is recorded for the baby it was given to',
+    await page.getByText('Ibuprofen').first().isVisible(),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Mira|Rafi/ }).first().click()
+  await sheet.getByRole('button', { name: /Mira/ }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).waitFor()
+  check(
+    'but NOT for the sibling — a copied dose would be a false medical record',
+    await page.evaluate(() => !document.body.innerText.includes('Ibuprofen')),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  console.log('\n▸ Birth measurements')
+  await page.getByRole('button', { name: 'Growth', exact: true }).click()
+  await page.getByRole('button', { name: 'Add the birth measurements' }).click()
+  check(
+    'the sheet says which entry is being made',
+    /At birth/.test(await sheet.innerText()),
+  )
+  await sheet.getByLabel('Value (kg)').fill('3.2')
+  await sheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  // With only two readings the previous one *is* the birth one, so "since Jun 20"
+  // and "since birth" would be the same sentence twice.
+  check(
+    'the ledger does not repeat itself when the previous reading is the birth one',
+    !/since birth/i.test(await page.locator('.ledger').innerText()),
+  )
+  check(
+    'and the offer to add them is gone once they are recorded',
+    (await page.getByRole('button', { name: 'Add the birth measurements' }).count()) === 0,
+  )
+  check(
+    'the birth measurement plots as a point on the chart',
+    (await page.locator('.chart-point').count()) >= 2,
+  )
+  // Two phrases composed into one is this project's most repeated bug: "Wet diaper
+  // diaper", "just now ago", and here "at born today".
+  const history = await page.locator('.timeline').last().innerText()
+  check(
+    `the birth row reads "at birth", not "at born today" (${history.split('\n').slice(-1)[0] ?? ''})`,
+    /at birth/.test(history) && !/born today/.test(history),
+  )
+  // A third reading makes "since birth" say something the row above it does not.
+  await page.getByRole('button', { name: 'Log a measurement' }).click()
+  await sheet.getByLabel('Value (kg)').fill('5.9')
+  await sheet.getByRole('button', { name: 'Save measurement' }).click()
+  await page.getByText('Measurement saved').waitFor()
+  const ledger = await page.locator('.ledger').innerText()
+  check(
+    `the ledger reports the gain since birth once it adds something (${
+      ledger.split('\n').find((line) => /since birth/i.test(line)) ?? ''
+    })`,
+    /\+2\.7 kg since birth/.test(ledger),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'growth-birth.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
   console.log('\n▸ Themes')
   // Each theme is pinned explicitly rather than left on auto, so the assertions

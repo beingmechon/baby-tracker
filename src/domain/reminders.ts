@@ -63,36 +63,49 @@ export const REMINDER_KINDS: readonly ReminderKind[] = [
   'custom',
 ]
 
-/** The last logged event that resolves this kind of reminder, if any. */
+function latestOfType(
+  events: readonly BabyEvent[],
+  type: BabyEvent['type'],
+): Timestamp | null {
+  let latest: Timestamp | null = null
+  for (const event of events) {
+    if (event.type !== type) continue
+    if (latest === null || event.startedAt > latest) latest = event.startedAt
+  }
+  return latest
+}
+
+/**
+ * The last logged event that resolves this kind of reminder, if any.
+ *
+ * A `custom` reminder has no event to anchor to by definition — it is whatever the
+ * parent named — so it returns null and falls back to Done or creation time.
+ */
 function lastRelevantEvent(
   kind: ReminderKind,
   events: readonly BabyEvent[],
 ): Timestamp | null {
-  if (kind === 'feed') return findLastFeed(events)?.startedAt ?? null
-  if (kind === 'diaper') {
-    return (
-      events
-        .filter((event) => event.type === 'diaper')
-        .reduce<Timestamp | null>(
-          (latest, event) =>
-            latest === null || event.startedAt > latest ? event.startedAt : latest,
-          null,
-        ) ?? null
-    )
+  switch (kind) {
+    case 'feed':
+      // Either kind of feed counts, so this goes through the shared helper.
+      return findLastFeed(events)?.startedAt ?? null
+    case 'diaper':
+      return latestOfType(events, 'diaper')
+    case 'pumping':
+      return latestOfType(events, 'pumping')
+    case 'custom':
+      return null
   }
-  // Pumping has no log of its own yet (see docs/ROADMAP.md v0.5); when it gains
-  // one, adding a case here is the whole change.
-  return null
 }
 
 /**
  * The moment the interval counts from: the most recent thing that resolved this
  * reminder.
  *
- * For a feed reminder that is usually the last feed — logging *is* how you
- * dismiss it, which is an action a parent already performs, so there is nothing
- * extra to remember. Done and creation time are the other candidates, and the
- * latest of the three wins.
+ * For a feed reminder that is usually the last feed, and for a pumping reminder
+ * the last pumping session — logging *is* how you dismiss it, which is an action
+ * a parent already performs, so there is nothing extra to remember. Done and
+ * creation time are the other candidates, and the latest of the three wins.
  */
 export function anchorFor(reminder: Reminder, events: readonly BabyEvent[]): Timestamp {
   return Math.max(

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The adaptive icon's background layer: the app's navy, not Capacitor's white. -->
+<resources>
+    <color name="ic_launcher_background">#1b2a4a</color>
+</resources>

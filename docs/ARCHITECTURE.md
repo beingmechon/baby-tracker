@@ -162,7 +162,7 @@ node scripts/snapshot.mjs .design-audit          # inlines CSS into static HTML
 node <path-to>/design-for-ai/scripts/detect.mjs .design-audit/*.html
 ```
 
-The current design scores 0 findings across 7 screens and 16 rules.
+The current design scores 0 findings across 31 screens and 16 rules.
 
 Test timestamps are always built from local calendar parts via the `at()` factory,
 so assertions about wall-clock behaviour hold in whatever timezone CI runs in.
@@ -195,3 +195,14 @@ new event type, since events share one object store.
   issue first.
 - **Never add an analytics or crash-reporting SDK.** This is a hard project rule,
   not a preference.
+
+## The Android shell
+
+The app ships as a PWA and as an Android app built from the same `dist/`. The shell
+exists for one capability a browser cannot provide — an alarm the OS holds and fires
+when the app is closed — and it is constrained so that the web build pays nothing
+for it: `src/app/native.ts` imports nothing from Capacitor statically, the bridge
+lives in its own dynamically-imported chunk that is excluded from the precache, and
+`scripts/check-web-payload.mjs` asserts that against the real build in CI.
+
+There is no iOS target, deliberately. See [ANDROID.md](ANDROID.md).

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
-  notificationState,
-  requestNotificationPermission,
+  askForNotifications,
+  resolveNotificationState,
   type NotificationPermissionState,
 } from '@/app/notifications'
 import type { ReminderStore } from '@/app/useReminders'
 import { SNOOZE_MS, type Reminder } from '@/domain/reminders'
+import { isNativeApp } from '@/app/native'
 import { useTranslator } from '@/i18n/context'
 import { formatDuration } from '@/i18n/format'
 import type { MessageKey } from '@/i18n/locales'
@@ -34,10 +35,11 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
   const [permission, setPermission] = useState<NotificationPermissionState>('default')
   const [toast, setToast] = useState<string | null>(null)
 
-  // Read after mount: `Notification.permission` is a browser API, and reading it
-  // during render would make this component non-deterministic under test.
+  // Read after mount: the permission is a platform API, and reading it during
+  // render would make this component non-deterministic under test. Async because
+  // the Android answer is — on the web it resolves in the same tick.
   useEffect(() => {
-    setPermission(notificationState())
+    void resolveNotificationState().then(setPermission)
   }, [])
 
   useEffect(() => {
@@ -81,20 +83,24 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
               onToggle={(reminder, enabled) => {
                 void reminders.update(reminder.id, { enabled })
               }}
+              // Awaited before the toast: a message saying it was snoozed when
+              // the write failed is worse than no message.
               onSnooze={(reminder) => {
-                void reminders.snooze(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderSnoozed', {
-                    duration: formatDuration(t, SNOOZE_MS),
-                  }),
+                void reminders.snooze(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderSnoozed', {
+                      duration: formatDuration(t, SNOOZE_MS),
+                    }),
+                  ),
                 )
               }}
               onDone={(reminder) => {
-                void reminders.markDone(reminder.id, Date.now())
-                setToast(
-                  t.t('toast.reminderDone', {
-                    duration: formatDuration(t, reminder.intervalMs),
-                  }),
+                void reminders.markDone(reminder.id, Date.now()).then(() =>
+                  setToast(
+                    t.t('toast.reminderDone', {
+                      duration: formatDuration(t, reminder.intervalMs),
+                    }),
+                  ),
                 )
               }}
             />
@@ -118,7 +124,7 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
                 type="button"
                 className="button"
                 data-variant="secondary"
-                onClick={() => void requestNotificationPermission().then(setPermission)}
+                onClick={() => void askForNotifications().then(setPermission)}
               >
                 {t.t('reminders.notificationsAsk')}
               </button>
@@ -128,7 +134,12 @@ export function RemindersScreen({ reminders, onBack }: RemindersScreenProps) {
             )}
             {/* The honest limit of a serverless app, stated where it matters
                 rather than buried in a readme nobody opens at 3am. */}
-            <p className="field-note">{t.t('reminders.limitation')}</p>
+            {/* Two different truths, and the app must not tell the wrong one. On the
+                web nothing can wake a closed app; in the Android shell the OS holds
+                the alarm and it arrives regardless. */}
+            <p className="field-note">
+              {t.t(isNativeApp() ? 'reminders.limitationNative' : 'reminders.limitation')}
+            </p>
           </div>
         </section>
       </main>

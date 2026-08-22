@@ -378,6 +378,28 @@
   color: var(--growth-tint);
 }
 
+/* Pumping shares the feed hue: it is milk, and a fifth category colour would be
+   one more thing for the eye to decode for no gain. */
+.timeline-mark[data-category='pumping'] {
+  color: var(--pumping-tint);
+}
+
+.timeline-mark[data-category='health'] {
+  color: var(--health-tint);
+}
+
+.timeline-mark[data-category='food'] {
+  color: var(--food-tint);
+}
+
+.timeline-mark[data-category='activity'] {
+  color: var(--activity-tint);
+}
+
+.timeline-mark[data-category='potty'] {
+  color: var(--potty-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -532,6 +554,11 @@
 .field-note {
   font-size: var(--text--1);
   color: var(--text-secondary);
+}
+
+/* Two notes in a row ran together as one wall of grey. They are separate points. */
+.field-note + .field-note {
+  margin-top: var(--space-3);
 }
 
 /*
@@ -770,6 +797,190 @@
   accent-color: var(--accent-solid);
 }
 
+/* ── Health ──────────────────────────────────────────────────────────────── */
+
+/* The reading leads, like the growth measurement and the home status do. */
+.health-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.health-band {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text-secondary);
+}
+
+/*
+ * A raised or low reading takes the accent on the *sentence*, never on a
+ * background: the app is reporting where a number sits against a published
+ * figure, and a red panel would be the app forming an opinion.
+ */
+.health-band[data-band='raised'],
+.health-band[data-band='low'] {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.health-headline + .health-band {
+  margin-bottom: var(--space-4);
+}
+
+/* A banner ran flush into the button below it, which read as one block. */
+.banner + .button {
+  margin-top: var(--space-5);
+}
+
+/* ── Milk stash ──────────────────────────────────────────────────────────── */
+
+.stash-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-5);
+}
+
+.stash-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.stash-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stash-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.stash-amount {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+.stash-meta,
+.stash-state {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/*
+ * Urgency reads on the state line only, the same rule the reminders follow: the
+ * accent marks a fact about the row, never the row itself.
+ */
+.stash-row[data-state='useSoon'] .stash-state {
+  color: var(--accent-text);
+}
+
+.stash-row[data-state='pastGuideline'] .stash-state {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.stash-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.stash-actions .chip {
+  min-height: var(--tap);
+  padding: 0 var(--space-5);
+  font-size: var(--text--1);
+  font-weight: 500;
+}
+
+.stash-list + .button {
+  margin-top: var(--space-6);
+}
+
+/* ── Babies ──────────────────────────────────────────────────────────────── */
+
+/*
+ * The app bar's name is a button, but must not look like one: it is the page's
+ * title first and a switcher second. No border, no fill — the sheet it opens is
+ * the affordance.
+ */
+.appbar-switcher {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+}
+
+.baby-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-6);
+}
+
+.baby-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--tap);
+  padding: var(--space-4) 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.baby-row:last-child {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.baby-identity {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.baby-name {
+  font-size: var(--text-1);
+  font-weight: 500;
+}
+
+.baby-age {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/*
+ * Which baby is open is marked, not highlighted: a filled row would be a second
+ * decorative device, and the tick plus a label says it once, for eyes and for a
+ * screen reader alike.
+ */
+.baby-active {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-text);
+}
+
+.baby-active-label {
+  font-size: var(--text--1);
+}
+
 /* ── Reminders ───────────────────────────────────────────────────────────── */
 
 /*
@@ -963,6 +1174,823 @@
   margin-top: var(--space-2);
   font-size: var(--text--1);
   color: var(--text-secondary);
+}
+
+/* ── Patterns ────────────────────────────────────────────────────────────── */
+
+/*
+ * The next-nap line on the home screen. It sits directly under the status
+ * headline it qualifies, so it is pulled up out of the page's between-group gap:
+ * "asleep for 40m" and "next nap around 2:15pm" are one thought.
+ */
+.headline + .prediction {
+  margin-top: calc(var(--space-5) - var(--space-9));
+}
+
+.prediction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+  min-height: var(--tap);
+  padding: var(--space-4) 0;
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prediction:active {
+  background: var(--surface-active);
+}
+
+.prediction-label {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.prediction-value {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-1);
+  color: var(--text);
+}
+
+/* The predicted time leads its section, as the measurement does on Growth. */
+.patterns-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: var(--leading-display);
+  letter-spacing: -0.01em;
+}
+
+.patterns-detail {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text);
+}
+
+.patterns-detail + .field-note,
+.patterns-headline + .patterns-detail + .field-note {
+  margin-top: var(--space-3);
+}
+
+.patterns-detail.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The day wheel ───────────────────────────────────────────────────────── */
+
+/*
+ * Sized by its container like the growth chart, and centred: it is the one
+ * radial thing in the app, and flush-left would leave it looking dropped.
+ */
+.wheel {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  height: auto;
+  margin: var(--space-4) auto var(--space-5);
+}
+
+.wheel-ring {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+/* Fainter than the sleep ring: a track, not a second chart. */
+.wheel-track {
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.wheel-hour {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.wheel-hour-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Sleep is the data, so sleep takes the accent — the rule the growth chart
+ * follows with the baby's own line. Night sleep is the frame around the day
+ * rather than a reading within it, so it stays neutral: what a parent is looking
+ * for on this ring is where the naps fell.
+ */
+.wheel-sleep {
+  stroke: var(--accent-solid);
+  stroke-width: 9;
+  stroke-linecap: butt;
+}
+
+.wheel-sleep[data-night='true'] {
+  stroke: var(--sleep-tint);
+  opacity: 0.45;
+}
+
+.wheel-mark {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.wheel-mark[data-kind='feed'] {
+  stroke: var(--feed-tint);
+}
+
+.wheel-mark[data-kind='diaper'] {
+  stroke: var(--diaper-tint);
+}
+
+/*
+ * Now: a tick crossing the rim, longer and stronger than an event mark but the
+ * neutral ink of the page rather than a category colour — it is a position on the
+ * dial, not something that was logged.
+ */
+.wheel-now {
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The day's own sleep total, set in the hole the ring leaves. */
+.wheel-total {
+  fill: var(--text);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.wheel-total-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 9px;
+}
+
+.wheel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.wheel-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* A dash in the mark's own colour, matching the wheel's stroke weights. */
+.wheel-legend li::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.1875rem;
+  border-radius: 1px;
+  background: currentcolor;
+}
+
+.wheel-legend li[data-key='sleep'] {
+  color: var(--accent-text);
+}
+
+.wheel-legend li[data-key='feed'] {
+  color: var(--feed-tint);
+}
+
+.wheel-legend li[data-key='diaper'] {
+  color: var(--diaper-tint);
+}
+
+/* ── The week ────────────────────────────────────────────────────────────── */
+
+.week-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.week-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Thirty bars need a hairline gap or they merge into one block. */
+.week-bars[data-span='30'] {
+  gap: 1px;
+}
+
+/*
+ * A toggle in the rule, not a second segmented control: this is a change of view
+ * rather than a choice being recorded, and it sits where the label already is.
+ */
+.span-toggle {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.span-toggle button {
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  font-size: var(--text--1);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+}
+
+.span-toggle button[aria-pressed='true'] {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--surface-active);
+}
+
+/*
+ * Bottom-anchored, and no track fill: an empty day is an empty column, which is
+ * the truth about it. A filled grey track would draw a bar where nothing was
+ * logged.
+ */
+.week-bar-track {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  height: 6rem;
+}
+
+.week-bar-fill {
+  width: 100%;
+  min-height: 0;
+}
+
+.week-bar-fill[data-part='nap'] {
+  background: var(--accent-solid);
+}
+
+.week-bar-fill[data-part='night'] {
+  background: var(--sleep-tint);
+  opacity: 0.45;
+}
+
+.week-bar-label {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/* ── Handover ────────────────────────────────────────────────────────────── */
+
+/*
+ * A ledger of facts: label at the left, value at the right, one hairline between
+ * rows. The same shape as the daily summary and the stash, because a parent
+ * reading this at the door should not have to learn a new layout.
+ */
+.handover-facts {
+  margin: 0;
+}
+
+.handover-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.handover-fact:last-child {
+  border-bottom: none;
+}
+
+.handover-fact dt {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.handover-fact dd {
+  margin: 0;
+  font-size: var(--text-0);
+  text-align: right;
+}
+
+.handover-fact dd.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Several doses or readings in one cell, each on its own line. */
+.handover-line {
+  display: block;
+}
+
+.handover-line + .handover-line {
+  margin-top: var(--space-1);
+}
+
+/*
+ * The message itself, shown rather than hidden behind the copy button — a parent
+ * should be able to read what they are about to send, and select it by hand when
+ * the clipboard is unavailable. Body face, not monospace: it is a sentence someone
+ * will read, not code.
+ */
+.handover-text {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-5);
+  font-family: var(--font-body);
+  font-size: var(--text-0);
+  line-height: var(--leading-body);
+  white-space: pre-wrap;
+  background: var(--surface);
+  border-left: 2px solid var(--border-strong);
+  overflow-x: auto;
+}
+
+.handover-text + .button {
+  margin-bottom: var(--space-4);
+}
+
+/* ── Symptoms and visits ─────────────────────────────────────────────────── */
+
+.episodes,
+.episode-entries,
+.questions {
+  display: flex;
+  flex-direction: column;
+}
+
+.episodes {
+  gap: var(--space-7);
+  margin-bottom: var(--space-6);
+}
+
+.episode-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.episode-name {
+  font-family: var(--font-display);
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+/*
+ * The parent's own word for how it seemed, set as a quiet label. Deliberately not
+ * colour-coded by level: a red "Bad" would be the app forming a view, and the whole
+ * point of this screen is that it does not.
+ */
+.episode-worst {
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.episode-meta {
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.episode-meta.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A still-running episode gets the accent on its own name — the one thing on this
+   screen a parent is actively watching. */
+.episode[data-ongoing='true'] .episode-name {
+  color: var(--accent-text);
+}
+
+.episode-entries {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.episode-entry {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text--1);
+}
+
+.episode-entry-when {
+  flex: 0 0 4.5rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.episode-entry-body {
+  min-width: 0;
+}
+
+.episode-entry-note {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+}
+
+/* ── Visits ──────────────────────────────────────────────────────────────── */
+
+/* "Coming up" / "Been": a group heading inside a section, quieter than a rule. */
+.visit-group {
+  margin: var(--space-6) 0 var(--space-3);
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.visit {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.visit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.visit-reason {
+  font-family: var(--font-display);
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+.visit-when {
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.visit-meta {
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+.visit-notes {
+  margin-top: var(--space-4);
+  font-size: var(--text-0);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--border-subtle);
+}
+
+.questions {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * The one list in the app that gets ticked one-handed while somebody is talking to
+ * you, so the whole row is the target and the row is a full tap height.
+ */
+.question-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--tap);
+  font-size: var(--text-0);
+  cursor: pointer;
+}
+
+.question-label input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 1.375rem;
+  height: 1.375rem;
+  accent-color: var(--accent-solid);
+}
+
+/* Struck through rather than removed: what you already asked is part of the record
+   of the appointment. */
+.question-label span[data-asked='true'] {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+/* The rows in the visit sheet, where a question is typed. */
+.question-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.question-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.question-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Activities ──────────────────────────────────────────────────────────── */
+
+/* Tummy time leads its section, as the measurement does on Growth. */
+.activity-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: var(--leading-display);
+  letter-spacing: -0.01em;
+}
+
+/*
+ * Whether the goal was met takes the accent on the words and nothing else. A green
+ * tick and a red cross would make a parent's day into a pass or a fail, which is
+ * not what a tummy-time counter is for.
+ */
+.activity-goal {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text-secondary);
+}
+
+/* ── Solids and allergens ────────────────────────────────────────────────── */
+
+/*
+ * The nine, as a ledger rather than a grid of coloured tiles.
+ *
+ * A traffic-light grid was the obvious design and the wrong one: green for
+ * "no reaction noted" would read as the app certifying a food safe, which is a
+ * clinical conclusion it is in no position to draw. Rows of words say what is
+ * actually known.
+ */
+.allergen-count {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-2);
+  font-weight: 600;
+  margin-bottom: var(--space-5);
+}
+
+.allergens {
+  margin: 0 0 var(--space-5);
+}
+
+/* No `min-height: var(--tap)`: nothing in this row is tappable, and nine rows
+   padded for a thumb in the dark is half a screen of nothing. */
+.allergen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.allergen:last-child {
+  border-bottom: none;
+}
+
+.allergen-name {
+  font-size: var(--text-0);
+  font-weight: 500;
+}
+
+.allergen-state {
+  margin: 0;
+  text-align: right;
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+}
+
+/* Not offered yet is the quietest state: it is the default, not a warning. */
+.allergen[data-state='notTried'] .allergen-name,
+.allergen[data-state='notTried'] .allergen-state {
+  color: var(--text-secondary);
+}
+
+.allergen-verdict {
+  display: block;
+  color: var(--text);
+}
+
+/*
+ * A logged reaction takes the accent on the words, never a red panel. Same rule as
+ * a raised temperature: the app is repeating what the parent wrote down, and a red
+ * block would be it forming an opinion.
+ */
+.allergen[data-state='reacted'] .allergen-verdict {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.allergen-detail {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.food-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-6);
+}
+
+.food-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.food-row:last-child {
+  border-bottom: none;
+}
+
+.food-name {
+  display: block;
+  font-size: var(--text-0);
+  font-weight: 500;
+}
+
+.food-meta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.food-flag {
+  flex: 0 0 auto;
+  font-size: var(--text--1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+/*
+ * A column of choices rather than a segmented row: five options do not fit across
+ * a phone, and "Ate most" truncated to "Ate m…" is worse than a taller control.
+ */
+.stack-choices {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.choice {
+  min-height: var(--tap);
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-0);
+  text-align: left;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-subtle);
+  transition: background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease);
+}
+
+.choice:first-child {
+  border-top: none;
+}
+
+.choice[aria-pressed='true'] {
+  color: var(--text);
+  background: var(--surface-active);
+  font-weight: 600;
+}
+
+/* Nine multi-select tags, wrapping. Not chips: chips are one-of-three and sized
+   for a thumb in the dark; these are read before they are tapped. */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.tag {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  transition: background var(--dur-state) var(--ease),
+    color var(--dur-state) var(--ease),
+    border-color var(--dur-state) var(--ease);
+}
+
+.tag[aria-pressed='true'] {
+  color: var(--accent-on-solid);
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  font-weight: 600;
+}
+
+/*
+ * ── Print ────────────────────────────────────────────────────────────────────
+ *
+ * Nurseries and childminders ask for paper, and "save as PDF" goes through the
+ * same path. What prints is the facts and nothing else: no app bar, no buttons,
+ * no theme. Black on white regardless of the theme on screen, because a night-mode
+ * page prints as a solid dark rectangle and empties an ink cartridge.
+ */
+@media print {
+  :root {
+    --background: #fff;
+    --surface: #fff;
+    --surface-hover: #fff;
+    --surface-active: #fff;
+    --text: #000;
+    --text-secondary: #333;
+    --border-subtle: #bbb;
+    --border: #999;
+    --border-strong: #666;
+    --accent-solid: #000;
+    --accent-text: #000;
+  }
+
+  .appbar,
+  .button,
+  .icon-button,
+  .segmented,
+  .toast,
+  .action,
+  .actions {
+    display: none !important;
+  }
+
+  .page {
+    gap: var(--space-7);
+    padding: 0;
+  }
+
+  .handover-text {
+    padding: 0;
+    border-left: none;
+  }
+
+  /* A page break inside a fact turns one line into two half-lines. */
+  .handover-fact,
+  .episode,
+  .visit,
+  .section {
+    break-inside: avoid;
+  }
+
+  /*
+   * A checkbox that prints as a filled square is unusable on paper; a printed
+   * question list is ticked with a pen. The box prints as an outline whatever the
+   * screen state, and an already-asked question keeps its strike-through so the
+   * sheet still says what was covered.
+   */
+  .question-label input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #666;
+    border-radius: 2px;
+    background: #fff;
+  }
+
+  .question-label {
+    min-height: 0;
+  }
 }
 
 /* ── Misc ────────────────────────────────────────────────────────────────── */

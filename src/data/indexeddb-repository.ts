@@ -1,4 +1,5 @@
 import type { Reminder } from '@/domain/reminders'
+import { isValidStashAmount, type StashEntry } from '@/domain/stash'
 import type { Baby, BabyEvent, Id, Sex, Timestamp } from '@/domain/types'
 import { newId } from './ids'
 import {
@@ -7,6 +8,7 @@ import {
   STORE_BABIES,
   STORE_EVENTS,
   STORE_REMINDERS,
+  STORE_STASH,
   openDatabase,
   requestToPromise,
   transactionDone,
@@ -17,9 +19,10 @@ import type {
   ImportResult,
   NewEvent,
   NewReminder,
+  NewStashEntry,
   Repository,
 } from './repository'
-import { parseBaby, parseEvent, parseReminder } from './validate'
+import { parseBaby, parseEvent, parseReminder, parseStashEntry } from './validate'
 
 export interface RepositoryOptions {
   /** Injectable so tests can control time and ids. */
@@ -121,13 +124,13 @@ export class IndexedDbRepository implements Repository {
   async deleteBaby(id: Id): Promise<void> {
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
       'readwrite',
     )
     tx.objectStore(STORE_BABIES).delete(id)
 
     // Cascade, so deleting a profile leaves no orphaned rows behind.
-    for (const storeName of [STORE_EVENTS, STORE_REMINDERS]) {
+    for (const storeName of [STORE_EVENTS, STORE_REMINDERS, STORE_STASH]) {
       const store = tx.objectStore(storeName)
       const keys = await requestToPromise<IDBValidKey[]>(
         store.index('babyId').getAllKeys(id),
@@ -259,11 +262,69 @@ export class IndexedDbRepository implements Repository {
     await transactionDone(tx)
   }
 
+  async listStash(babyId: Id): Promise<StashEntry[]> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_STASH, 'readonly')
+    const index = tx.objectStore(STORE_STASH).index('babyId')
+    const entries = await requestToPromise<StashEntry[]>(index.getAll(babyId))
+    await transactionDone(tx)
+    return entries.sort((a, b) => a.expressedAt - b.expressedAt)
+  }
+
+  async addStash(babyId: Id, entry: NewStashEntry): Promise<StashEntry> {
+    if (!isValidStashAmount(entry.amountMl)) {
+      throw new Error('A stash entry needs an amount')
+    }
+    const timestamp = this.now()
+    const stored: StashEntry = {
+      ...entry,
+      id: this.generateId(),
+      babyId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }
+    const db = await this.db()
+    const tx = db.transaction(STORE_STASH, 'readwrite')
+    tx.objectStore(STORE_STASH).put(stored)
+    await transactionDone(tx)
+    return stored
+  }
+
+  async updateStash(id: Id, patch: Partial<StashEntry>): Promise<StashEntry> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_STASH, 'readwrite')
+    const store = tx.objectStore(STORE_STASH)
+    const existing = await requestToPromise<StashEntry | undefined>(store.get(id))
+    if (existing === undefined) {
+      tx.abort()
+      throw new Error(`No stash entry with id ${id}`)
+    }
+    const updated: StashEntry = {
+      ...existing,
+      ...patch,
+      id: existing.id,
+      babyId: existing.babyId,
+      createdAt: existing.createdAt,
+      updatedAt: this.now(),
+    }
+    store.put(updated)
+    await transactionDone(tx)
+    return updated
+  }
+
+  async deleteStash(id: Id): Promise<void> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_STASH, 'readwrite')
+    tx.objectStore(STORE_STASH).delete(id)
+    await transactionDone(tx)
+  }
+
   async exportAll(): Promise<ExportBundle> {
-    const [babies, events, reminders] = await Promise.all([
+    const [babies, events, reminders, stash] = await Promise.all([
       this.readAll<Baby>(STORE_BABIES),
       this.readAll<BabyEvent>(STORE_EVENTS),
       this.readAll<Reminder>(STORE_REMINDERS),
+      this.readAll<StashEntry>(STORE_STASH),
     ])
     return {
       format: 'baby-tracker-export',
@@ -272,6 +333,7 @@ export class IndexedDbRepository implements Repository {
       babies,
       events: events.sort((a, b) => a.startedAt - b.startedAt),
       reminders,
+      stash,
     }
   }
 
@@ -291,14 +353,19 @@ export class IndexedDbRepository implements Repository {
 
     const rawBabies = Array.isArray(candidate.babies) ? candidate.babies : []
     const rawEvents = Array.isArray(candidate.events) ? candidate.events : []
-    // Absent from every export written before v0.2, which must still import.
+    // Absent from every export written before these features, which must still
+    // import.
     const rawReminders = Array.isArray(candidate.reminders) ? candidate.reminders : []
+    const rawStash = Array.isArray(candidate.stash) ? candidate.stash : []
 
     const babies = rawBabies.map(parseBaby).filter((b): b is Baby => b !== null)
     const events = rawEvents.map(parseEvent).filter((e): e is BabyEvent => e !== null)
     const reminders = rawReminders
       .map(parseReminder)
       .filter((r): r is Reminder => r !== null)
+    const stash = rawStash
+      .map(parseStashEntry)
+      .filter((entry): entry is StashEntry => entry !== null)
 
     // An event whose baby is in neither the file nor the store would be
     // invisible in the UI forever, so it is dropped rather than silently kept.
@@ -306,20 +373,23 @@ export class IndexedDbRepository implements Repository {
     for (const baby of babies) existingIds.add(baby.id)
     const importable = events.filter((event) => existingIds.has(event.babyId))
     const importableReminders = reminders.filter((r) => existingIds.has(r.babyId))
+    const importableStash = stash.filter((entry) => existingIds.has(entry.babyId))
 
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
       'readwrite',
     )
     const babyStore = tx.objectStore(STORE_BABIES)
     const eventStore = tx.objectStore(STORE_EVENTS)
     const reminderStore = tx.objectStore(STORE_REMINDERS)
+    const stashStore = tx.objectStore(STORE_STASH)
     for (const baby of babies) babyStore.put(baby)
     // put() by id makes import idempotent: importing the same file twice
     // overwrites rather than duplicating.
     for (const event of importable) eventStore.put(event)
     for (const reminder of importableReminders) reminderStore.put(reminder)
+    for (const entry of importableStash) stashStore.put(entry)
     await transactionDone(tx)
 
     const skipped: ImportResult['skipped'] = []
@@ -347,11 +417,18 @@ export class IndexedDbRepository implements Repository {
         count: rawReminders.length - importableReminders.length,
       })
     }
+    if (rawStash.length > importableStash.length) {
+      skipped.push({
+        reason: 'malformed or orphaned stash entries',
+        count: rawStash.length - importableStash.length,
+      })
+    }
 
     return {
       babiesImported: babies.length,
       eventsImported: importable.length,
       remindersImported: importableReminders.length,
+      stashImported: importableStash.length,
       skipped,
     }
   }
@@ -359,12 +436,13 @@ export class IndexedDbRepository implements Repository {
   async clearAll(): Promise<void> {
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
       'readwrite',
     )
     tx.objectStore(STORE_BABIES).clear()
     tx.objectStore(STORE_EVENTS).clear()
     tx.objectStore(STORE_REMINDERS).clear()
+    tx.objectStore(STORE_STASH).clear()
     await transactionDone(tx)
   }
 }

@@ -86,6 +86,11 @@ try {
     timezoneId: 'Asia/Kolkata',
     locale: 'en-GB',
   })
+  // Same reason as the smoke suite: a run that straddles local midnight moves
+  // seeded events onto yesterday, and a screen that waits for one never loads.
+  await context.clock.install({ time: new Date('2026-08-21T04:30:00Z') })
+  await context.clock.resume()
+
   const page = await context.newPage()
 
   await page.goto(BASE)
@@ -144,6 +149,72 @@ try {
   await page.getByText('Reminder saved').waitFor()
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  // A temperature reading, so the health screen has a headline to audit.
+  await page.getByRole('button', { name: 'Health' }).first().click()
+  await page.getByRole('button', { name: 'Log temperature' }).click()
+  await page.locator('.sheet').getByLabel(/Reading/).fill('37.2')
+  await page.locator('.sheet').getByRole('button', { name: 'Save reading' }).click()
+  await page.getByText('Reading saved').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  // Something in the stash, so that screen has rows to audit too.
+  await page.getByRole('button', { name: 'Milk stash' }).first().click()
+  await page.getByRole('button', { name: 'Add milk' }).click()
+  await page.locator('.sheet').getByLabel('Amount (ml)').fill('120')
+  await page.locator('.sheet').getByRole('button', { name: 'Add to stash' }).click()
+  await page.getByText(/added to the stash/).waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.waitForTimeout(2400)
+
+  // An activity and a potty trip, so that screen has totals rather than empties.
+  await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Tummy time' }).click()
+  await page.locator('.sheet').getByLabel('How long? (minutes)').fill('12')
+  await page.locator('.sheet').getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Wee' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  // A food with an allergen tag, so the solids screen has a populated ledger.
+  await page.getByRole('button', { name: 'Log a food' }).first().click()
+  await page.getByRole('button', { name: 'Log a food' }).click()
+  await page.locator('.sheet').getByLabel('What did you offer?').fill('Scrambled egg')
+  await page.locator('.sheet').getByRole('button', { name: 'Ate some' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Egg', exact: true }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Save food' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  // A symptom and an appointment, so the illness screen has episodes and a
+  // question list to audit rather than two empty states.
+  await page.getByRole('button', { name: 'Symptoms and visits' }).first().click()
+  await page.getByRole('button', { name: 'Log a symptom' }).click()
+  await page.locator('.sheet').getByLabel('What did you notice?').fill('Cough')
+  await page.locator('.sheet').getByRole('button', { name: 'Moderate' }).click()
+  await page.locator('.sheet').getByLabel('Anything else').fill('worse at night')
+  await page.locator('.sheet').getByRole('button', { name: 'Save symptom' }).click()
+  await page.getByText('Symptom saved').waitFor()
+  await page.getByRole('button', { name: 'Add a visit' }).click()
+  await page.locator('.sheet').getByLabel('What is it for?').fill('8-week check')
+  await page.locator('.sheet').getByLabel(/Who are you seeing/).fill('Dr Rao')
+  await page
+    .locator('.sheet')
+    .getByLabel(/is this rash worth worrying/)
+    .first()
+    .fill('Is the cough worth worrying about?')
+  await page.locator('.sheet').getByRole('button', { name: 'Save visit' }).click()
+  await page.getByText('Visit saved').waitFor()
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
   for (const [label, theme] of [
@@ -168,6 +239,54 @@ try {
     await page.locator('.reminder-row').first().waitFor()
     writeFileSync(join(OUT, `reminders-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Health' }).first().click()
+    await page.locator('.health-headline').waitFor()
+    writeFileSync(join(OUT, `health-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Milk stash' }).first().click()
+    await page.locator('.stash-row').first().waitFor()
+    writeFileSync(join(OUT, `stash-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'The day, round the clock' }).click()
+    await page.locator('.wheel').waitFor()
+    writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+    await page.locator('.activity-headline').waitFor()
+    writeFileSync(join(OUT, `activity-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Log a food' }).first().click()
+    await page.locator('.allergen').first().waitFor()
+    writeFileSync(join(OUT, `food-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Symptoms and visits' }).click()
+    await page.locator('.episode').first().waitFor()
+    writeFileSync(join(OUT, `illness-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'What to tell the next person' }).click()
+    await page.locator('.handover-text').waitFor()
+    writeFileSync(join(OUT, `handover-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: /Mira/ }).click()
+    await page.locator('.baby-row').first().waitFor()
+    writeFileSync(join(OUT, `babies-${theme}.html`), await serialize(page))
+    await page.locator('.sheet').getByRole('button', { name: 'Close' }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   }
 

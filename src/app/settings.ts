@@ -19,6 +19,21 @@ export interface Settings {
   nightWindow: NightWindow
   /** Whether the wake-window display shows age-based guidance. */
   showWakeWindowGuidance: boolean
+  /**
+   * Babies logged together — twins mode. Two or more ids, or empty for off.
+   *
+   * A group rather than a direction, so it means the same thing whichever twin is
+   * on screen. See `domain/together.ts`.
+   */
+  togetherIds: Id[]
+  /**
+   * Daily tummy-time target in minutes, or 0 for none.
+   *
+   * The parent's number, not the app's recommendation. Health services do publish
+   * guidance and the screen repeats what it is, but the figure measured against is
+   * one a person typed.
+   */
+  tummyGoalMinutes: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -29,6 +44,8 @@ export const DEFAULT_SETTINGS: Settings = {
   themeMode: 'auto',
   nightWindow: DEFAULT_NIGHT_WINDOW,
   showWakeWindowGuidance: true,
+  togetherIds: [],
+  tummyGoalMinutes: 0,
 }
 
 const STORAGE_KEY = 'baby-tracker:settings'
@@ -82,6 +99,18 @@ export function loadSettings(): Settings {
           : DEFAULT_NIGHT_WINDOW.endHour,
       },
       showWakeWindowGuidance: value.showWakeWindowGuidance !== false,
+      // Every entry checked: a hand-edited array of numbers must not become a
+      // list of babies to write events for.
+      togetherIds: Array.isArray(value.togetherIds)
+        ? value.togetherIds.filter((id): id is Id => typeof id === 'string')
+        : [],
+      tummyGoalMinutes:
+        typeof value.tummyGoalMinutes === 'number' &&
+        Number.isFinite(value.tummyGoalMinutes) &&
+        value.tummyGoalMinutes >= 0 &&
+        value.tummyGoalMinutes <= 24 * 60
+          ? Math.round(value.tummyGoalMinutes)
+          : 0,
     }
   } catch {
     // A corrupt or unavailable store must never stop the app from opening.

@@ -28,7 +28,19 @@ device.
 The app makes exactly one kind of network request: downloading its own code and
 icons the first time you visit, and occasionally checking for an update.
 
-After that it works entirely offline. If you install it to your home screen and
+**The Android app makes none at all.** Its files are already on the device, served
+from local storage. It holds the `INTERNET` permission only because the WebView it
+runs in requires it to serve those local files over an `https://` scheme — which is
+what IndexedDB and the clipboard need in order to work. There is no code in the app
+that can reach the network, which is what makes this checkable rather than a promise.
+
+Reminders on Android are handed to the operating system's alarm scheduler. That is a
+call into your own phone, not out of it: no subscription endpoint, no push service,
+nothing registered with Google or with us. It is the reason the Android app exists —
+a browser cannot wake an app you closed, and only a server could make it, so we
+built the shell instead of the server.
+
+After the first load it works entirely offline. If you install it to your home screen and
 turn off your connection, it still opens and still logs — this is verified by an
 automated test on every change, not just claimed here.
 
@@ -71,6 +83,12 @@ be deliberate about email, cloud drives and messaging apps.
 
 CSV exports are deliberately hardened against spreadsheet formula injection, so a
 file you hand to a doctor cannot execute anything when opened.
+
+The same applies to the handover screen. "Copy as a message" puts plain text on
+your clipboard and nothing else happens — no request is made, and the app does not
+know or care where you paste it. Once it is in a message or on a nursery's
+whiteboard, it is out of this app's hands. "Print or save as PDF" opens your own
+device's print dialog; the app never sees the result.
 
 ## Children's data
 

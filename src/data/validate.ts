@@ -1,4 +1,14 @@
 import { isValidInterval, type Reminder, type ReminderKind } from '@/domain/reminders'
+import {
+  TEMPERATURE_SITES,
+  isValidTemperature,
+} from '@/domain/health'
+import {
+  STASH_LOCATIONS,
+  isValidStashAmount,
+  type StashEntry,
+  type StashLocation,
+} from '@/domain/stash'
 import type {
   Baby,
   BabyEvent,
@@ -8,6 +18,14 @@ import type {
   MeasureKind,
   Sex,
   SleepKind,
+  ActivityKind,
+  Allergen,
+  FoodAcceptance,
+  PottyPlace,
+  PottyResult,
+  SymptomImpression,
+  VisitQuestion,
+  TemperatureSite,
 } from '@/domain/types'
 
 /**
@@ -45,6 +63,62 @@ const CONTENTS: readonly BottleContents[] = ['breast_milk', 'formula']
 const DIAPER_KINDS: readonly DiaperKind[] = ['wet', 'dirty', 'mixed', 'dry']
 const SLEEP_KINDS: readonly SleepKind[] = ['nap', 'night']
 const MEASURES: readonly MeasureKind[] = ['weight', 'length', 'head']
+const IMPRESSIONS: readonly SymptomImpression[] = ['mild', 'moderate', 'severe']
+const ACCEPTANCES: readonly FoodAcceptance[] = [
+  'refused',
+  'tasted',
+  'some',
+  'most',
+  'all',
+]
+const ACTIVITY_KINDS: readonly ActivityKind[] = [
+  'tummy',
+  'bath',
+  'walk',
+  'play',
+  'reading',
+  'other',
+]
+const POTTY_RESULTS: readonly PottyResult[] = [
+  'pee',
+  'poo',
+  'both',
+  'nothing',
+  'accident',
+]
+const POTTY_PLACES: readonly PottyPlace[] = ['potty', 'toilet']
+const ALLERGENS: readonly Allergen[] = [
+  'milk',
+  'egg',
+  'peanut',
+  'treeNut',
+  'wheat',
+  'soy',
+  'fish',
+  'shellfish',
+  'sesame',
+]
+
+/**
+ * A cap on the questions list from a file.
+ *
+ * Nothing about a doctor's appointment needs two hundred questions, and an
+ * unbounded array from an untrusted file is an unbounded render.
+ */
+const MAX_QUESTIONS = 50
+
+function parseQuestions(value: unknown): VisitQuestion[] {
+  if (!Array.isArray(value)) return []
+  const questions: VisitQuestion[] = []
+  for (const entry of value) {
+    if (!isObject(entry)) continue
+    const text = str(entry.text)
+    if (text === null) continue
+    questions.push({ text, asked: entry.asked === true })
+    if (questions.length >= MAX_QUESTIONS) break
+  }
+  return questions
+}
 const SEXES: readonly Sex[] = ['male', 'female']
 const REMINDER_KIND_VALUES: readonly ReminderKind[] = [
   'feed',
@@ -121,6 +195,79 @@ export function parseEvent(value: unknown): BabyEvent | null {
       if (kind === null) return null
       return { ...base, type: 'diaper', kind }
     }
+    case 'temperature': {
+      const site = oneOf<TemperatureSite>(value.site, TEMPERATURE_SITES)
+      const celsiusHundredths = finiteNumber(value.celsiusHundredths)
+      if (site === null || celsiusHundredths === null) return null
+      // A reading outside human range is a typo or a broken thermometer, and
+      // storing it would put a nonsense figure in front of a doctor.
+      if (!isValidTemperature(celsiusHundredths)) return null
+      return { ...base, type: 'temperature', site, celsiusHundredths }
+    }
+    case 'medication': {
+      const name = str(value.name)
+      if (name === null) return null
+      return { ...base, type: 'medication', name, dose: str(value.dose) ?? '' }
+    }
+    case 'symptom': {
+      const name = str(value.name)
+      const impression = oneOf<SymptomImpression>(value.impression, IMPRESSIONS)
+      // An unnamed symptom is not an observation, and an unknown impression would
+      // render as an empty word next to it.
+      if (name === null || impression === null) return null
+      return { ...base, type: 'symptom', name, impression }
+    }
+    case 'food': {
+      const name = str(value.name)
+      const acceptance = oneOf<FoodAcceptance>(value.acceptance, ACCEPTANCES)
+      if (name === null || acceptance === null) return null
+      return {
+        ...base,
+        type: 'food',
+        name,
+        acceptance,
+        // Unknown allergen names are dropped rather than failing the whole entry:
+        // a file from a future version that knows about celery should still import
+        // its food log, minus the tag this version cannot name.
+        allergens: Array.isArray(value.allergens)
+          ? value.allergens.filter((entry): entry is Allergen =>
+              (ALLERGENS as readonly string[]).includes(entry as string),
+            )
+          : [],
+        reaction: value.reaction === true,
+      }
+    }
+    case 'activity': {
+      const kind = oneOf<ActivityKind>(value.kind, ACTIVITY_KINDS)
+      const durationMs = nonNegative(value.durationMs)
+      if (kind === null) return null
+      // A missing duration means "nobody timed it", not "invalid".
+      return { ...base, type: 'activity', kind, durationMs: durationMs ?? 0 }
+    }
+    case 'potty': {
+      const result = oneOf<PottyResult>(value.result, POTTY_RESULTS)
+      const place = oneOf<PottyPlace>(value.place, POTTY_PLACES)
+      if (result === null) return null
+      return { ...base, type: 'potty', result, place: place ?? 'potty' }
+    }
+    case 'visit': {
+      const reason = str(value.reason)
+      if (reason === null) return null
+      return {
+        ...base,
+        type: 'visit',
+        reason,
+        who: str(value.who) ?? '',
+        questions: parseQuestions(value.questions),
+      }
+    }
+    case 'pumping': {
+      const leftMl = nonNegative(value.leftMl)
+      const rightMl = nonNegative(value.rightMl)
+      const durationMs = nonNegative(value.durationMs)
+      if (leftMl === null || rightMl === null || durationMs === null) return null
+      return { ...base, type: 'pumping', leftMl, rightMl, durationMs }
+    }
     case 'growth': {
       const measure = oneOf(value.measure, MEASURES)
       const measured = finiteNumber(value.value)
@@ -167,6 +314,32 @@ export function parseReminder(value: unknown): Reminder | null {
     lastDoneAt: optionalTime(value.lastDoneAt),
     lastAlertedAt: optionalTime(value.lastAlertedAt),
     snoozedUntil: optionalTime(value.snoozedUntil),
+    createdAt,
+    updatedAt: nonNegative(value.updatedAt) ?? createdAt,
+  }
+}
+
+/** A milk-stash entry from an export file. */
+export function parseStashEntry(value: unknown): StashEntry | null {
+  if (!isObject(value)) return null
+
+  const id = str(value.id)
+  const babyId = str(value.babyId)
+  const location = oneOf<StashLocation>(value.location, STASH_LOCATIONS)
+  const amountMl = finiteNumber(value.amountMl)
+  const expressedAt = nonNegative(value.expressedAt)
+  if (id === null || babyId === null || location === null) return null
+  if (amountMl === null || !isValidStashAmount(amountMl)) return null
+  // Without a time of expression there is no age, and the age is the point.
+  if (expressedAt === null) return null
+
+  const createdAt = nonNegative(value.createdAt) ?? expressedAt
+  return {
+    id,
+    babyId,
+    amountMl,
+    location,
+    expressedAt,
     createdAt,
     updatedAt: nonNegative(value.updatedAt) ?? createdAt,
   }

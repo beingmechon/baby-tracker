@@ -1,12 +1,28 @@
 import type {
   BottleEvent,
+  PumpingEvent,
   DiaperEvent,
   DiaperKind,
   GrowthEvent,
   MeasureKind,
+  MedicationEvent,
   NursingEvent,
+  ActivityEvent,
+  ActivityKind,
+  Allergen,
+  DoctorVisitEvent,
+  FoodAcceptance,
+  FoodEvent,
+  PottyEvent,
+  PottyPlace,
+  PottyResult,
+  SymptomEvent,
+  SymptomImpression,
+  VisitQuestion,
   SleepEvent,
   SleepKind,
+  TemperatureEvent,
+  TemperatureSite,
   Timestamp,
 } from '@/domain/types'
 
@@ -111,6 +127,154 @@ export function growth(
     startedAt,
     measure,
     value,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function pumping(
+  startedAt: Timestamp,
+  leftMl: number,
+  rightMl: number,
+  durationMs = 15 * 60_000,
+): PumpingEvent {
+  return {
+    id: nextId('pumping'),
+    babyId: BABY_ID,
+    type: 'pumping',
+    startedAt,
+    leftMl,
+    rightMl,
+    durationMs,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function temperature(
+  startedAt: Timestamp,
+  celsiusHundredths: number,
+  site: TemperatureSite = 'armpit',
+): TemperatureEvent {
+  return {
+    id: nextId('temperature'),
+    babyId: BABY_ID,
+    type: 'temperature',
+    startedAt,
+    celsiusHundredths,
+    site,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function medication(
+  startedAt: Timestamp,
+  name: string,
+  dose = '',
+): MedicationEvent {
+  return {
+    id: nextId('medication'),
+    babyId: BABY_ID,
+    type: 'medication',
+    startedAt,
+    name,
+    dose,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function symptom(
+  startedAt: Timestamp,
+  name: string,
+  impression: SymptomImpression = 'mild',
+  note = '',
+): SymptomEvent {
+  return {
+    id: nextId('symptom'),
+    babyId: BABY_ID,
+    type: 'symptom',
+    startedAt,
+    name,
+    impression,
+    note,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function visit(
+  startedAt: Timestamp,
+  reason: string,
+  questions: VisitQuestion[] = [],
+  who = '',
+  note = '',
+): DoctorVisitEvent {
+  return {
+    id: nextId('visit'),
+    babyId: BABY_ID,
+    type: 'visit',
+    startedAt,
+    reason,
+    who,
+    note,
+    questions,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function food(
+  startedAt: Timestamp,
+  name: string,
+  allergens: Allergen[] = [],
+  acceptance: FoodAcceptance = 'some',
+  reaction = false,
+): FoodEvent {
+  return {
+    id: nextId('food'),
+    babyId: BABY_ID,
+    type: 'food',
+    startedAt,
+    name,
+    acceptance,
+    allergens,
+    reaction,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function activity(
+  startedAt: Timestamp,
+  kind: ActivityKind,
+  durationMs = 0,
+): ActivityEvent {
+  return {
+    id: nextId('activity'),
+    babyId: BABY_ID,
+    type: 'activity',
+    startedAt,
+    kind,
+    durationMs,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function potty(
+  startedAt: Timestamp,
+  result: PottyResult,
+  place: PottyPlace = 'potty',
+): PottyEvent {
+  return {
+    id: nextId('potty'),
+    babyId: BABY_ID,
+    type: 'potty',
+    startedAt,
+    result,
+    place,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

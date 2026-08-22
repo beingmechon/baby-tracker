@@ -1,4 +1,4 @@
-import { DAY_MS } from '../time'
+import { DAY_MS, addDays, birthTimestamp } from '../time'
 import type { BabyEvent, GrowthEvent, MeasureKind, Timestamp } from '../types'
 import { monthsBetween } from './percentiles'
 
@@ -89,4 +89,49 @@ export function measurementAgeMonths(
   birthTimestamp: Timestamp,
 ): number {
   return monthsBetween(birthTimestamp, event.startedAt)
+}
+
+/**
+ * The measurement taken on the day the baby was born, if there is one.
+ *
+ * Birth stats are stored as ordinary growth events dated at birth rather than as
+ * fields on the baby, so they plot on the chart and export with everything else.
+ * The cost of that choice is this function: "the birth weight" has to be recognised
+ * by its date instead of read from a labelled field.
+ *
+ * Matched on the whole local day, not the exact millisecond, because a parent
+ * entering it later types a date and not a time.
+ */
+export function birthMeasurement(
+  events: readonly BabyEvent[],
+  measure: MeasureKind,
+  birthDate: string | null,
+): GrowthEvent | null {
+  const birth = birthTimestamp(birthDate)
+  if (birth === null) return null
+  const dayEnd = addDays(birth, 1)
+  return (
+    growthSeries(events, measure).find(
+      (event) => event.startedAt >= birth && event.startedAt < dayEnd,
+    ) ?? null
+  )
+}
+
+/**
+ * Change from the birth measurement to the latest one.
+ *
+ * The comparison parents are actually told at every appointment — "back to birth
+ * weight yet?" in the first fortnight, "doubled her birth weight" later — and the
+ * one thing a chart of two dots cannot show them. Null when either end is missing,
+ * or when the latest *is* the birth measurement and the answer would be zero.
+ */
+export function changeSinceBirth(
+  events: readonly BabyEvent[],
+  measure: MeasureKind,
+  birthDate: string | null,
+): { from: GrowthEvent; to: GrowthEvent; delta: number } | null {
+  const from = birthMeasurement(events, measure, birthDate)
+  const to = latestMeasurement(events, measure)
+  if (from === null || to === null || from.id === to.id) return null
+  return { from, to, delta: to.value - from.value }
 }

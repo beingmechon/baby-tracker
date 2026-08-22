@@ -1,9 +1,28 @@
 import { G_PER_OZ, gramsToPoundsOunces, mmToInches } from '@/domain/measure'
+import {
+  RAISED_THRESHOLD,
+  LOW_THRESHOLD,
+  fromHundredths,
+  type TemperatureReading,
+} from '@/domain/health'
 import type { ReminderKind, ReminderStatus } from '@/domain/reminders'
-import { MINUTE_MS, splitDuration, type AgeDescription } from '@/domain/time'
+import type { StashLocation, StashStatus } from '@/domain/stash'
+import {
+  MINUTE_MS,
+  describeSpan,
+  splitDuration,
+  type AgeDescription,
+} from '@/domain/time'
 import type {
+  ActivityKind,
+  Allergen,
+  FoodAcceptance,
+  PottyPlace,
+  PottyResult,
   MeasureKind,
   MeasureSystem,
+  SymptomImpression,
+  TemperatureSite,
   Timestamp,
   VolumeUnit,
 } from '@/domain/types'
@@ -26,6 +45,29 @@ export function formatDuration(t: Translator, ms: number): string {
   if (hours === 0) return t.t('duration.minutes', { minutes })
   if (minutes === 0) return t.t('duration.hours', { hours })
   return t.t('duration.hoursMinutes', { hours, minutes })
+}
+
+/**
+ * A long span in words: `3 days`, `6 months`.
+ *
+ * Distinct from `formatDuration`, which is the compact `1h 24m` form built for
+ * feeds and naps. Storage life and anything else measured in days needs units a
+ * person would say out loud.
+ */
+export function formatSpan(t: Translator, ms: number): string {
+  const { unit, count } = describeSpan(ms)
+  switch (unit) {
+    case 'minutes':
+      return t.plural('span.minutes', count)
+    case 'hours':
+      return t.plural('span.hours', count)
+    case 'days':
+      return t.plural('span.days', count)
+    case 'weeks':
+      return t.plural('span.weeks', count)
+    case 'months':
+      return t.plural('span.months', count)
+  }
 }
 
 /** `just now`, `20m ago`, `3h 5m ago`. */
@@ -220,5 +262,178 @@ export function formatReminderState(t: Translator, status: ReminderStatus): stri
         ? t.t('reminders.due')
         : t.t('reminders.overdue', { duration: formatDuration(t, overdueMs) })
     }
+  }
+}
+
+const STASH_LOCATION_NAMES: Record<StashLocation, MessageKey> = {
+  fridge: 'stash.location.fridge',
+  freezer: 'stash.location.freezer',
+}
+
+export function stashLocationName(t: Translator, location: StashLocation): string {
+  return t.t(STASH_LOCATION_NAMES[location])
+}
+
+/**
+ * A stash entry's standing against its storage guideline, in words.
+ *
+ * Phrased as a description of a date rather than an instruction about a baby:
+ * "past the 4 days guideline", not "throw this away". The distinction is the whole
+ * reason this project can show the figure at all.
+ */
+export function formatStashState(t: Translator, status: StashStatus): string {
+  switch (status.state) {
+    case 'fresh':
+      return t.t('stash.fresh', { duration: formatSpan(t, status.remainingMs) })
+    case 'useSoon':
+      return t.t('stash.useSoon', { duration: formatSpan(t, status.remainingMs) })
+    case 'pastGuideline':
+      return t.t('stash.pastGuideline', {
+        guideline: formatSpan(t, status.guidelineMs),
+      })
+  }
+}
+
+const TEMPERATURE_SITE_NAMES: Record<TemperatureSite, MessageKey> = {
+  armpit: 'temperature.site.armpit',
+  ear: 'temperature.site.ear',
+  forehead: 'temperature.site.forehead',
+  mouth: 'temperature.site.mouth',
+  rectal: 'temperature.site.rectal',
+}
+
+export function temperatureSiteName(t: Translator, site: TemperatureSite): string {
+  return t.t(TEMPERATURE_SITE_NAMES[site])
+}
+
+/** Which scale a measurement system reads temperatures in. */
+/**
+ * The parent's own impression of a symptom.
+ *
+ * Worded as a description of what they saw, never as a grade the app assigns —
+ * "seemed mild", not "MILD".
+ */
+export function symptomImpressionName(
+  t: Translator,
+  impression: SymptomImpression,
+): string {
+  switch (impression) {
+    case 'mild':
+      return t.t('symptom.impression.mild')
+    case 'moderate':
+      return t.t('symptom.impression.moderate')
+    case 'severe':
+      return t.t('symptom.impression.severe')
+  }
+}
+
+const FOOD_ACCEPTANCE_NAMES: Record<FoodAcceptance, MessageKey> = {
+  refused: 'food.acceptance.refused',
+  tasted: 'food.acceptance.tasted',
+  some: 'food.acceptance.some',
+  most: 'food.acceptance.most',
+  all: 'food.acceptance.all',
+}
+
+/** How much went in, in the words a parent would use rather than a percentage. */
+export function foodAcceptanceName(t: Translator, acceptance: FoodAcceptance): string {
+  return t.t(FOOD_ACCEPTANCE_NAMES[acceptance])
+}
+
+const ALLERGEN_NAMES: Record<Allergen, MessageKey> = {
+  milk: 'allergen.milk',
+  egg: 'allergen.egg',
+  peanut: 'allergen.peanut',
+  treeNut: 'allergen.treeNut',
+  wheat: 'allergen.wheat',
+  soy: 'allergen.soy',
+  fish: 'allergen.fish',
+  shellfish: 'allergen.shellfish',
+  sesame: 'allergen.sesame',
+}
+
+export function allergenName(t: Translator, allergen: Allergen): string {
+  return t.t(ALLERGEN_NAMES[allergen])
+}
+
+const ACTIVITY_NAMES: Record<ActivityKind, MessageKey> = {
+  tummy: 'activity.tummy',
+  bath: 'activity.bath',
+  walk: 'activity.walk',
+  play: 'activity.play',
+  reading: 'activity.reading',
+  other: 'activity.other',
+}
+
+export function activityName(t: Translator, kind: ActivityKind): string {
+  return t.t(ACTIVITY_NAMES[kind])
+}
+
+const POTTY_RESULT_NAMES: Record<PottyResult, MessageKey> = {
+  pee: 'potty.result.pee',
+  poo: 'potty.result.poo',
+  both: 'potty.result.both',
+  nothing: 'potty.result.nothing',
+  accident: 'potty.result.accident',
+}
+
+export function pottyResultName(t: Translator, result: PottyResult): string {
+  return t.t(POTTY_RESULT_NAMES[result])
+}
+
+const POTTY_PLACE_NAMES: Record<PottyPlace, MessageKey> = {
+  potty: 'potty.place.potty',
+  toilet: 'potty.place.toilet',
+}
+
+export function pottyPlaceName(t: Translator, place: PottyPlace): string {
+  return t.t(POTTY_PLACE_NAMES[place])
+}
+
+export function temperatureUnit(system: MeasureSystem): 'c' | 'f' {
+  return system === 'imperial' ? 'f' : 'c'
+}
+
+export function temperatureUnitSymbol(system: MeasureSystem): string {
+  return system === 'imperial' ? '°F' : '°C'
+}
+
+/** `37.6 °C` / `99.7 °F`, in the reader's scale. */
+export function formatTemperature(
+  t: Translator,
+  hundredths: number,
+  system: MeasureSystem,
+): string {
+  const unit = temperatureUnit(system)
+  return `${t.number(fromHundredths(hundredths, unit), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} ${temperatureUnitSymbol(system)}`
+}
+
+/**
+ * Where a reading sits, in words, with the threshold quoted in the reader's own
+ * scale.
+ *
+ * Phrased as a comparison with a published figure — "at or above the 38.0 °C most
+ * guidance calls a fever" — rather than as a verdict. The app is reporting a
+ * threshold, not deciding anything about a baby.
+ */
+export function formatTemperatureBand(
+  t: Translator,
+  reading: TemperatureReading,
+  system: MeasureSystem,
+): string {
+  switch (reading.band) {
+    case 'normal':
+      return t.t('temperature.band.normal')
+    case 'raised':
+      return t.t('temperature.band.raised', {
+        threshold: formatTemperature(t, RAISED_THRESHOLD, system),
+      })
+    case 'low':
+      return t.t('temperature.band.low', {
+        threshold: formatTemperature(t, LOW_THRESHOLD, system),
+      })
   }
 }

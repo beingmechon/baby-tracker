@@ -14,7 +14,20 @@ export type BottleContents = 'breast_milk' | 'formula'
 export type DiaperKind = 'wet' | 'dirty' | 'mixed' | 'dry'
 export type SleepKind = 'nap' | 'night'
 export type VolumeUnit = 'ml' | 'oz'
-export type EventType = 'nursing' | 'bottle' | 'sleep' | 'diaper' | 'growth'
+export type EventType =
+  | 'nursing'
+  | 'bottle'
+  | 'sleep'
+  | 'diaper'
+  | 'growth'
+  | 'pumping'
+  | 'temperature'
+  | 'medication'
+  | 'symptom'
+  | 'visit'
+  | 'food'
+  | 'activity'
+  | 'potty'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -25,6 +38,61 @@ export type EventType = 'nursing' | 'bottle' | 'sleep' | 'diaper' | 'growth'
 export type Sex = 'male' | 'female'
 
 export type MeasureKind = 'weight' | 'length' | 'head'
+
+/** Where a temperature was taken. It materially changes the number. */
+export type TemperatureSite = 'armpit' | 'ear' | 'forehead' | 'mouth' | 'rectal'
+
+/**
+ * How a symptom seemed *to the parent*.
+ *
+ * Their own impression, recorded so a diary can show a direction over days — the
+ * thing a doctor asks and nobody can remember. It is not a clinical grade and the
+ * app never acts on it: nothing is triaged, ranked or flagged from this value.
+ */
+export type SymptomImpression = 'mild' | 'moderate' | 'severe'
+
+/**
+ * The nine major food allergens named in United States federal law — the eight of
+ * the Food Allergen Labeling and Consumer Protection Act of 2004, plus sesame,
+ * added by the FASTER Act with effect from January 2023.
+ *
+ * A published regulatory list, not medical advice and not this project's opinion
+ * about what any child should eat. It is here because "which of the nine have we
+ * introduced?" is a question parents are asked and cannot answer from memory, and
+ * because a list defined by statute is one this app can carry without inventing
+ * anything. Other countries name more — celery, mustard, lupin and molluscs in the
+ * EU and UK, for instance — and adding them is a matter of extending this list;
+ * see docs/ROADMAP.md.
+ */
+export type Allergen =
+  | 'milk'
+  | 'egg'
+  | 'peanut'
+  | 'treeNut'
+  | 'wheat'
+  | 'soy'
+  | 'fish'
+  | 'shellfish'
+  | 'sesame'
+
+/** How much of it actually went in, as the parent saw it. */
+export type FoodAcceptance = 'refused' | 'tasted' | 'some' | 'most' | 'all'
+
+/**
+ * The activities worth a button of their own.
+ *
+ * A short, fixed list rather than free text, because the point of logging these is
+ * counting them — "how much tummy time did she get today?" only has an answer if
+ * every entry is the same word. `other` carries a name in the note for everything
+ * the list does not cover.
+ */
+export type ActivityKind = 'tummy' | 'bath' | 'walk' | 'play' | 'reading' | 'other'
+
+/** What happened, from a parent's point of view rather than a clinical one. */
+export type PottyResult = 'pee' | 'poo' | 'both' | 'nothing' | 'accident'
+
+/** Where it happened. An accident is its own result, so this is where they sat. */
+export type PottyPlace = 'potty' | 'toilet'
 
 /** Which units measurements are shown and entered in. */
 export type MeasureSystem = 'metric' | 'imperial'
@@ -85,12 +153,129 @@ export interface GrowthEvent extends EventBase {
   value: number
 }
 
+export interface PumpingEvent extends EventBase {
+  type: 'pumping'
+  /**
+   * Output per side in canonical millilitres. Both are recorded even when one is
+   * zero: a persistent difference between sides is a thing parents watch for, and
+   * a single total would throw that away.
+   */
+  leftMl: number
+  rightMl: number
+  durationMs: number
+}
+
+export interface TemperatureEvent extends EventBase {
+  type: 'temperature'
+  /**
+   * Hundredths of a degree Celsius — 37.5 °C is 3750.
+   *
+   * One canonical unit, held as an integer, so a reading typed in Fahrenheit and
+   * read back in Fahrenheit returns what was typed instead of drifting.
+   */
+  celsiusHundredths: number
+  site: TemperatureSite
+}
+
+export interface MedicationEvent extends EventBase {
+  type: 'medication'
+  name: string
+  /**
+   * Free text, deliberately: doses come in millilitres, milligrams, drops and
+   * fractions of a tablet, and a structured amount-plus-unit would be a precision
+   * the app does not actually have.
+   */
+  dose: string
+}
+
+export interface SymptomEvent extends EventBase {
+  type: 'symptom'
+  /**
+   * Free text, with the parent's own past entries offered as suggestions.
+   *
+   * A fixed list would be either incomplete or a set of clinical categories, and
+   * this app is not in a position to offer either. "Whatever you would say out
+   * loud" is the right vocabulary for a diary a parent keeps.
+   */
+  name: string
+  impression: SymptomImpression
+  // "Anything else" is the inherited `note`. A second field of the same name on
+  // this interface would have silently been the same property, so this event's
+  // free text lives where every other event's does — and is editable through the
+  // ordinary edit sheet for free.
+}
+
+/**
+ * A doctor, midwife or health-visitor appointment, with the questions to ask.
+ *
+ * The only event type that is *expected* to be in the future: the whole point of a
+ * questions list is that you write it down at 3am and take it with you next week.
+ * Everything that aggregates events therefore has to tolerate a future timestamp,
+ * which the window functions already do — they filter rather than assume.
+ */
+export interface DoctorVisitEvent extends EventBase {
+  type: 'visit'
+  reason: string
+  /** The clinic, doctor or health visitor. Free text; often left empty. */
+  who: string
+  questions: VisitQuestion[]
+  // What was said goes in the inherited `note`, for the same reason as above.
+}
+
+export interface VisitQuestion {
+  text: string
+  /** Ticked off in the room, which is the only reason the list is worth keeping. */
+  asked: boolean
+}
+
+export interface FoodEvent extends EventBase {
+  type: 'food'
+  name: string
+  acceptance: FoodAcceptance
+  /**
+   * Which of the nine the parent says this food contained.
+   *
+   * Chosen by them, never inferred from the name. The app has no food-composition
+   * database and will not pretend to: guessing that hummus contains sesame is right,
+   * guessing that a supermarket biscuit does not contain egg is how an app tells a
+   * parent something dangerous and untrue.
+   */
+  allergens: Allergen[]
+  /**
+   * Whether the parent noticed a reaction. Deliberately a flag and not a severity
+   * scale — grading a reaction is triage, and this app does not triage. What it
+   * looked like goes in the inherited `note`.
+   */
+  reaction: boolean
+}
+
+export interface ActivityEvent extends EventBase {
+  type: 'activity'
+  kind: ActivityKind
+  /** Zero when it was a moment rather than a stretch — a bath nobody timed. */
+  durationMs: number
+}
+
+export interface PottyEvent extends EventBase {
+  type: 'potty'
+  result: PottyResult
+  place: PottyPlace
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
   | SleepEvent
   | DiaperEvent
   | GrowthEvent
+  | PumpingEvent
+  | TemperatureEvent
+  | MedicationEvent
+  | SymptomEvent
+  | DoctorVisitEvent
+  | FoodEvent
+  | ActivityEvent
+  | PottyEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -107,6 +292,43 @@ export function isDiaper(event: BabyEvent): event is DiaperEvent {
 
 export function isGrowth(event: BabyEvent): event is GrowthEvent {
   return event.type === 'growth'
+}
+
+export function isPumping(event: BabyEvent): event is PumpingEvent {
+  return event.type === 'pumping'
+}
+
+export function isTemperature(event: BabyEvent): event is TemperatureEvent {
+  return event.type === 'temperature'
+}
+
+export function isMedication(event: BabyEvent): event is MedicationEvent {
+  return event.type === 'medication'
+}
+
+export function isSymptom(event: BabyEvent): event is SymptomEvent {
+  return event.type === 'symptom'
+}
+
+export function isDoctorVisit(event: BabyEvent): event is DoctorVisitEvent {
+  return event.type === 'visit'
+}
+
+export function isFood(event: BabyEvent): event is FoodEvent {
+  return event.type === 'food'
+}
+
+export function isActivity(event: BabyEvent): event is ActivityEvent {
+  return event.type === 'activity'
+}
+
+export function isPotty(event: BabyEvent): event is PottyEvent {
+  return event.type === 'potty'
+}
+
+/** Total output of a pumping session. */
+export function pumpedMl(event: PumpingEvent): number {
+  return event.leftMl + event.rightMl
 }
 
 /** A sleep with no end time is the one currently in progress. */

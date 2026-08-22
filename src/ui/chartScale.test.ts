@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { linearScale, niceTicks, padRange, polylinePath } from './chartScale'
+import {
+  linearScale,
+  niceTicks,
+  padRange,
+  polarPoint,
+  polylinePath,
+  ringArcPath,
+} from './chartScale'
 
 describe('linearScale', () => {
   it('maps the domain onto the range', () => {
@@ -78,5 +85,57 @@ describe('polylinePath', () => {
 
   it('is empty for no points, so an empty series draws nothing', () => {
     expect(polylinePath([])).toBe('')
+  })
+})
+
+describe('polarPoint', () => {
+  const centre = { x: 100, y: 100 }
+
+  it('starts at the top and runs clockwise, like a clock face', () => {
+    // Midnight at twelve o'clock is what makes the day wheel readable.
+    const midnight = polarPoint(centre, 50, 0)
+    expect(midnight.x).toBeCloseTo(100, 6)
+    expect(midnight.y).toBeCloseTo(50, 6)
+
+    const sixAm = polarPoint(centre, 50, 0.25)
+    expect(sixAm.x).toBeCloseTo(150, 6)
+    expect(sixAm.y).toBeCloseTo(100, 6)
+
+    const noon = polarPoint(centre, 50, 0.5)
+    expect(noon.y).toBeCloseTo(150, 6)
+  })
+
+  it('comes back to the start after a full turn', () => {
+    const start = polarPoint(centre, 50, 0)
+    const round = polarPoint(centre, 50, 1)
+    expect(round.x).toBeCloseTo(start.x, 6)
+    expect(round.y).toBeCloseTo(start.y, 6)
+  })
+})
+
+describe('ringArcPath', () => {
+  const centre = { x: 100, y: 100 }
+
+  it('draws a single arc for an ordinary span', () => {
+    const path = ringArcPath(centre, 50, 0.25, 0.5)
+    expect(path.startsWith('M')).toBe(true)
+    // Under half a turn, so the small-arc flag.
+    expect(path).toContain('A50 50 0 0 1')
+  })
+
+  it('sets the large-arc flag past a half turn', () => {
+    expect(ringArcPath(centre, 50, 0, 0.75)).toContain('A50 50 0 1 1')
+  })
+
+  it('draws a whole day as two arcs rather than nothing', () => {
+    // One `A` from a point back to itself has zero length and renders nothing,
+    // which would show a baby who slept all day as one who never slept.
+    const path = ringArcPath(centre, 50, 0, 1)
+    expect(path.match(/A/g)).toHaveLength(2)
+  })
+
+  it('draws nothing for an empty or inverted span', () => {
+    expect(ringArcPath(centre, 50, 0.5, 0.5)).toBe('')
+    expect(ringArcPath(centre, 50, 0.6, 0.4)).toBe('')
   })
 })

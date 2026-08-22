@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ExportBundle, ImportResult, NewEvent } from '@/data/repository'
 import { findLastFeed } from '@/domain/feeds'
 import { classifySleep, findSleepInProgress, type NightWindow } from '@/domain/sleep'
+import { cleanTogetherIds, logTargets } from '@/domain/together'
 import type {
   Baby,
   BabyEvent,
@@ -11,6 +12,14 @@ import type {
   Id,
   MeasureKind,
   SleepEvent,
+  ActivityKind,
+  Allergen,
+  FoodAcceptance,
+  PottyPlace,
+  PottyResult,
+  SymptomImpression,
+  TemperatureSite,
+  VisitQuestion,
   Timestamp,
 } from '@/domain/types'
 import { useRepository } from './repositoryContext'
@@ -45,6 +54,54 @@ export interface BabyStore {
     value: number
     startedAt: Timestamp
   }): Promise<void>
+  logPumping(input: {
+    leftMl: number
+    rightMl: number
+    durationMs: number
+    startedAt: Timestamp
+  }): Promise<void>
+  logTemperature(input: {
+    celsiusHundredths: number
+    site: TemperatureSite
+    startedAt: Timestamp
+  }): Promise<void>
+  logMedication(input: {
+    name: string
+    dose: string
+    startedAt: Timestamp
+  }): Promise<void>
+  logFood(input: {
+    name: string
+    acceptance: FoodAcceptance
+    allergens: Allergen[]
+    reaction: boolean
+    note: string
+    startedAt: Timestamp
+  }): Promise<void>
+  logActivity(input: {
+    kind: ActivityKind
+    durationMs: number
+    startedAt: Timestamp
+  }): Promise<void>
+  logPotty(input: {
+    result: PottyResult
+    place: PottyPlace
+    startedAt: Timestamp
+  }): Promise<void>
+  logSymptom(input: {
+    name: string
+    impression: SymptomImpression
+    note: string
+    startedAt: Timestamp
+  }): Promise<void>
+  /** A visit may be in the future: that is where the questions list earns its keep. */
+  logVisit(input: {
+    reason: string
+    who: string
+    note: string
+    questions: VisitQuestion[]
+    startedAt: Timestamp
+  }): Promise<void>
   startSleep(startedAt: Timestamp): Promise<void>
   endSleep(id: Id, endedAt: Timestamp): Promise<void>
   /** Re-logs the last feed as-is — the "one tap repeats" shortcut. */
@@ -59,6 +116,10 @@ export interface BabyStore {
   reload(): Promise<void>
 }
 
+/** One stable empty array, so a baby with nothing loaded yet does not invalidate
+ *  every memo downstream on each render. */
+const NO_EVENTS: BabyEvent[] = []
+
 function messageFor(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong'
 }
@@ -72,15 +133,33 @@ function messageFor(error: unknown): string {
  * actually saved — the property that matters most in an app whose whole promise
  * is that your data is safe on your own device.
  */
+/**
+ * @param togetherIds Babies logged together — twins mode. Every point-in-time
+ *   event written for the active baby is written for the others too. Empty is off,
+ *   which is the ordinary single-baby path unchanged.
+ */
 export function useBabyStore(
   activeBabyId: Id | null,
   nightWindow: NightWindow,
+  togetherIds: readonly Id[] = [],
 ): BabyStore {
   const repository = useRepository()
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [babies, setBabies] = useState<Baby[]>([])
-  const [events, setEvents] = useState<BabyEvent[]>([])
+  /**
+   * The loaded events, tagged with whose they are.
+   *
+   * Switching baby changes `activeBabyId` synchronously but the read from storage
+   * resolves a tick later, so a plain `events` array would spend that tick showing
+   * one baby's entries under another baby's name. Tagging them means the wrong
+   * baby's data is never rendered at all — an empty timeline for a few
+   * milliseconds is honest, and showing someone else's feeds is not.
+   */
+  const [loaded, setLoaded] = useState<{ babyId: Id | null; events: BabyEvent[] }>({
+    babyId: null,
+    events: [],
+  })
 
   const activeBaby = useMemo(() => {
     if (babies.length === 0) return null
@@ -88,6 +167,10 @@ export function useBabyStore(
   }, [babies, activeBabyId])
 
   const activeId = activeBaby?.id ?? null
+  // Recomputed from the loaded babies so a group naming a deleted baby is pruned
+  // before anything is written for an id that no longer exists.
+  const babyIds = useMemo(() => babies.map((baby) => baby.id), [babies])
+  const events = loaded.babyId === activeId ? loaded.events : NO_EVENTS
 
   const reload = useCallback(async () => {
     try {
@@ -96,10 +179,13 @@ export function useBabyStore(
 
       const target =
         loadedBabies.find((baby) => baby.id === activeBabyId) ?? loadedBabies[0] ?? null
-      // v0.1 reads the full history: a year of dense logging is a few thousand
-      // small records, which IndexedDB returns in single-digit milliseconds. The
+      // The full history is read: a year of dense logging is a few thousand small
+      // records, which IndexedDB returns in single-digit milliseconds. The
       // [babyId, startedAt] index is already in place for when windowing pays off.
-      setEvents(target === null ? [] : await repository.listEvents(target.id))
+      setLoaded({
+        babyId: target?.id ?? null,
+        events: target === null ? [] : await repository.listEvents(target.id),
+      })
 
       setStatus('ready')
       setError(null)
@@ -128,12 +214,30 @@ export function useBabyStore(
     [reload],
   )
 
+  /**
+   * Writes one event for every baby it belongs to.
+   *
+   * One baby normally; both twins when the group is on. Written sequentially with
+   * the baby on screen first, and *not* wrapped in a transaction: if the second
+   * write fails, the first is still a true record of something that happened, and
+   * rolling it back would discard a real event to preserve a symmetry nobody asked
+   * for. The error surfaces either way.
+   */
   const addEvent = useCallback(
     async (event: NewEvent) => {
-      if (activeId === null) throw new Error('No baby selected')
-      await mutate(() => repository.addEvent(activeId, event))
+      const targets = logTargets(
+        activeId,
+        cleanTogetherIds(togetherIds, babyIds),
+        event.type,
+      )
+      if (targets.length === 0) throw new Error('No baby selected')
+      await mutate(async () => {
+        for (const babyId of targets) {
+          await repository.addEvent(babyId, event)
+        }
+      })
     },
-    [activeId, mutate, repository],
+    [activeId, babyIds, togetherIds, mutate, repository],
   )
 
   const sleepInProgress = useMemo(() => findSleepInProgress(events), [events])
@@ -161,6 +265,30 @@ export function useBabyStore(
     logDiaper: ({ kind, startedAt }) => addEvent({ type: 'diaper', kind, startedAt }),
     logGrowth: ({ measure, value, startedAt }) =>
       addEvent({ type: 'growth', measure, value, startedAt }),
+    logPumping: ({ leftMl, rightMl, durationMs, startedAt }) =>
+      addEvent({ type: 'pumping', leftMl, rightMl, durationMs, startedAt }),
+    logTemperature: ({ celsiusHundredths, site, startedAt }) =>
+      addEvent({ type: 'temperature', celsiusHundredths, site, startedAt }),
+    logMedication: ({ name, dose, startedAt }) =>
+      addEvent({ type: 'medication', name, dose, startedAt }),
+    logFood: ({ name, acceptance, allergens, reaction, note, startedAt }) =>
+      addEvent({
+        type: 'food',
+        name,
+        acceptance,
+        allergens,
+        reaction,
+        note,
+        startedAt,
+      }),
+    logActivity: ({ kind, durationMs, startedAt }) =>
+      addEvent({ type: 'activity', kind, durationMs, startedAt }),
+    logPotty: ({ result, place, startedAt }) =>
+      addEvent({ type: 'potty', result, place, startedAt }),
+    logSymptom: ({ name, impression, note, startedAt }) =>
+      addEvent({ type: 'symptom', name, impression, note, startedAt }),
+    logVisit: ({ reason, who, note, questions, startedAt }) =>
+      addEvent({ type: 'visit', reason, who, note, questions, startedAt }),
 
     startSleep: async (startedAt) => {
       // Only ever one sleep runs at a time; the button that calls this is hidden

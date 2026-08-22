@@ -74,6 +74,33 @@ export function splitDuration(ms: number): DurationParts {
   }
 }
 
+/**
+ * A long span at the granularity a person would actually say it in.
+ *
+ * `splitDuration` is built for feeds and naps and tops out at hours, which is
+ * right there and absurd elsewhere: six months of freezer life came out as
+ * "4319h 59m". Anything past a couple of days wants days, weeks or months.
+ *
+ * Rounds to the nearest unit rather than flooring. At this granularity the figure
+ * is an approximation by construction, and "4 days" beats "3 days" for something
+ * four hours short of four days.
+ */
+export type CoarseSpan = {
+  unit: 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
+  count: number
+}
+
+export function describeSpan(ms: number): CoarseSpan {
+  const safe = Math.max(0, ms)
+  if (safe < HOUR_MS) return { unit: 'minutes', count: Math.round(safe / MINUTE_MS) }
+  if (safe < 2 * DAY_MS) return { unit: 'hours', count: Math.round(safe / HOUR_MS) }
+  if (safe < 14 * DAY_MS) return { unit: 'days', count: Math.round(safe / DAY_MS) }
+  if (safe < 70 * DAY_MS) return { unit: 'weeks', count: Math.round(safe / (7 * DAY_MS)) }
+  // 30.4375 days is the average Gregorian month, the same figure the growth code
+  // uses, so "6 months" of freezer life comes out as six and not five.
+  return { unit: 'months', count: Math.round(safe / (30.4375 * DAY_MS)) }
+}
+
 /** `00:42` / `1:07:03` — a monospace-friendly form for live timers. */
 export function formatStopwatch(ms: number): string {
   const safe = Math.max(0, ms)
@@ -98,6 +125,18 @@ export function overlapMs(
   windowEnd: Timestamp,
 ): number {
   return Math.max(0, Math.min(end, windowEnd) - Math.max(start, windowStart))
+}
+
+/**
+ * Local midnight on the birth date, or null if there is no usable date.
+ *
+ * Exported because birth measurements are stored as ordinary growth events dated
+ * at birth — which needs a timestamp — rather than as extra fields on the baby.
+ * That way the birth weight lands on the chart, feeds the gain-per-week maths and
+ * exports to CSV with no special case anywhere.
+ */
+export function birthTimestamp(birthDate: string | null): Timestamp | null {
+  return parseBirthDate(birthDate)?.getTime() ?? null
 }
 
 /** Parses a `YYYY-MM-DD` birth date into local midnight, or null if invalid. */

@@ -14,6 +14,11 @@ to sign up to, because there is no server.
   <img src="docs/screenshots/home-night.png" alt="The same screen in night mode: the identical layout in warm amber on a deep brown-black ground, with no blue light." width="30%">
   <img src="docs/screenshots/growth.png" alt="The growth screen: a large serif 5.6 kg, a ledger reading 77th percentile for age, and a chart plotting the measurement against the WHO 3rd, 50th and 97th percentile curves." width="30%">
 </p>
+<p align="center">
+  <img src="docs/screenshots/patterns.png" alt="The patterns screen: a 24-hour clock face with midnight at the top, sleep drawn as an arc on the rim and feeds and diapers as tick marks, the day's total sleep set in the middle of the ring, and a seven-day bar chart of nights and naps below it." width="30%">
+  <img src="docs/screenshots/handover.png" alt="The handover screen: a Right Now ledger giving the times of the last sleep, feed and diaper change, the totals for the chosen window below it, and the whole thing rendered as a plain-text message ready to copy." width="30%">
+  <img src="docs/screenshots/illness.png" alt="The symptom diary: a Cough episode headed by the parent's own word for how bad it seemed, dated entries beneath it, and an upcoming doctor visit with its questions as a tick list." width="30%">
+</p>
 
 ---
 
@@ -60,9 +65,44 @@ This is an early release, deliberately small, and genuinely usable right now:
   circumference, in metric or imperial, plotted against the World Health
   Organization's own reference curves. Gain per week between weigh-ins. This is
   the feature most trackers put behind a subscription; here it is just part of the
-  app.
+  app. Birth measurements plot as the first point, so "back to birth weight yet?"
+  has an answer.
+- **Temperature and medication** — readings compared against the figure health
+  services publish rather than diagnosed, and a dose log that answers "when did we
+  last give this?"
+- **Pumping and a milk stash** — per-side output with a session clock, plus fridge
+  and freezer stock listed in the order to use it, each container measured against
+  its own storage guideline.
+- **Sleep patterns, free** — the next nap predicted from this baby's own wake
+  windows (with the spread it is honest about, and no prediction at all from too
+  few data points), a 24-hour day wheel, a week of nights and naps stacked, the
+  trend against last week, and cluster feeding named when it happens. All of it
+  computed on the device. This is the $69-a-year feature.
+- **A symptom diary and doctor visits** — entries group into episodes, so the
+  answer to "when did this start?" is "cough, four days, worse yesterday" instead
+  of twelve scattered lines. Appointments can be dated in the future with the
+  questions you thought of at 3am, ticked off in the room, and printed with the
+  last two weeks of symptoms. It records; it does not assess.
+- **Solids and the nine major allergens** — log what you offered and how it went,
+  and see at a glance which of the nine have been introduced. You tag what a food
+  contains; the app never guesses from the name, because no food database could know
+  what is in the biscuit in your cupboard. It says "no reaction noted", never
+  "tolerated".
+- **Activities and the potty** — tummy time counted against a goal you set
+  yourself, plus baths, walks, play and reading; then successes, accidents and the
+  best clean run once potty training starts. A record, not a scoreboard.
+- **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
+  and when they last ate, slept and were changed, then copy it as a plain-text
+  message or print it for a nursery. Copying puts text on your clipboard; nothing
+  is sent anywhere.
+- **More than one baby** — switch from the app bar; each one's log, growth and
+  reminders are entirely their own. **Twins mode** makes one tap log a feed or a
+  diaper for both. Weights, temperatures, symptoms, medicine, pumping and sleep are
+  never copied: those belong to one child.
 - **Reminders** — next feed, diaper, pumping or anything you name, snoozeable, and
-  counted from your own log rather than from when the reminder last went off.
+  counted from your own log rather than from when the reminder last went off. On
+  Android they are handed to the OS, so a closed app still wakes you — with no
+  server anywhere, because the alarm is held by your phone.
 - **Your language** — every string is translatable, with plurals, locale-aware
   clocks and numbers, and a language picker.
 - **Your data is yours** — full JSON backup, CSV export for the paediatrician,
@@ -72,9 +112,21 @@ See the [roadmap](docs/ROADMAP.md) for what is coming and how to help.
 
 ## Try it
 
-**On your phone (recommended):** open the app, then use *Add to Home Screen*
-(Share menu in Safari, or the install prompt in Chrome). It then behaves like any
-other app, works offline, and never asks you to sign in.
+**On Android (recommended):** install the app. Every push builds a debug APK —
+grab `baby-tracker-debug-apk` from the latest
+[Actions run](https://github.com/beingmechon/baby-tracker/actions). Reminders are
+handed to Android there, so they arrive whether the app is open, in the background,
+or closed. F-Droid is the intended home; metadata is already in the repo.
+
+**Anywhere else:** open the app and use *Add to Home Screen* (Share menu in Safari,
+or the install prompt in Chrome). It behaves like any other app, works offline, and
+never asks you to sign in. The one thing a browser cannot do is wake a fully closed
+app when a reminder falls due — the reminders screen says so plainly rather than
+pretending otherwise.
+
+There is no iOS build, deliberately: it would need a Mac and a paid Apple account
+every year, which is not a thing an open-source app should require. See
+[docs/ANDROID.md](docs/ANDROID.md) for the reasoning and the build instructions.
 
 **Run it locally:**
 
@@ -121,6 +173,7 @@ are "this wording confused me at 3am" and "this button is hard to hit one-handed
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the code is organised and why
 - [docs/DESIGN.md](docs/DESIGN.md) — the design contract; read it before changing the UI
 - [docs/ROADMAP.md](docs/ROADMAP.md) — the full feature plan, version by version
+- [docs/ANDROID.md](docs/ANDROID.md) — the Android shell: why it exists, how to build it
 - Good first issues are labelled [`good first issue`](https://github.com/beingmechon/baby-tracker/labels/good%20first%20issue)
 
 Translations, country-specific vaccination schedules and accessibility fixes are
@@ -148,14 +201,17 @@ whose AI-tell catalog ports rules from
 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) — the composition came
 from its seeded dealer rather than from anyone's taste, the colour ramps are
 generated OKLCH with WCAG contrast solved by construction (16/16 pairs pass), and
-the result is checked by its deterministic AI-tell detector: **0 findings across 13
+the result is checked by its deterministic AI-tell detector: **0 findings across 31
 screens and 16 rules**, down from 13.
 
 ## Tech
 
-React + TypeScript + Vite, as an offline-first PWA. No UI framework, and two
-runtime dependencies (React and React DOM). About 300 KB precached in total,
-fonts included — downloaded once, then it runs offline forever.
+React + TypeScript + Vite, as an offline-first PWA, plus a Capacitor shell for the
+Android build. No UI framework. Three runtime dependencies: React, React DOM, and
+`@capacitor/core` — and the Capacitor half never reaches a browser. It sits behind a
+dynamic import in its own chunk, excluded from the service-worker precache, and CI
+asserts that against the real build output on every push. About 470 KB precached in
+total, fonts included — downloaded once, then it runs offline forever.
 
 ```
 src/domain/   Pure logic: units, time, sleep classification, summaries. No I/O.
@@ -163,18 +219,21 @@ src/data/     Storage behind one Repository interface (IndexedDB today).
 src/app/      React state: settings, theme, the nursing timer, the store.
 src/ui/       Components.
 src/styles/   Tokens, base, components, and the two self-hosted fonts.
+android/      The Capacitor shell. Generated, committed, and about 1 MB of config.
 ```
 
-The domain and data layers are deliberately free of React, so a native shell or a
-sync server can reuse them unchanged. 156 unit tests cover the logic, plus a
-browser smoke test that verifies the app still works with the network off — and
-that its numerals are genuinely tabular, so a running timer cannot jitter.
+The domain and data layers are deliberately free of React, which is what let the
+Android shell reuse them unchanged — and is what a sync server would reuse too. 443
+unit tests cover the logic, plus 132 browser checks that verify the app still works
+with the network off, that a printed page drops its chrome and prints black on
+white, and that its numerals are genuinely tabular so a running timer cannot jitter.
 
 ```bash
 npm test          # unit tests
 npm run check     # lint, typecheck, tests and a production build
 npm run smoke     # end-to-end run in a real browser (needs a built app)
 npm run fonts     # re-vendor the woff2 files from node_modules
+npm run android:apk   # build a debug APK (needs a JDK and the Android SDK)
 ```
 
 ## License

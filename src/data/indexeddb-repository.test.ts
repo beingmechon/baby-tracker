@@ -477,6 +477,125 @@ describe('reminders', () => {
   })
 })
 
+describe('the milk stash', () => {
+  it('stores an entry and reads it back oldest first', async () => {
+    const baby = await seedBaby()
+    await repo.addStash(baby.id, {
+      amountMl: 120,
+      location: 'fridge',
+      expressedAt: clock,
+    })
+    await repo.addStash(baby.id, {
+      amountMl: 200,
+      location: 'freezer',
+      expressedAt: clock - HOUR_MS,
+    })
+
+    const entries = await repo.listStash(baby.id)
+    expect(entries.map((entry) => entry.amountMl)).toEqual([200, 120])
+  })
+
+  it('refuses an entry with no milk in it', async () => {
+    const baby = await seedBaby()
+    await expect(
+      repo.addStash(baby.id, { amountMl: 0, location: 'fridge', expressedAt: clock }),
+    ).rejects.toThrow(/needs an amount/)
+  })
+
+  it('scopes the stash to one baby', async () => {
+    const mira = await seedBaby('Mira')
+    const arun = await seedBaby('Arun')
+    await repo.addStash(mira.id, {
+      amountMl: 120,
+      location: 'fridge',
+      expressedAt: clock,
+    })
+    await expect(repo.listStash(arun.id)).resolves.toEqual([])
+  })
+
+  it('updates the amount left without touching identity', async () => {
+    const baby = await seedBaby()
+    const entry = await repo.addStash(baby.id, {
+      amountMl: 120,
+      location: 'fridge',
+      expressedAt: clock,
+    })
+    clock += MINUTE_MS
+    const updated = await repo.updateStash(entry.id, { amountMl: 80 })
+    expect(updated).toMatchObject({
+      id: entry.id,
+      babyId: baby.id,
+      amountMl: 80,
+      expressedAt: entry.expressedAt,
+      createdAt: entry.createdAt,
+      updatedAt: clock,
+    })
+  })
+
+  it('cascades a delete to that baby’s stash', async () => {
+    const baby = await seedBaby()
+    await repo.addStash(baby.id, {
+      amountMl: 120,
+      location: 'fridge',
+      expressedAt: clock,
+    })
+    await repo.deleteBaby(baby.id)
+    await expect(repo.listStash(baby.id)).resolves.toEqual([])
+  })
+
+  it('round-trips through an export, keeping when it was expressed', async () => {
+    const baby = await seedBaby()
+    const expressedAt = clock - 6 * HOUR_MS
+    await repo.addStash(baby.id, { amountMl: 150, location: 'freezer', expressedAt })
+    const bundle = await repo.exportAll()
+
+    const fresh = new IndexedDbRepository({
+      databaseName: `test-db-${counter}-stash`,
+      now: () => clock,
+    })
+    try {
+      const result = await fresh.importBundle(bundle)
+      expect(result.stashImported).toBe(1)
+      // The age is computed from this, so a lost expressedAt would silently
+      // re-date every bag to the moment of the import.
+      expect((await fresh.listStash(baby.id))[0]).toMatchObject({
+        amountMl: 150,
+        location: 'freezer',
+        expressedAt,
+      })
+    } finally {
+      await fresh.close()
+    }
+  })
+
+  it('drops an entry with no time of expression', async () => {
+    const baby = await seedBaby()
+    const bundle = await repo.exportAll()
+    const tampered = {
+      ...bundle,
+      stash: [
+        { id: 's1', babyId: baby.id, amountMl: 100, location: 'fridge' },
+        { id: 's2', babyId: baby.id, amountMl: 100, location: 'sock drawer', expressedAt: clock },
+      ],
+    }
+
+    const fresh = new IndexedDbRepository({
+      databaseName: `test-db-${counter}-badstash`,
+      now: () => clock,
+    })
+    try {
+      const result = await fresh.importBundle(tampered)
+      expect(result.stashImported).toBe(0)
+      expect(result.skipped).toContainEqual({
+        reason: 'malformed or orphaned stash entries',
+        count: 2,
+      })
+    } finally {
+      await fresh.close()
+    }
+  })
+})
+
 describe('schema migration', () => {
   /**
    * Builds a genuine version-1 database: the schema as v0.1 shipped it.
@@ -509,6 +628,7 @@ describe('schema migration', () => {
     const name = `test-db-${counter}-migrate`
     const v1 = await openLegacyDatabase(name)
     expect([...v1.objectStoreNames]).not.toContain('reminders')
+    expect([...v1.objectStoreNames]).not.toContain('stash')
 
     const tx = v1.transaction(STORE_BABIES, 'readwrite')
     tx.objectStore(STORE_BABIES).put({
@@ -528,7 +648,7 @@ describe('schema migration', () => {
       // A row written before the sex field existed reads back as "not recorded".
       expect(babies[0]?.sex).toBeNull()
 
-      // And the new store works, rather than merely existing.
+      // And the new stores work, rather than merely existing.
       const reminder = await migrated.addReminder('existing', {
         kind: 'feed',
         label: '',
@@ -536,6 +656,13 @@ describe('schema migration', () => {
         enabled: true,
       })
       await expect(migrated.listReminders('existing')).resolves.toEqual([reminder])
+
+      const entry = await migrated.addStash('existing', {
+        amountMl: 120,
+        location: 'fridge',
+        expressedAt: clock,
+      })
+      await expect(migrated.listStash('existing')).resolves.toEqual([entry])
     } finally {
       await migrated.close()
     }
@@ -543,7 +670,7 @@ describe('schema migration', () => {
 })
 
 describe('clearAll', () => {
-  it('removes every baby, event and reminder', async () => {
+  it('removes every baby, event, reminder and stash entry', async () => {
     const baby = await seedBaby()
     await repo.addEvent(baby.id, { type: 'diaper', kind: 'wet', startedAt: clock })
     await repo.addReminder(baby.id, {
@@ -551,6 +678,11 @@ describe('clearAll', () => {
       label: '',
       intervalMs: 3 * HOUR_MS,
       enabled: true,
+    })
+    await repo.addStash(baby.id, {
+      amountMl: 120,
+      location: 'fridge',
+      expressedAt: clock,
     })
 
     await repo.clearAll()
@@ -560,5 +692,6 @@ describe('clearAll', () => {
     // The privacy promise is "delete everything", so a forgotten store here would
     // leave a reminder behind after the user asked for a wipe.
     await expect(repo.listReminders(baby.id)).resolves.toHaveLength(0)
+    await expect(repo.listStash(baby.id)).resolves.toHaveLength(0)
   })
 })

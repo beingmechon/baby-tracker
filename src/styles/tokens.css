@@ -60,6 +60,15 @@
   --diaper-tint: var(--yellow-11);
   --sleep-tint: var(--neutral-11);
   --growth-tint: var(--accent-11);
+  --pumping-tint: var(--orange-11);
+  --health-tint: var(--neutral-11);
+  /* Solids get the yellow rather than the feed orange: once weaning starts,
+     "did she eat?" and "did she drink?" are different questions. */
+  --food-tint: var(--yellow-11);
+  /* Activities and the potty share the neutral: they are things that happened,
+     not readings, and two more hues would make the timeline a paint chart. */
+  --activity-tint: var(--neutral-11);
+  --potty-tint: var(--yellow-11);
 
   /* Depth. Hue-shifted warm-dark, never a black overlay (ch09). */
   --shadow-sheet: 0 -2px 24px rgb(48 45 42 / 22%);

@@ -7,14 +7,32 @@ import type {
   VolumeUnit,
 } from '@/domain/types'
 import {
+  activityName,
   formatDuration,
   formatMeasure,
+  formatTemperature,
   formatVolume,
+  foodAcceptanceName,
   measureName,
+  pottyPlaceName,
+  pottyResultName,
+  symptomImpressionName,
+  temperatureSiteName,
 } from '@/i18n/format'
 import type { MessageKey, Translator } from '@/i18n/locales'
 
-export type Category = 'feed' | 'sleep' | 'diaper' | 'growth'
+export type Category =
+  | 'feed'
+  | 'sleep'
+  | 'diaper'
+  | 'growth'
+  | 'pumping'
+  | 'health'
+  // Solids get their own tint rather than sharing the milk one: "did she eat?" and
+  // "did she drink?" are different questions once weaning starts.
+  | 'food'
+  | 'activity'
+  | 'potty'
 
 export interface EventDescription {
   category: Category
@@ -95,6 +113,98 @@ export function describeEvent(
         category: 'diaper',
         title: t.t(DIAPER_TITLES[event.kind]),
         detail: '',
+        live: false,
+      }
+
+    case 'pumping': {
+      const total = event.leftMl + event.rightMl
+      const split =
+        event.leftMl > 0 && event.rightMl > 0
+          ? t.t('pumping.bothSides', {
+              left: formatVolume(t, event.leftMl, volumeUnit),
+              right: formatVolume(t, event.rightMl, volumeUnit),
+            })
+          : t.t(event.leftMl > 0 ? 'pumping.leftOnly' : 'pumping.rightOnly')
+      return {
+        category: 'pumping',
+        title: t.t('event.pumping'),
+        detail: `${formatVolume(t, total, volumeUnit)} · ${split}`,
+        live: false,
+      }
+    }
+
+    case 'temperature':
+      return {
+        category: 'health',
+        title: t.t('event.temperature'),
+        detail: `${formatTemperature(t, event.celsiusHundredths, measureSystem)} · ${temperatureSiteName(t, event.site)}`,
+        live: false,
+      }
+
+    case 'medication':
+      return {
+        category: 'health',
+        title: event.name,
+        detail: event.dose,
+        live: false,
+      }
+
+    case 'symptom':
+      return {
+        category: 'health',
+        title: event.name,
+        detail: symptomImpressionName(t, event.impression),
+        live: false,
+      }
+
+    case 'food':
+      return {
+        category: 'food',
+        title: event.name,
+        detail: [
+          foodAcceptanceName(t, event.acceptance),
+          event.reaction ? t.t('food.reactionShort') : '',
+        ]
+          .filter((part) => part !== '')
+          .join(' · '),
+        live: false,
+      }
+
+    case 'activity':
+      return {
+        category: 'activity',
+        title: activityName(t, event.kind),
+        detail: event.durationMs > 0 ? formatDuration(t, event.durationMs) : '',
+        live: false,
+      }
+
+    case 'potty':
+      return {
+        category: 'potty',
+        title: pottyResultName(t, event.result),
+        // The place is omitted for an accident: "Accident · on the potty" reads as
+        // a contradiction, and where they were sitting is not the point.
+        detail: event.result === 'accident' ? '' : pottyPlaceName(t, event.place),
+        live: false,
+      }
+
+    case 'visit':
+      return {
+        category: 'health',
+        title: event.reason,
+        // The clinic if it was named, otherwise how far through the questions the
+        // parent got — the two things worth seeing without opening the entry.
+        detail:
+          event.who !== ''
+            ? event.who
+            : event.questions.length === 0
+              ? ''
+              : t.t('visit.questionsProgress', {
+                  asked: t.number(
+                    event.questions.filter((question) => question.asked).length,
+                  ),
+                  total: t.number(event.questions.length),
+                }),
         live: false,
       }
 

@@ -59,6 +59,38 @@ export function DiaperIcon({ size = 22, className }: IconProps) {
   )
 }
 
+/** A clock face with one filled quadrant: the day, round the ring. */
+export function WheelIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" strokeWidth="3" />
+      <path d="M12 8v4l2.5 2" />
+    </svg>
+  )
+}
+
+/** A thermometer: the health screen covers temperature and medicine. */
+export function HealthIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M13.5 13.6V5a1.75 1.75 0 0 0-3.5 0v8.6a3.5 3.5 0 1 0 3.5 0Z" />
+      <path d="M16.5 7.5h3M16.5 10.5h2" />
+    </svg>
+  )
+}
+
+/** A bottle under a funnel: expressing into a container, not a machine. */
+export function PumpIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M7 3.5h10l-3 5h-4Z" />
+      <path d="M12 8.5v2.5" />
+      <path d="M8.5 11h7a1.5 1.5 0 0 1 1.5 1.5v6A2 2 0 0 1 15 20.5H9a2 2 0 0 1-2-2v-6A1.5 1.5 0 0 1 8.5 11Z" />
+    </svg>
+  )
+}
+
 export function BellIcon({ size = 22, className }: IconProps) {
   return (
     <svg {...svgProps(size)} className={className}>
@@ -143,6 +175,69 @@ export function ShieldIcon({ size = 20, className }: IconProps) {
   return (
     <svg {...svgProps(size)} className={className}>
       <path d="M12 2.5 20 5.5v6c0 5-3.4 8.9-8 10.5-4.6-1.6-8-5.5-8-10.5v-6Z" />
+    </svg>
+  )
+}
+
+export function CopyIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+    </svg>
+  )
+}
+
+export function PrintIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M7 9V3.5h10V9" />
+      <path d="M7 17H4.5V9h15v8H17" />
+      <rect x="7" y="14" width="10" height="6.5" rx="1" />
+    </svg>
+  )
+}
+
+export function HandoverIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M3 13.5c1.8-1.4 3.4-1.4 5 0l2.5 2.2" />
+      <path d="M21 13.5c-1.8-1.4-3.4-1.4-5 0l-2.5 2.2" />
+      <path d="M12 4.5v5" />
+      <path d="M9.5 7 12 4.5 14.5 7" />
+    </svg>
+  )
+}
+
+export function DiaryIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6 3.5h12a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6Z" />
+      <path d="M6 3.5A1.5 1.5 0 0 0 4.5 5v14A1.5 1.5 0 0 0 6 20.5" />
+      <path d="M9 8.5h7" />
+      <path d="M9 12h7" />
+      <path d="M9 15.5h4" />
+    </svg>
+  )
+}
+
+export function FoodIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M6 3.5v7a2.5 2.5 0 0 0 5 0v-7" />
+      <path d="M8.5 13v7.5" />
+      <path d="M17.5 3.5c2 1.6 2.6 4.2 1.6 6.4-.6 1.3-1.6 2-1.6 2v8.6" />
+    </svg>
+  )
+}
+
+export function ActivityIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <circle cx="12" cy="6" r="2.5" />
+      <path d="M12 8.5v6" />
+      <path d="M7.5 11h9" />
+      <path d="M9.5 20.5 12 14.5l2.5 6" />
     </svg>
   )
 }

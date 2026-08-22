@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launch screen.
+
+  Capacitor scaffolds eleven density-specific PNGs of its own logo on white. Both
+  halves of that are wrong here: the logo is the framework's, and a white flash is
+  the last thing an app built to be opened at 3am next to a sleeping baby should
+  show. This is the app's own navy with the crescent over it.
+
+  One XML drawable rather than eleven bitmaps, so it scales to any density and there
+  is nothing to keep in step. The colour is the same navy as the web manifest's
+  theme_color, which is what makes the launch and the first paint continuous.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launchBackground" />
+    <item
+        android:drawable="@mipmap/ic_launcher_foreground"
+        android:gravity="center" />
+</layer-list>

@@ -138,6 +138,102 @@ describe('parseEvent', () => {
     })
   })
 
+  describe('symptom', () => {
+    it('accepts a named symptom with an impression', () => {
+      expect(
+        parseEvent({
+          ...validBase,
+          type: 'symptom',
+          name: 'Cough',
+          impression: 'moderate',
+        }),
+      ).toMatchObject({ type: 'symptom', name: 'Cough', impression: 'moderate' })
+    })
+
+    it('rejects an unnamed symptom, which is not an observation', () => {
+      expect(
+        parseEvent({ ...validBase, type: 'symptom', impression: 'mild' }),
+      ).toBeNull()
+    })
+
+    it('rejects an impression it does not know how to name', () => {
+      expect(
+        parseEvent({
+          ...validBase,
+          type: 'symptom',
+          name: 'Cough',
+          impression: 'catastrophic',
+        }),
+      ).toBeNull()
+    })
+  })
+
+  describe('visit', () => {
+    it('accepts a visit with its questions', () => {
+      expect(
+        parseEvent({
+          ...validBase,
+          type: 'visit',
+          reason: '8-week check',
+          who: 'Dr Rao',
+          questions: [{ text: 'Vitamin D?', asked: true }],
+        }),
+      ).toMatchObject({
+        type: 'visit',
+        reason: '8-week check',
+        who: 'Dr Rao',
+        questions: [{ text: 'Vitamin D?', asked: true }],
+      })
+    })
+
+    it('rejects a visit with no reason', () => {
+      expect(parseEvent({ ...validBase, type: 'visit', who: 'Dr Rao' })).toBeNull()
+    })
+
+    it('treats a missing questions list as no questions', () => {
+      expect(
+        parseEvent({ ...validBase, type: 'visit', reason: 'Check' }),
+      ).toMatchObject({ questions: [] })
+      expect(
+        parseEvent({ ...validBase, type: 'visit', reason: 'Check', questions: 'no' }),
+      ).toMatchObject({ questions: [] })
+    })
+
+    it('drops a malformed question rather than the whole visit', () => {
+      const parsed = parseEvent({
+        ...validBase,
+        type: 'visit',
+        reason: 'Check',
+        questions: [{ text: 'Real one' }, { asked: true }, 'not an object', null],
+      })
+      expect(parsed).toMatchObject({ questions: [{ text: 'Real one', asked: false }] })
+    })
+
+    it('caps the questions list from a hand-edited file', () => {
+      // An unbounded array from an untrusted file is an unbounded render.
+      const parsed = parseEvent({
+        ...validBase,
+        type: 'visit',
+        reason: 'Check',
+        questions: Array.from({ length: 500 }, (_, i) => ({ text: `q${i}` })),
+      })
+      expect(parsed as { questions: unknown[] }).toMatchObject({
+        questions: expect.any(Array),
+      })
+      expect((parsed as { questions: unknown[] }).questions.length).toBe(50)
+    })
+
+    it('accepts a visit in the future, which is the point of one', () => {
+      const parsed = parseEvent({
+        ...validBase,
+        startedAt: 4_000_000_000_000,
+        type: 'visit',
+        reason: 'Vaccinations',
+      })
+      expect(parsed).not.toBeNull()
+    })
+  })
+
   describe('growth', () => {
     it('accepts each measurement kind', () => {
       for (const measure of ['weight', 'length', 'head']) {

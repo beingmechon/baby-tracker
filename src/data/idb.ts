@@ -22,10 +22,11 @@ export function transactionDone(tx: IDBTransaction): Promise<void> {
 }
 
 export const DB_NAME = 'baby-tracker'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 export const STORE_BABIES = 'babies'
 export const STORE_EVENTS = 'events'
 export const STORE_REMINDERS = 'reminders'
+export const STORE_STASH = 'stash'
 
 /**
  * Opens the database, running migrations as needed.
@@ -56,6 +57,14 @@ export function openDatabase(name = DB_NAME, version = DB_VERSION): Promise<IDBD
         // whole set, so `babyId` is the only index worth carrying.
         const reminders = db.createObjectStore(STORE_REMINDERS, { keyPath: 'id' })
         reminders.createIndex('babyId', 'babyId')
+      }
+
+      if (oldVersion < 3) {
+        // The milk stash. Read whole and sorted in memory: a freezer holds tens of
+        // bags, not thousands, and the sort key is a computed urgency rather than
+        // a stored field an index could cover.
+        const stash = db.createObjectStore(STORE_STASH, { keyPath: 'id' })
+        stash.createIndex('babyId', 'babyId')
       }
     }
 

@@ -64,6 +64,14 @@ function growthColumns(event: GrowthEvent): [string, string, string, string] {
   return [round(event.value / 10, 1), 'cm', round(mmToInches(event.value), 2), 'in']
 }
 
+/**
+ * Joins the several free-text fields these events carry into the one note column,
+ * skipping the empty ones so a row never reads " — — ".
+ */
+function joinNotes(...parts: string[]): string {
+  return parts.filter((part) => part.trim() !== '').join(' — ')
+}
+
 function rowFor(event: BabyEvent, babyName: string): string[] {
   const base = [babyName, localDateKey(event.startedAt), formatClock24(event.startedAt)]
   const note = event.note ?? ''
@@ -115,6 +123,141 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         ...growthColumns(event),
         note,
       ]
+    case 'temperature':
+      return [
+        ...base,
+        'temperature',
+        event.site,
+        '',
+        '',
+        '',
+        round(event.celsiusHundredths / 100, 1),
+        'C',
+        round((event.celsiusHundredths / 100) * (9 / 5) + 32, 1),
+        'F',
+        note,
+      ]
+    case 'medication':
+      // The dose goes in `detail` because it is free text — millilitres, drops or
+      // a fraction of a tablet — and forcing it into a numeric column would
+      // invent a precision the app does not have.
+      return [
+        ...base,
+        'medication',
+        `${event.name}: ${event.dose}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'pumping': {
+      const total = event.leftMl + event.rightMl
+      // The total goes in the same amount columns as a bottle so a spreadsheet can
+      // sum feeds and output without special-casing; the split goes in `detail`.
+      return [
+        ...base,
+        'pumping',
+        `left ${round(event.leftMl, 0)} / right ${round(event.rightMl, 0)}`,
+        minutes(event.durationMs),
+        round(total, 0),
+        round(mlToOz(total), 1),
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    }
+    case 'symptom':
+      // The parent's own impression goes in `detail` alongside the symptom, next
+      // to it rather than in a column of its own: it is a word they chose, not a
+      // grade anything can be computed from.
+      return [
+        ...base,
+        'symptom',
+        `${event.name}: ${event.impression}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'food':
+      return [
+        ...base,
+        'food',
+        event.allergens.length === 0
+          ? `${event.name}: ${event.acceptance}`
+          : `${event.name}: ${event.acceptance} (${event.allergens.join(', ')})`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        // A reaction has to be legible in a spreadsheet a doctor might scan, so it
+        // is a word in the note rather than a flag in a column nobody reads.
+        joinNotes(event.reaction ? 'reaction noted' : '', note),
+      ]
+    case 'activity':
+      return [
+        ...base,
+        'activity',
+        event.kind,
+        event.durationMs > 0 ? minutes(event.durationMs) : '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'potty':
+      return [
+        ...base,
+        'potty',
+        `${event.result} (${event.place})`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'visit': {
+      const asked = event.questions.filter((question) => question.asked).length
+      return [
+        ...base,
+        'visit',
+        event.who === '' ? event.reason : `${event.reason} — ${event.who}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        joinNotes(
+          note,
+          event.questions.length === 0
+            ? ''
+            : `questions ${asked}/${event.questions.length}: ${event.questions
+                .map((question) => question.text)
+                .join('; ')}`,
+        ),
+      ]
+    }
   }
 }
 

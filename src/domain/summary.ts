@@ -23,12 +23,27 @@ export interface SleepSummary {
 
 export type DiaperSummary = Record<DiaperKind, number> & { total: number }
 
+export interface PumpingSummary {
+  sessions: number
+  /** Total expressed volume in canonical millilitres. */
+  ml: number
+}
+
+/**
+ * Medication and temperature are listed rather than counted.
+ *
+ * "2 doses" is the wrong thing to hand over at the door: the next caregiver needs
+ * to know *what* was given and *when*, so they do not give it again.
+ */
 export interface Summary {
   windowStart: Timestamp
   windowEnd: Timestamp
   feeds: FeedSummary
   sleep: SleepSummary
   diapers: DiaperSummary
+  pumping: PumpingSummary
+  medications: { name: string; dose: string; at: Timestamp }[]
+  temperatures: { celsiusHundredths: number; at: Timestamp }[]
 }
 
 /**
@@ -64,6 +79,9 @@ export function summarizeWindow(
     sessions: 0,
   }
   const diapers: DiaperSummary = { wet: 0, dirty: 0, mixed: 0, dry: 0, total: 0 }
+  const pumping: PumpingSummary = { sessions: 0, ml: 0 }
+  const medications: Summary['medications'] = []
+  const temperatures: Summary['temperatures'] = []
 
   for (const event of events) {
     if (event.type === 'sleep') {
@@ -95,10 +113,39 @@ export function summarizeWindow(
         diapers[event.kind] += 1
         diapers.total += 1
         break
+      case 'pumping':
+        pumping.sessions += 1
+        pumping.ml += event.leftMl + event.rightMl
+        break
+      case 'medication':
+        medications.push({
+          name: event.name,
+          dose: event.dose,
+          at: event.startedAt,
+        })
+        break
+      case 'temperature':
+        temperatures.push({
+          celsiusHundredths: event.celsiusHundredths,
+          at: event.startedAt,
+        })
+        break
     }
   }
 
-  return { windowStart, windowEnd, feeds, sleep, diapers }
+  medications.sort((a, b) => a.at - b.at)
+  temperatures.sort((a, b) => a.at - b.at)
+
+  return {
+    windowStart,
+    windowEnd,
+    feeds,
+    sleep,
+    diapers,
+    pumping,
+    medications,
+    temperatures,
+  }
 }
 
 /** Aggregates the local calendar day containing `dayAnchor`. */
