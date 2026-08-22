@@ -28,6 +28,8 @@ export type NewStashEntry = Pick<
   'amountMl' | 'location' | 'expressedAt'
 >
 
+export type NewPhoto = Pick<StoredPhoto, 'type' | 'data' | 'width' | 'height'>
+
 export interface EventQuery {
   /** Inclusive lower bound on `startedAt`. */
   since?: Timestamp
@@ -49,6 +51,41 @@ export interface ExportBundle {
    */
   reminders?: Reminder[]
   stash?: StashEntry[]
+  /**
+   * Photos, base64-encoded.
+   *
+   * Included so "export a complete backup" stays a true sentence — a backup that
+   * silently drops the first-smile photo is not a backup. The cost is size, which
+   * is why photos are downscaled before they are ever stored (see `ui/photo.ts`)
+   * and why the settings screen says the file will be larger once there are any.
+   */
+  photos?: StoredPhoto[]
+}
+
+/**
+ * A photo, in its own store rather than on the event that shows it.
+ *
+ * Every summary, timeline and chart reads whole event records; carrying a JPEG
+ * through each of those reads to display a date would be the worst decision in the
+ * data layer. The event holds an id and the bytes are fetched only when shown.
+ */
+export interface StoredPhoto {
+  id: Id
+  babyId: Id
+  /** `image/jpeg` after downscaling, whatever was picked. */
+  type: string
+  /**
+   * The image itself, base64 without a data-URL prefix.
+   *
+   * Stored as a string rather than a Blob: structured-clone support for Blobs in
+   * IndexedDB is real but uneven across the engines this app has to run in, and a
+   * photo that fails to round-trip on one browser is a keepsake lost. The size cost
+   * of base64 is a third, and downscaling already bounds it.
+   */
+  data: string
+  width: number
+  height: number
+  createdAt: Timestamp
 }
 
 export interface ImportResult {
@@ -56,6 +93,7 @@ export interface ImportResult {
   eventsImported: number
   remindersImported: number
   stashImported: number
+  photosImported: number
   /** Entries rejected by validation, with a reason, so nothing fails silently. */
   skipped: { reason: string; count: number }[]
 }
@@ -87,6 +125,11 @@ export interface Repository {
   addReminder(babyId: Id, reminder: NewReminder): Promise<Reminder>
   updateReminder(id: Id, patch: Partial<Reminder>): Promise<Reminder>
   deleteReminder(id: Id): Promise<void>
+
+  /** The bytes for one photo, or null once it has been deleted. */
+  getPhoto(id: Id): Promise<StoredPhoto | null>
+  addPhoto(babyId: Id, photo: NewPhoto): Promise<StoredPhoto>
+  deletePhoto(id: Id): Promise<void>
 
   listStash(babyId: Id): Promise<StashEntry[]>
   addStash(babyId: Id, entry: NewStashEntry): Promise<StashEntry>

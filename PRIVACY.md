@@ -75,6 +75,28 @@ file you can restore later or move to another device. It takes one tap.
 - **Delete all my data** — erases every baby and every entry from this device
   immediately. There is no copy anywhere else, so this cannot be undone.
 
+## Photos
+
+Photos attached to milestones are the most sensitive thing this app holds, and they
+are treated accordingly.
+
+- **They never leave the device.** Same as everything else here: there is no upload,
+  no service, and no code in the app that can reach the network.
+- **They are re-encoded before they are stored**, which strips every piece of camera
+  metadata in passing — including the GPS coordinates that phones write into
+  photographs by default. That is the point of the re-encode, not a side effect. A
+  geotagged picture of a child is not something worth keeping on the off-chance.
+- **They are resized**, to 1600 pixels on the longest edge. More than a phone screen
+  shows and enough to print a 6×4, and it keeps a few dozen keepsakes at megabytes
+  rather than gigabytes — which matters because a browser can evict a site's storage
+  when the device runs short.
+- **They are in your backup.** A backup that silently dropped the first-smile photo
+  would not be a backup. The cost is that the export file gets much larger once
+  there are photos in it, and the settings screen says so before you tap.
+- **"Delete all my data" deletes them.** There is a test for exactly that, because a
+  wipe that left a child's photographs behind would be the most serious broken
+  promise in the app.
+
 ## Sharing an export
 
 An export contains everything about your child. Once you share the file, this

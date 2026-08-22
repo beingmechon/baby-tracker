@@ -8,6 +8,7 @@ import {
   STORE_BABIES,
   STORE_EVENTS,
   STORE_REMINDERS,
+  STORE_PHOTOS,
   STORE_STASH,
   openDatabase,
   requestToPromise,
@@ -18,11 +19,19 @@ import type {
   ExportBundle,
   ImportResult,
   NewEvent,
+  NewPhoto,
   NewReminder,
   NewStashEntry,
   Repository,
+  StoredPhoto,
 } from './repository'
-import { parseBaby, parseEvent, parseReminder, parseStashEntry } from './validate'
+import {
+  parseBaby,
+  parseEvent,
+  parsePhoto,
+  parseReminder,
+  parseStashEntry,
+} from './validate'
 
 export interface RepositoryOptions {
   /** Injectable so tests can control time and ids. */
@@ -124,13 +133,18 @@ export class IndexedDbRepository implements Repository {
   async deleteBaby(id: Id): Promise<void> {
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH, STORE_PHOTOS],
       'readwrite',
     )
     tx.objectStore(STORE_BABIES).delete(id)
 
     // Cascade, so deleting a profile leaves no orphaned rows behind.
-    for (const storeName of [STORE_EVENTS, STORE_REMINDERS, STORE_STASH]) {
+    for (const storeName of [
+      STORE_EVENTS,
+      STORE_REMINDERS,
+      STORE_STASH,
+      STORE_PHOTOS,
+    ]) {
       const store = tx.objectStore(storeName)
       const keys = await requestToPromise<IDBValidKey[]>(
         store.index('babyId').getAllKeys(id),
@@ -319,12 +333,44 @@ export class IndexedDbRepository implements Repository {
     await transactionDone(tx)
   }
 
+  async getPhoto(id: Id): Promise<StoredPhoto | null> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_PHOTOS, 'readonly')
+    const photo = await requestToPromise<StoredPhoto | undefined>(
+      tx.objectStore(STORE_PHOTOS).get(id),
+    )
+    await transactionDone(tx)
+    return photo ?? null
+  }
+
+  async addPhoto(babyId: Id, photo: NewPhoto): Promise<StoredPhoto> {
+    const stored: StoredPhoto = {
+      ...photo,
+      id: this.generateId(),
+      babyId,
+      createdAt: this.now(),
+    }
+    const db = await this.db()
+    const tx = db.transaction(STORE_PHOTOS, 'readwrite')
+    tx.objectStore(STORE_PHOTOS).put(stored)
+    await transactionDone(tx)
+    return stored
+  }
+
+  async deletePhoto(id: Id): Promise<void> {
+    const db = await this.db()
+    const tx = db.transaction(STORE_PHOTOS, 'readwrite')
+    tx.objectStore(STORE_PHOTOS).delete(id)
+    await transactionDone(tx)
+  }
+
   async exportAll(): Promise<ExportBundle> {
-    const [babies, events, reminders, stash] = await Promise.all([
+    const [babies, events, reminders, stash, photos] = await Promise.all([
       this.readAll<Baby>(STORE_BABIES),
       this.readAll<BabyEvent>(STORE_EVENTS),
       this.readAll<Reminder>(STORE_REMINDERS),
       this.readAll<StashEntry>(STORE_STASH),
+      this.readAll<StoredPhoto>(STORE_PHOTOS),
     ])
     return {
       format: 'baby-tracker-export',
@@ -334,6 +380,7 @@ export class IndexedDbRepository implements Repository {
       events: events.sort((a, b) => a.startedAt - b.startedAt),
       reminders,
       stash,
+      photos,
     }
   }
 
@@ -357,6 +404,7 @@ export class IndexedDbRepository implements Repository {
     // import.
     const rawReminders = Array.isArray(candidate.reminders) ? candidate.reminders : []
     const rawStash = Array.isArray(candidate.stash) ? candidate.stash : []
+    const rawPhotos = Array.isArray(candidate.photos) ? candidate.photos : []
 
     const babies = rawBabies.map(parseBaby).filter((b): b is Baby => b !== null)
     const events = rawEvents.map(parseEvent).filter((e): e is BabyEvent => e !== null)
@@ -366,6 +414,9 @@ export class IndexedDbRepository implements Repository {
     const stash = rawStash
       .map(parseStashEntry)
       .filter((entry): entry is StashEntry => entry !== null)
+    const photos = rawPhotos
+      .map(parsePhoto)
+      .filter((photo): photo is StoredPhoto => photo !== null)
 
     // An event whose baby is in neither the file nor the store would be
     // invisible in the UI forever, so it is dropped rather than silently kept.
@@ -374,10 +425,11 @@ export class IndexedDbRepository implements Repository {
     const importable = events.filter((event) => existingIds.has(event.babyId))
     const importableReminders = reminders.filter((r) => existingIds.has(r.babyId))
     const importableStash = stash.filter((entry) => existingIds.has(entry.babyId))
+    const importablePhotos = photos.filter((photo) => existingIds.has(photo.babyId))
 
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH, STORE_PHOTOS],
       'readwrite',
     )
     const babyStore = tx.objectStore(STORE_BABIES)
@@ -390,6 +442,7 @@ export class IndexedDbRepository implements Repository {
     for (const event of importable) eventStore.put(event)
     for (const reminder of importableReminders) reminderStore.put(reminder)
     for (const entry of importableStash) stashStore.put(entry)
+    for (const photo of importablePhotos) tx.objectStore(STORE_PHOTOS).put(photo)
     await transactionDone(tx)
 
     const skipped: ImportResult['skipped'] = []
@@ -423,12 +476,19 @@ export class IndexedDbRepository implements Repository {
         count: rawStash.length - importableStash.length,
       })
     }
+    if (rawPhotos.length > importablePhotos.length) {
+      skipped.push({
+        reason: 'malformed or orphaned photos',
+        count: rawPhotos.length - importablePhotos.length,
+      })
+    }
 
     return {
       babiesImported: babies.length,
       eventsImported: importable.length,
       remindersImported: importableReminders.length,
       stashImported: importableStash.length,
+      photosImported: importablePhotos.length,
       skipped,
     }
   }
@@ -436,13 +496,16 @@ export class IndexedDbRepository implements Repository {
   async clearAll(): Promise<void> {
     const db = await this.db()
     const tx = db.transaction(
-      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH],
+      [STORE_BABIES, STORE_EVENTS, STORE_REMINDERS, STORE_STASH, STORE_PHOTOS],
       'readwrite',
     )
     tx.objectStore(STORE_BABIES).clear()
     tx.objectStore(STORE_EVENTS).clear()
     tx.objectStore(STORE_REMINDERS).clear()
     tx.objectStore(STORE_STASH).clear()
+    // Photos too. "Delete everything" that leaves a child's photographs on the
+    // device would be the most serious broken promise in the app.
+    tx.objectStore(STORE_PHOTOS).clear()
     await transactionDone(tx)
   }
 }

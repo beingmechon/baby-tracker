@@ -91,6 +91,11 @@ This is an early release, deliberately small, and genuinely usable right now:
 - **Activities and the potty** — tummy time counted against a goal you set
   yourself, plus baths, walks, play and reading; then successes, accidents and the
   best clean run once potty training starts. A record, not a scoreboard.
+- **Milestones and a photo journal** — first smile, first tooth, first steps, with a
+  photo each. No ages are attached to any of it, because the moment an app says
+  "first steps — 12 months" it has started telling you whether your baby is late.
+  Photos are resized and stripped of camera metadata — including the GPS coordinates
+  phones write into photographs — on your device, before they are stored.
 - **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
   and when they last ate, slept and were changed, then copy it as a plain-text
   message or print it for a nursery. Copying puts text on your clipboard; nothing

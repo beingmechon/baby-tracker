@@ -400,6 +400,10 @@
   color: var(--potty-tint);
 }
 
+.timeline-mark[data-category='milestone'] {
+  color: var(--milestone-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -1718,6 +1722,92 @@
 .question-row input {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* ── Milestones and photos ───────────────────────────────────────────────── */
+
+/*
+ * A photo grid, square-cropped.
+ *
+ * Squares rather than the photos' own proportions: a mixed grid of portrait and
+ * landscape keepsakes reads as a jumble, and `object-fit: cover` on a square is what
+ * every photo app does because it is what works. Tapping opens nothing yet — this is
+ * a wall to look at, not a gallery to navigate.
+ */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.photo-tile {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--surface-active);
+}
+
+/* A tile whose bytes are still being read keeps its square so the grid does not
+   jump as photos arrive one at a time. */
+.photo-tile[data-loading='true'] {
+  background: var(--surface-active);
+}
+
+.photo-preview {
+  display: block;
+  width: 100%;
+  max-height: 14rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+  background: var(--surface-active);
+}
+
+.milestones {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-6);
+}
+
+.milestone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.milestone:last-child {
+  border-bottom: none;
+}
+
+/* The row thumbnail is small and fixed, so a row is a line of text with a picture
+   beside it rather than a card. */
+.milestone .photo-tile {
+  flex: 0 0 auto;
+  width: 3rem;
+}
+
+.milestone-body {
+  min-width: 0;
+}
+
+.milestone-name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--text-1);
+  font-weight: 600;
+}
+
+.milestone-when {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text--1);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Activities ──────────────────────────────────────────────────────────── */

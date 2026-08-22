@@ -1131,6 +1131,92 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Milestones and the photo journal')
+  await page.getByRole('button', { name: 'Milestones' }).first().click()
+  await page.getByRole('button', { name: 'Add a milestone' }).waitFor()
+  check(
+    'the list starts empty and says what it is for',
+    await page.getByText(/back of a baby book/).isVisible(),
+  )
+  check(
+    'and says plainly it is not a developmental checklist',
+    /not a developmental checklist/.test(await page.locator('.page').innerText()),
+  )
+  check(
+    'no suggestion carries an age, which would tell a parent their baby is late',
+    await page.evaluate(() => !/\d+\s*(month|week|year)/i.test(document.body.innerText)),
+  )
+
+  await page.getByRole('button', { name: 'Add a milestone' }).click()
+  check(
+    'common milestones are offered as one-tap chips',
+    await sheet.getByRole('button', { name: 'First smile' }).isVisible(),
+  )
+  check(
+    'and the privacy of a photo is stated before one is chosen',
+    /GPS coordinates/.test(await sheet.innerText()),
+  )
+  await sheet.getByRole('button', { name: 'First smile' }).click()
+
+  // A real image through the real path: decoded, downscaled, re-encoded, stored.
+  // The app's own 192px icon is a genuine PNG that ships in the repo.
+  await sheet.locator('input[type="file"]').setInputFiles('public/icons/icon-192.png')
+  await sheet.locator('.photo-preview').waitFor()
+  check('a picked photo previews before saving', true)
+  const previewSrc = await sheet.locator('.photo-preview').getAttribute('src')
+  check(
+    're-encoded as JPEG, which is what strips the camera metadata',
+    (previewSrc ?? '').startsWith('data:image/jpeg;base64,'),
+  )
+
+  await sheet.getByRole('button', { name: 'Save milestone' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator('.milestone').first().waitFor()
+  check(
+    'the milestone is recorded with its date and the age it happened at',
+    /First smile/.test(await page.locator('.milestone').first().innerText()),
+  )
+  await page.locator('.photo-grid img.photo-tile').first().waitFor()
+  check(
+    'and the photo appears in the journal, loaded from the photo store',
+    await page.evaluate(() => {
+      const tile = document.querySelector('.photo-grid .photo-tile')
+      return tile instanceof HTMLImageElement && tile.naturalWidth > 0
+    }),
+  )
+  check(
+    'a recorded milestone stops being offered as a suggestion',
+    await page.evaluate(async () => {
+      document.querySelectorAll('button').forEach((button) => {
+        if (button.textContent === 'Add a milestone') button.click()
+      })
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const chips = [...document.querySelectorAll('.tag')].map((c) => c.textContent)
+      const close = [...document.querySelectorAll('button')].find((b) =>
+        /Close/.test(b.textContent ?? ''),
+      )
+      close?.click()
+      return !chips.includes('First smile')
+    }),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'milestones.png'), fullPage: true })
+
+  // The photo has to survive a restart, and it has to be in the backup.
+  await page.reload()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+  await page.getByRole('button', { name: 'Milestones' }).first().click()
+  await page.locator('.photo-grid img.photo-tile').first().waitFor()
+  check(
+    'the photo is still there after a restart',
+    await page.evaluate(() => {
+      const tile = document.querySelector('.photo-grid .photo-tile')
+      return tile instanceof HTMLImageElement && tile.naturalWidth > 0
+    }),
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Activities and potty')
   await page.getByRole('button', { name: 'Settings' }).click()
   await page.getByLabel('Daily tummy-time goal (minutes)').fill('30')

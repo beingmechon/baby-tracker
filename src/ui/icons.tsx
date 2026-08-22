@@ -241,3 +241,11 @@ export function ActivityIcon({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function StarIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.9-5.2 2.9 1-5.9-4.3-4.1 5.9-.8Z" />
+    </svg>
+  )
+}

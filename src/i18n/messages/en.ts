@@ -233,6 +233,39 @@ export const en = {
   'patterns.note':
     'Everything here is worked out from this baby’s own log, on this device. No averages from other babies, and nothing sent anywhere.',
 
+  // Milestones and the photo journal
+  'milestone.title': 'Milestones',
+  'milestone.log': 'Add a milestone',
+  'milestone.empty': 'Nothing recorded yet.',
+  'milestone.emptyHint':
+    'The page in the back of a baby book: first smile, first tooth, first steps. No ages attached to any of them.',
+  'milestone.name': 'What happened?',
+  'milestone.namePlaceholder': 'e.g. first smile',
+  'milestone.suggestions': 'Common ones',
+  'milestone.photo': 'A photo',
+  'milestone.addPhoto': 'Choose a photo',
+  'milestone.changePhoto': 'Choose a different photo',
+  'milestone.removePhoto': 'Remove the photo',
+  'milestone.photoNote':
+    'Resized on this device and stripped of camera data — including the GPS coordinates phones write into photographs. It never leaves the device, and it is included in your backup.',
+  'milestone.photoPending': 'Preparing the photo…',
+  'milestone.photoFailed': 'That file could not be read as an image.',
+  'milestone.save': 'Save milestone',
+  'milestone.at': 'at {age}',
+  'milestone.journal': 'The photo journal',
+  'milestone.journalEmpty': 'No photos yet.',
+  'milestone.count.one': '{count} milestone',
+  'milestone.count.other': '{count} milestones',
+  'milestone.storage': '{count} photos, about {size}',
+  'milestone.note':
+    'A keepsake list, not a developmental checklist. Whether anything is early or late is a question for your doctor, and this app deliberately does not attach ages to any of it.',
+  'event.milestone': 'Milestone',
+  'section.milestone': 'Milestones',
+  'toast.milestoneSaved': 'Milestone saved',
+  'settings.photoStorage': 'Photos',
+  'settings.photoStorageNote':
+    'Photos are in your backup, which makes the file much bigger. Each one is resized before it is stored, so a few dozen is megabytes rather than gigabytes.',
+
   // Activities and potty training
   'activity.title': 'Activities',
   'activity.log': 'Log an activity',

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ExportBundle, ImportResult, NewEvent } from '@/data/repository'
+import type {
+  ExportBundle,
+  ImportResult,
+  NewEvent,
+  NewPhoto,
+  StoredPhoto,
+} from '@/data/repository'
 import { findLastFeed } from '@/domain/feeds'
 import { classifySleep, findSleepInProgress, type NightWindow } from '@/domain/sleep'
 import { cleanTogetherIds, logTargets } from '@/domain/together'
@@ -88,6 +94,15 @@ export interface BabyStore {
     place: PottyPlace
     startedAt: Timestamp
   }): Promise<void>
+  logMilestone(input: {
+    name: string
+    photoId: Id | null
+    note: string
+    startedAt: Timestamp
+  }): Promise<void>
+  /** Stores a prepared photo and returns its id, for a milestone to point at. */
+  savePhoto(photo: NewPhoto): Promise<Id>
+  readPhoto(id: Id): Promise<StoredPhoto | null>
   logSymptom(input: {
     name: string
     impression: SymptomImpression
@@ -240,6 +255,19 @@ export function useBabyStore(
     [activeId, babyIds, togetherIds, mutate, repository],
   )
 
+  /**
+   * Stable across renders, unlike the store object itself.
+   *
+   * `store` below is a fresh literal every render, so a `useEffect` in a photo tile
+   * keyed on it — or on a method plucked off it — re-runs on every render and reads
+   * the photo out of IndexedDB again. With a grid of a dozen keepsakes that is a
+   * dozen reads per render, each one setting state and causing another render.
+   */
+  const readPhoto = useCallback(
+    (id: Id) => repository.getPhoto(id),
+    [repository],
+  )
+
   const sleepInProgress = useMemo(() => findSleepInProgress(events), [events])
 
   const store: BabyStore = {
@@ -285,6 +313,17 @@ export function useBabyStore(
       addEvent({ type: 'activity', kind, durationMs, startedAt }),
     logPotty: ({ result, place, startedAt }) =>
       addEvent({ type: 'potty', result, place, startedAt }),
+    logMilestone: ({ name, photoId, note, startedAt }) =>
+      addEvent({ type: 'milestone', name, photoId, note, startedAt }),
+    savePhoto: async (photo) => {
+      if (activeId === null) throw new Error('No baby selected')
+      // Not routed through `mutate`: writing a photo changes no event, so
+      // reloading the whole log here would be work for nothing. The milestone
+      // that follows it does the reload.
+      const stored = await repository.addPhoto(activeId, photo)
+      return stored.id
+    },
+    readPhoto,
     logSymptom: ({ name, impression, note, startedAt }) =>
       addEvent({ type: 'symptom', name, impression, note, startedAt }),
     logVisit: ({ reason, who, note, questions, startedAt }) =>

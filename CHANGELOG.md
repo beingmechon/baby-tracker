@@ -6,6 +6,43 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — milestones and a photo journal
+
+- **Milestones with a photo each** — first smile, first tooth, first steps — offered
+  as one-tap suggestions that drop off the list once recorded.
+- **No ages are attached to any of it, deliberately.** The moment an app says "first
+  steps — 12 months" it has started telling a parent whether their child is late.
+  The screen says it is a keepsake list and not a developmental checklist, and there
+  is a test asserting no suggestion contains a number or the word month.
+- **A photo journal**: the milestone photos as a wall of squares.
+- **Photos are resized and re-encoded on the device before they are stored**, to 1600
+  pixels on the longest edge. That bounds three things at once — a browser's storage
+  quota, the size of the JSON backup, and the memory needed to render a grid — and
+  the re-encode strips every piece of camera metadata in passing, **including the GPS
+  coordinates phones write into photographs by default**. That is the point of it,
+  not a side effect: a geotagged picture of a child is not worth keeping on the
+  off-chance the file gets shared. The sheet says so before a photo is chosen.
+- **Photos live in their own IndexedDB store** (schema v4), not on the event that
+  shows them. Every summary, timeline and chart reads whole event records; carrying a
+  JPEG through each of those reads to display a date would be the worst decision
+  available in the data layer. The event holds an id and the bytes are fetched only
+  when a tile is on screen.
+- **They are in the backup, and "delete all my data" deletes them.** Both have tests,
+  because a backup that silently dropped the first-smile photo would not be a backup,
+  and a wipe that left a child's photographs behind would be the most serious broken
+  promise in the app. `PRIVACY.md` has a section on photos.
+- Import refuses a photo over 3 MB of base64, or one claiming to be an SVG — which is
+  a document that can carry script, not a photograph.
+
+### Fixed
+
+- **A photo tile re-read its bytes out of IndexedDB on every render.** The effect
+  depended on the store object, which is a fresh literal each render, so a grid of a
+  dozen keepsakes issued a dozen reads per render and each read set state and caused
+  another. The reader is now stable across renders and the tiles depend on that.
+  Found while diagnosing what looked like a persistence failure and was not.
+
+
 ### Added
 
 - **A thirty-day view on the daily-sleep chart**, toggled from the section rule. A

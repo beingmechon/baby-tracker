@@ -22,11 +22,12 @@ export function transactionDone(tx: IDBTransaction): Promise<void> {
 }
 
 export const DB_NAME = 'baby-tracker'
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 export const STORE_BABIES = 'babies'
 export const STORE_EVENTS = 'events'
 export const STORE_REMINDERS = 'reminders'
 export const STORE_STASH = 'stash'
+export const STORE_PHOTOS = 'photos'
 
 /**
  * Opens the database, running migrations as needed.
@@ -65,6 +66,16 @@ export function openDatabase(name = DB_NAME, version = DB_VERSION): Promise<IDBD
         // a stored field an index could cover.
         const stash = db.createObjectStore(STORE_STASH, { keyPath: 'id' })
         stash.createIndex('babyId', 'babyId')
+      }
+
+      if (oldVersion < 4) {
+        // Photos, for milestones and the journal. A store of their own rather than
+        // blobs on the event rows: every summary, timeline and chart reads whole
+        // event records, and carrying a megabyte of JPEG through each of those
+        // reads to display a date would be the single worst decision in the data
+        // layer. The event holds an id; the bytes are fetched only when shown.
+        const photos = db.createObjectStore(STORE_PHOTOS, { keyPath: 'id' })
+        photos.createIndex('babyId', 'babyId')
       }
     }
 

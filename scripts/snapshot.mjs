@@ -169,6 +169,20 @@ try {
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
+  // A milestone with a photo, so the journal has a tile to audit.
+  await page.getByRole('button', { name: 'Milestones' }).first().click()
+  await page.getByRole('button', { name: 'Add a milestone' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'First smile' }).click()
+  await page
+    .locator('.sheet')
+    .locator('input[type="file"]')
+    .setInputFiles('public/icons/icon-192.png')
+  await page.locator('.sheet .photo-preview').waitFor()
+  await page.locator('.sheet').getByRole('button', { name: 'Save milestone' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   // An activity and a potty trip, so that screen has totals rather than empties.
   await page.getByRole('button', { name: 'Activities and potty' }).first().click()
   await page.getByRole('button', { name: 'Log an activity' }).click()
@@ -256,6 +270,12 @@ try {
     await page.getByRole('button', { name: 'The day, round the clock' }).click()
     await page.locator('.wheel').waitFor()
     writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Milestones' }).first().click()
+    await page.locator('.milestone').first().waitFor()
+    writeFileSync(join(OUT, `milestones-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

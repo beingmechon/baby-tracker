@@ -28,6 +28,7 @@ export type EventType =
   | 'food'
   | 'activity'
   | 'potty'
+  | 'milestone'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -262,6 +263,22 @@ export interface PottyEvent extends EventBase {
   place: PottyPlace
 }
 
+/**
+ * A first — smile, tooth, step — with an optional photograph.
+ *
+ * Free text, and deliberately not a developmental checklist. The CDC publishes one
+ * and it is worth having, but a paraphrased milestone list shown to a parent who is
+ * already worried is worse than no list at all: see docs/ROADMAP.md. What this is
+ * instead is the page in the back of a baby book, which is what most parents
+ * actually want and nobody has to be qualified to write.
+ */
+export interface MilestoneEvent extends EventBase {
+  type: 'milestone'
+  name: string
+  /** A row in the photos store, or null. The bytes never live on the event. */
+  photoId: Id | null
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
@@ -276,6 +293,7 @@ export type BabyEvent =
   | FoodEvent
   | ActivityEvent
   | PottyEvent
+  | MilestoneEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -324,6 +342,10 @@ export function isActivity(event: BabyEvent): event is ActivityEvent {
 
 export function isPotty(event: BabyEvent): event is PottyEvent {
   return event.type === 'potty'
+}
+
+export function isMilestone(event: BabyEvent): event is MilestoneEvent {
+  return event.type === 'milestone'
 }
 
 /** Total output of a pumping session. */

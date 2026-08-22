@@ -505,6 +505,10 @@ export function SettingsScreen({
             <p className="field-note">
               <ShieldIcon size={16} /> {t.t('settings.dataNote')}
             </p>
+            {/* Said before the export button, because a parent who has attached
+                photographs is about to download a much larger file than they
+                expect and should know why. */}
+            <p className="field-note">{t.t('settings.photoStorageNote')}</p>
             <div className="button-row">
               <button
                 type="button"

@@ -33,6 +33,7 @@ export type Category =
   | 'food'
   | 'activity'
   | 'potty'
+  | 'milestone'
 
 export interface EventDescription {
   category: Category
@@ -185,6 +186,14 @@ export function describeEvent(
         // The place is omitted for an accident: "Accident · on the potty" reads as
         // a contradiction, and where they were sitting is not the point.
         detail: event.result === 'accident' ? '' : pottyPlaceName(t, event.place),
+        live: false,
+      }
+
+    case 'milestone':
+      return {
+        category: 'milestone',
+        title: event.name,
+        detail: '',
         live: false,
       }
 

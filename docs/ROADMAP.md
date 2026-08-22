@@ -110,12 +110,13 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 - [x] Activities: tummy time with a daily goal you set yourself, bath, walks,
       playtime, reading
 - [ ] User-defined activity types
-- [ ] Milestones: a keepsake list (first smile, first tooth, first steps) with a
-      photo each
+- [x] Milestones: a keepsake list (first smile, first tooth, first steps) with a
+      photo each, and deliberately no ages attached to any of them
 - [ ] The CDC "Learn the Signs" checklist by age — **needs sourcing.** Developmental
       milestones shown to a worried parent have to be transcribed exactly or not at
       all, same rule as the WHO growth tables
-- [ ] Photo journal / timeline
+- [x] Photo journal — the milestone photos as a wall. Stored in their own
+      IndexedDB store, downscaled and stripped of camera metadata on the device
 - [ ] Voice logging: "log 120ml bottle". **Blocked, and worth saying why.** The
       Web Speech API in Chrome sends audio to Google's servers to be transcribed,
       which is precisely what this app promises not to do. It arrives when browsers

@@ -13,6 +13,7 @@ import type {
   DoctorVisitEvent,
   FoodAcceptance,
   FoodEvent,
+  MilestoneEvent,
   PottyEvent,
   PottyPlace,
   PottyResult,
@@ -275,6 +276,23 @@ export function potty(
     startedAt,
     result,
     place,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function milestone(
+  startedAt: Timestamp,
+  name: string,
+  photoId: string | null = null,
+): MilestoneEvent {
+  return {
+    id: nextId('milestone'),
+    babyId: BABY_ID,
+    type: 'milestone',
+    startedAt,
+    name,
+    photoId,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

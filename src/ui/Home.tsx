@@ -18,6 +18,7 @@ import { useNow } from '@/app/useNow'
 import { findLastFeed, findLastNursingSide, suggestNextSide } from '@/domain/feeds'
 import { MEASURE_KINDS, latestMeasurements } from '@/domain/growth'
 import { nextVisit } from '@/domain/illness'
+import { latestMilestone } from '@/domain/milestones'
 import { cleanTogetherIds, logTargets } from '@/domain/together'
 import { predictNextNap } from '@/domain/patterns'
 import { SNOOZE_MS } from '@/domain/reminders'
@@ -37,6 +38,7 @@ import {
   formatAge,
   formatDuration,
   formatMeasure,
+  formatShortDate,
   formatSpan,
   formatVolume,
   measureName,
@@ -66,6 +68,7 @@ import {
   SettingsIcon,
   SleepIcon,
   ActivityIcon,
+  StarIcon,
   DiaryIcon,
   FoodIcon,
   HandoverIcon,
@@ -84,6 +87,7 @@ interface HomeProps {
   onOpenIllness: () => void
   onOpenFood: () => void
   onOpenActivity: () => void
+  onOpenMilestones: () => void
   onOpenPatterns: () => void
   onOpenHandover: () => void
   onSwitchBaby: (babyId: string) => void
@@ -111,6 +115,7 @@ export function Home({
   onOpenIllness,
   onOpenFood,
   onOpenActivity,
+  onOpenMilestones,
   onOpenPatterns,
   onOpenHandover,
   onSwitchBaby,
@@ -172,6 +177,7 @@ export function Home({
   )
 
   const appointment = useMemo(() => nextVisit(events, now), [events, now])
+  const lastMilestone = useMemo(() => latestMilestone(events, now), [events, now])
 
   // The other babies a feed or a diaper will also be written for, by name.
   const alsoLoggingFor = useMemo(() => {
@@ -604,6 +610,17 @@ export function Home({
             <ActivityIcon size={16} />
             <span>{t.t('section.activity')}</span>
           </button>
+          <button type="button" className="action-repeat" onClick={onOpenMilestones}>
+            <StarIcon size={16} />
+            <span>{t.t('section.milestone')}</span>
+          </button>
+          {lastMilestone !== null && (
+            <p className="field-note">
+              {lastMilestone.name}
+              {' · '}
+              {formatShortDate(t.locale, lastMilestone.startedAt)}
+            </p>
+          )}
         </section>
 
         <section className="section" aria-label={t.t('section.health')}>

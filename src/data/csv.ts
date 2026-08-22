@@ -235,6 +235,21 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         '',
         note,
       ]
+    case 'milestone':
+      return [
+        ...base,
+        'milestone',
+        event.name,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        // Says a photo exists without trying to put one in a spreadsheet cell.
+        joinNotes(event.photoId === null ? '' : 'has a photo', note),
+      ]
     case 'visit': {
       const asked = event.questions.filter((question) => question.asked).length
       return [

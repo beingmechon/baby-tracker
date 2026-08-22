@@ -669,6 +669,76 @@ describe('schema migration', () => {
   })
 })
 
+describe('photos', () => {
+  const PHOTO = { type: 'image/jpeg', data: 'AAAAAAAA', width: 800, height: 600 }
+
+  it('round-trips a photo and hands back an id to point at', async () => {
+    const baby = await seedBaby()
+    const stored = await repo.addPhoto(baby.id, PHOTO)
+
+    expect(stored).toMatchObject({ babyId: baby.id, ...PHOTO })
+    await expect(repo.getPhoto(stored.id)).resolves.toMatchObject({ data: 'AAAAAAAA' })
+  })
+
+  it('is null for a photo that was deleted, rather than throwing', async () => {
+    const baby = await seedBaby()
+    const stored = await repo.addPhoto(baby.id, PHOTO)
+    await repo.deletePhoto(stored.id)
+    await expect(repo.getPhoto(stored.id)).resolves.toBeNull()
+  })
+
+  it('cascades a delete to that baby’s photos', async () => {
+    const baby = await seedBaby()
+    const other = await seedBaby('Twin')
+    const mine = await repo.addPhoto(baby.id, PHOTO)
+    const theirs = await repo.addPhoto(other.id, PHOTO)
+
+    await repo.deleteBaby(baby.id)
+
+    await expect(repo.getPhoto(mine.id)).resolves.toBeNull()
+    // The sibling's keepsakes are untouched.
+    await expect(repo.getPhoto(theirs.id)).resolves.not.toBeNull()
+  })
+
+  it('carries photos through an export and back', async () => {
+    // A backup that silently drops the first-smile photo is not a backup.
+    const baby = await seedBaby()
+    const stored = await repo.addPhoto(baby.id, PHOTO)
+
+    const bundle = await repo.exportAll()
+    expect(bundle.photos).toHaveLength(1)
+
+    await repo.clearAll()
+    const result = await repo.importBundle(bundle)
+
+    expect(result.photosImported).toBe(1)
+    await expect(repo.getPhoto(stored.id)).resolves.toMatchObject({ data: 'AAAAAAAA' })
+  })
+
+  it('refuses a photo whose baby is not in the file or the store', async () => {
+    const baby = await seedBaby()
+    const bundle = await repo.exportAll()
+    const result = await repo.importBundle({
+      ...bundle,
+      babies: [],
+      photos: [
+        {
+          id: 'p1',
+          babyId: 'nobody',
+          type: 'image/jpeg',
+          data: 'AAAA',
+          width: 10,
+          height: 10,
+          createdAt: clock,
+        },
+      ],
+    })
+    expect(result.photosImported).toBe(0)
+    expect(result.skipped.some((s) => /photos/.test(s.reason))).toBe(true)
+    expect(baby.id).toBeTruthy()
+  })
+})
+
 describe('clearAll', () => {
   it('removes every baby, event, reminder and stash entry', async () => {
     const baby = await seedBaby()
@@ -693,5 +763,21 @@ describe('clearAll', () => {
     // leave a reminder behind after the user asked for a wipe.
     await expect(repo.listReminders(baby.id)).resolves.toHaveLength(0)
     await expect(repo.listStash(baby.id)).resolves.toHaveLength(0)
+  })
+
+  it('removes the photos too', async () => {
+    // "Delete everything" that leaves a child's photographs on the device would be
+    // the most serious broken promise in the app.
+    const baby = await seedBaby()
+    const photo = await repo.addPhoto(baby.id, {
+      type: 'image/jpeg',
+      data: 'AAAA',
+      width: 10,
+      height: 10,
+    })
+
+    await repo.clearAll()
+
+    await expect(repo.getPhoto(photo.id)).resolves.toBeNull()
   })
 })

@@ -9,6 +9,7 @@ import {
   type StashEntry,
   type StashLocation,
 } from '@/domain/stash'
+import type { StoredPhoto } from './repository'
 import type {
   Baby,
   BabyEvent,
@@ -250,6 +251,16 @@ export function parseEvent(value: unknown): BabyEvent | null {
       if (result === null) return null
       return { ...base, type: 'potty', result, place: place ?? 'potty' }
     }
+    case 'milestone': {
+      const name = str(value.name)
+      if (name === null) return null
+      return {
+        ...base,
+        type: 'milestone',
+        name,
+        photoId: str(value.photoId),
+      }
+    }
     case 'visit': {
       const reason = str(value.reason)
       if (reason === null) return null
@@ -342,5 +353,45 @@ export function parseStashEntry(value: unknown): StashEntry | null {
     expressedAt,
     createdAt,
     updatedAt: nonNegative(value.updatedAt) ?? createdAt,
+  }
+}
+
+/**
+ * A photo from an export file.
+ *
+ * The size cap matters as much as the shape check. A hand-edited or hostile file
+ * could carry a hundred-megabyte string per record; base64 of a downscaled JPEG is
+ * a few hundred kilobytes, so anything past a couple of megabytes is not a photo
+ * this app produced and is refused rather than written to a phone's storage quota.
+ *
+ * The data is not decoded or validated as an image. Nothing here executes it, it is
+ * only ever handed to an `<img>` as a data URL, and a corrupt one shows a broken
+ * image rather than doing harm.
+ */
+const MAX_PHOTO_BASE64 = 3_000_000
+
+export function parsePhoto(value: unknown): StoredPhoto | null {
+  if (!isObject(value)) return null
+  const id = str(value.id)
+  const babyId = str(value.babyId)
+  const data = str(value.data)
+  const width = nonNegative(value.width)
+  const height = nonNegative(value.height)
+  const createdAt = nonNegative(value.createdAt)
+  if (id === null || babyId === null || data === null) return null
+  if (width === null || height === null) return null
+  if (data.length > MAX_PHOTO_BASE64) return null
+  // Only the image types the picker can produce, so a file cannot smuggle in an
+  // SVG — which is a document that can carry script, not a photograph.
+  const type = str(value.type) ?? 'image/jpeg'
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(type)) return null
+  return {
+    id,
+    babyId,
+    type,
+    data,
+    width,
+    height,
+    createdAt: createdAt ?? 0,
   }
 }

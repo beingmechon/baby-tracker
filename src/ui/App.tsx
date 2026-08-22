@@ -20,6 +20,7 @@ import { reminderName } from '@/i18n/format'
 import { GrowthScreen } from './GrowthScreen'
 import { ActivityScreen } from './ActivityScreen'
 import { FoodScreen } from './FoodScreen'
+import { MilestonesScreen } from './MilestonesScreen'
 import { HealthScreen } from './HealthScreen'
 import { IllnessScreen } from './IllnessScreen'
 import { HandoverScreen } from './HandoverScreen'
@@ -88,6 +89,7 @@ function AppContent({
     | 'illness'
     | 'food'
     | 'activity'
+    | 'milestones'
     | 'settings'
   >('home')
   const prefersDark = usePrefersDark()
@@ -265,6 +267,14 @@ function AppContent({
     )
   }
 
+  if (screen === 'milestones') {
+    return (
+      <div className="app">
+        <MilestonesScreen store={store} onBack={() => setScreen('home')} />
+      </div>
+    )
+  }
+
   if (screen === 'activity') {
     return (
       <div className="app">
@@ -349,6 +359,7 @@ function AppContent({
         onOpenIllness={() => setScreen('illness')}
         onOpenFood={() => setScreen('food')}
         onOpenActivity={() => setScreen('activity')}
+        onOpenMilestones={() => setScreen('milestones')}
         onSwitchBaby={(babyId) => updateSettings({ activeBabyId: babyId })}
       />
     </div>

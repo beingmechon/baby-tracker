@@ -225,6 +225,39 @@ export const es: Messages = {
     'Todo lo de aquí se calcula con el propio registro de este bebé, en este dispositivo. Sin medias de otros bebés y sin enviar nada a ningún sitio.',
 
   'health.title': 'Salud',
+  // Milestones and the photo journal
+  'milestone.title': 'Hitos',
+  'milestone.log': 'Añadir un hito',
+  'milestone.empty': 'Aún no hay nada registrado.',
+  'milestone.emptyHint':
+    'La página del final del álbum del bebé: primera sonrisa, primer diente, primeros pasos. Sin edades asociadas a ninguno.',
+  'milestone.name': '¿Qué ha pasado?',
+  'milestone.namePlaceholder': 'p. ej. primera sonrisa',
+  'milestone.suggestions': 'Los habituales',
+  'milestone.photo': 'Una foto',
+  'milestone.addPhoto': 'Elegir una foto',
+  'milestone.changePhoto': 'Elegir otra foto',
+  'milestone.removePhoto': 'Quitar la foto',
+  'milestone.photoNote':
+    'Se redimensiona en este dispositivo y se le quitan los datos de la cámara, incluidas las coordenadas GPS que los móviles escriben en las fotos. Nunca sale del dispositivo y se incluye en tu copia de seguridad.',
+  'milestone.photoPending': 'Preparando la foto…',
+  'milestone.photoFailed': 'Ese archivo no se pudo leer como imagen.',
+  'milestone.save': 'Guardar hito',
+  'milestone.at': 'a los {age}',
+  'milestone.journal': 'El diario de fotos',
+  'milestone.journalEmpty': 'Aún no hay fotos.',
+  'milestone.count.one': '{count} hito',
+  'milestone.count.other': '{count} hitos',
+  'milestone.storage': '{count} fotos, unos {size}',
+  'milestone.note':
+    'Una lista de recuerdos, no una lista de control del desarrollo. Si algo va adelantado o con retraso es una pregunta para tu médico, y esta aplicación no asocia edades a nada de esto a propósito.',
+  'event.milestone': 'Hito',
+  'section.milestone': 'Hitos',
+  'toast.milestoneSaved': 'Hito guardado',
+  'settings.photoStorage': 'Fotos',
+  'settings.photoStorageNote':
+    'Las fotos están en tu copia de seguridad, lo que hace el archivo mucho más grande. Cada una se redimensiona antes de guardarse, así que unas docenas son megabytes y no gigabytes.',
+
   // Activities and potty training
   'activity.title': 'Actividades',
   'activity.log': 'Registrar una actividad',
