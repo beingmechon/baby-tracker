@@ -392,6 +392,14 @@
   color: var(--food-tint);
 }
 
+.timeline-mark[data-category='activity'] {
+  color: var(--activity-tint);
+}
+
+.timeline-mark[data-category='potty'] {
+  color: var(--potty-tint);
+}
+
 .timeline-body {
   min-width: 0;
 }
@@ -1681,6 +1689,29 @@
 .question-row input {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* ── Activities ──────────────────────────────────────────────────────────── */
+
+/* Tummy time leads its section, as the measurement does on Growth. */
+.activity-headline {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-4);
+  font-weight: 600;
+  line-height: var(--leading-display);
+  letter-spacing: -0.01em;
+}
+
+/*
+ * Whether the goal was met takes the accent on the words and nothing else. A green
+ * tick and a red cross would make a parent's day into a pass or a fail, which is
+ * not what a tummy-time counter is for.
+ */
+.activity-goal {
+  margin-top: var(--space-2);
+  font-size: var(--text-0);
+  color: var(--text-secondary);
 }
 
 /* ── Solids and allergens ────────────────────────────────────────────────── */

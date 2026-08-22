@@ -7,12 +7,15 @@ import type {
   VolumeUnit,
 } from '@/domain/types'
 import {
+  activityName,
   formatDuration,
   formatMeasure,
   formatTemperature,
   formatVolume,
   foodAcceptanceName,
   measureName,
+  pottyPlaceName,
+  pottyResultName,
   symptomImpressionName,
   temperatureSiteName,
 } from '@/i18n/format'
@@ -28,6 +31,8 @@ export type Category =
   // Solids get their own tint rather than sharing the milk one: "did she eat?" and
   // "did she drink?" are different questions once weaning starts.
   | 'food'
+  | 'activity'
+  | 'potty'
 
 export interface EventDescription {
   category: Category
@@ -162,6 +167,24 @@ export function describeEvent(
         ]
           .filter((part) => part !== '')
           .join(' · '),
+        live: false,
+      }
+
+    case 'activity':
+      return {
+        category: 'activity',
+        title: activityName(t, event.kind),
+        detail: event.durationMs > 0 ? formatDuration(t, event.durationMs) : '',
+        live: false,
+      }
+
+    case 'potty':
+      return {
+        category: 'potty',
+        title: pottyResultName(t, event.result),
+        // The place is omitted for an accident: "Accident · on the potty" reads as
+        // a contradiction, and where they were sitting is not the point.
+        detail: event.result === 'accident' ? '' : pottyPlaceName(t, event.place),
         live: false,
       }
 

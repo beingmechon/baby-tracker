@@ -65,6 +65,7 @@ import {
   RepeatIcon,
   SettingsIcon,
   SleepIcon,
+  ActivityIcon,
   DiaryIcon,
   FoodIcon,
   HandoverIcon,
@@ -82,6 +83,7 @@ interface HomeProps {
   onOpenHealth: () => void
   onOpenIllness: () => void
   onOpenFood: () => void
+  onOpenActivity: () => void
   onOpenPatterns: () => void
   onOpenHandover: () => void
   onSwitchBaby: (babyId: string) => void
@@ -108,6 +110,7 @@ export function Home({
   onOpenHealth,
   onOpenIllness,
   onOpenFood,
+  onOpenActivity,
   onOpenPatterns,
   onOpenHandover,
   onSwitchBaby,
@@ -596,6 +599,10 @@ export function Home({
           <button type="button" className="action-repeat" onClick={onOpenFood}>
             <FoodIcon size={16} />
             <span>{t.t('food.log')}</span>
+          </button>
+          <button type="button" className="action-repeat" onClick={onOpenActivity}>
+            <ActivityIcon size={16} />
+            <span>{t.t('section.activity')}</span>
           </button>
         </section>
 

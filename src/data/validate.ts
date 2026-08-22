@@ -18,8 +18,11 @@ import type {
   MeasureKind,
   Sex,
   SleepKind,
+  ActivityKind,
   Allergen,
   FoodAcceptance,
+  PottyPlace,
+  PottyResult,
   SymptomImpression,
   VisitQuestion,
   TemperatureSite,
@@ -68,6 +71,22 @@ const ACCEPTANCES: readonly FoodAcceptance[] = [
   'most',
   'all',
 ]
+const ACTIVITY_KINDS: readonly ActivityKind[] = [
+  'tummy',
+  'bath',
+  'walk',
+  'play',
+  'reading',
+  'other',
+]
+const POTTY_RESULTS: readonly PottyResult[] = [
+  'pee',
+  'poo',
+  'both',
+  'nothing',
+  'accident',
+]
+const POTTY_PLACES: readonly PottyPlace[] = ['potty', 'toilet']
 const ALLERGENS: readonly Allergen[] = [
   'milk',
   'egg',
@@ -217,6 +236,19 @@ export function parseEvent(value: unknown): BabyEvent | null {
           : [],
         reaction: value.reaction === true,
       }
+    }
+    case 'activity': {
+      const kind = oneOf<ActivityKind>(value.kind, ACTIVITY_KINDS)
+      const durationMs = nonNegative(value.durationMs)
+      if (kind === null) return null
+      // A missing duration means "nobody timed it", not "invalid".
+      return { ...base, type: 'activity', kind, durationMs: durationMs ?? 0 }
+    }
+    case 'potty': {
+      const result = oneOf<PottyResult>(value.result, POTTY_RESULTS)
+      const place = oneOf<PottyPlace>(value.place, POTTY_PLACES)
+      if (result === null) return null
+      return { ...base, type: 'potty', result, place: place ?? 'potty' }
     }
     case 'visit': {
       const reason = str(value.reason)

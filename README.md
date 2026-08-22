@@ -88,6 +88,9 @@ This is an early release, deliberately small, and genuinely usable right now:
   contains; the app never guesses from the name, because no food database could know
   what is in the biscuit in your cupboard. It says "no reaction noted", never
   "tolerated".
+- **Activities and the potty** — tummy time counted against a goal you set
+  yourself, plus baths, walks, play and reading; then successes, accidents and the
+  best clean run once potty training starts. A record, not a scoreboard.
 - **Handover** — pick a shift (last 4, 8 or 12 hours, or today), see what happened
   and when they last ate, slept and were changed, then copy it as a plain-text
   message or print it for a nursery. Copying puts text on your clipboard; nothing

@@ -12,8 +12,11 @@ import type {
   Id,
   MeasureKind,
   SleepEvent,
+  ActivityKind,
   Allergen,
   FoodAcceptance,
+  PottyPlace,
+  PottyResult,
   SymptomImpression,
   TemperatureSite,
   VisitQuestion,
@@ -73,6 +76,16 @@ export interface BabyStore {
     allergens: Allergen[]
     reaction: boolean
     note: string
+    startedAt: Timestamp
+  }): Promise<void>
+  logActivity(input: {
+    kind: ActivityKind
+    durationMs: number
+    startedAt: Timestamp
+  }): Promise<void>
+  logPotty(input: {
+    result: PottyResult
+    place: PottyPlace
     startedAt: Timestamp
   }): Promise<void>
   logSymptom(input: {
@@ -268,6 +281,10 @@ export function useBabyStore(
         note,
         startedAt,
       }),
+    logActivity: ({ kind, durationMs, startedAt }) =>
+      addEvent({ type: 'activity', kind, durationMs, startedAt }),
+    logPotty: ({ result, place, startedAt }) =>
+      addEvent({ type: 'potty', result, place, startedAt }),
     logSymptom: ({ name, impression, note, startedAt }) =>
       addEvent({ type: 'symptom', name, impression, note, startedAt }),
     logVisit: ({ reason, who, note, questions, startedAt }) =>

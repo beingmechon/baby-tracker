@@ -26,6 +26,8 @@ export type EventType =
   | 'symptom'
   | 'visit'
   | 'food'
+  | 'activity'
+  | 'potty'
 
 /**
  * Recorded only because the WHO publishes separate growth references for boys
@@ -75,6 +77,22 @@ export type Allergen =
 
 /** How much of it actually went in, as the parent saw it. */
 export type FoodAcceptance = 'refused' | 'tasted' | 'some' | 'most' | 'all'
+
+/**
+ * The activities worth a button of their own.
+ *
+ * A short, fixed list rather than free text, because the point of logging these is
+ * counting them — "how much tummy time did she get today?" only has an answer if
+ * every entry is the same word. `other` carries a name in the note for everything
+ * the list does not cover.
+ */
+export type ActivityKind = 'tummy' | 'bath' | 'walk' | 'play' | 'reading' | 'other'
+
+/** What happened, from a parent's point of view rather than a clinical one. */
+export type PottyResult = 'pee' | 'poo' | 'both' | 'nothing' | 'accident'
+
+/** Where it happened. An accident is its own result, so this is where they sat. */
+export type PottyPlace = 'potty' | 'toilet'
 
 /** Which units measurements are shown and entered in. */
 export type MeasureSystem = 'metric' | 'imperial'
@@ -231,6 +249,19 @@ export interface FoodEvent extends EventBase {
   reaction: boolean
 }
 
+export interface ActivityEvent extends EventBase {
+  type: 'activity'
+  kind: ActivityKind
+  /** Zero when it was a moment rather than a stretch — a bath nobody timed. */
+  durationMs: number
+}
+
+export interface PottyEvent extends EventBase {
+  type: 'potty'
+  result: PottyResult
+  place: PottyPlace
+}
+
 export type BabyEvent =
   | NursingEvent
   | BottleEvent
@@ -243,6 +274,8 @@ export type BabyEvent =
   | SymptomEvent
   | DoctorVisitEvent
   | FoodEvent
+  | ActivityEvent
+  | PottyEvent
 export type FeedEvent = NursingEvent | BottleEvent
 
 export function isFeed(event: BabyEvent): event is FeedEvent {
@@ -283,6 +316,14 @@ export function isDoctorVisit(event: BabyEvent): event is DoctorVisitEvent {
 
 export function isFood(event: BabyEvent): event is FoodEvent {
   return event.type === 'food'
+}
+
+export function isActivity(event: BabyEvent): event is ActivityEvent {
+  return event.type === 'activity'
+}
+
+export function isPotty(event: BabyEvent): event is PottyEvent {
+  return event.type === 'potty'
 }
 
 /** Total output of a pumping session. */

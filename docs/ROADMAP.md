@@ -103,10 +103,12 @@ carries a UUID and `updatedAt`, so sync can be added without rewriting the app.
 - [ ] Food library with age-appropriate serving guidance — **needs a real
       source.** Serving sizes and choking guidance for infants are exactly the
       kind of data this project will not invent
-- [ ] Potty training: attempts, successes, reminders, streaks
+- [x] Potty training: successes, accidents, sits with nothing, and the best clean
+      run. Reminders are covered by the custom reminders already shipped
 - [ ] Chores and routines as the child grows
-- [ ] Activities: tummy time with a daily goal, bath, walks, playtime, plus
-      user-defined activity types
+- [x] Activities: tummy time with a daily goal you set yourself, bath, walks,
+      playtime, reading
+- [ ] User-defined activity types
 - [ ] Milestones: CDC checklist by age, a photo per milestone
 - [ ] Photo journal / timeline
 - [ ] Voice logging: "log 120ml bottle", on-device speech

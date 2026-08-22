@@ -6,6 +6,37 @@ versions may change behaviour.
 
 ## Unreleased
 
+### Added — activities and potty training
+
+- **Tummy time, counted against a goal you set yourself.** The screen says the
+  number in the field was typed by a person and repeats what health services suggest
+  without turning it into the app's own instruction. Whether the goal was met takes
+  the accent on the words and nothing else: a green tick and a red cross would turn
+  a parent's day into a pass or a fail, which is not what a tummy-time counter is
+  for.
+- **Baths, walks, play and reading**, from a short fixed list rather than free text —
+  counting them only works if every entry is the same word. An activity nobody timed
+  is counted without a duration being invented for it.
+- **Potty training**: successes, accidents, and sits where nothing happened, which
+  are worth logging because a week of them shows a pattern nobody could hold in their
+  head. Plus the best run of consecutive accident-free days.
+- **A day nobody logged does not count towards a clean run.** A fortnight of silence
+  is not a fortnight without accidents, and claiming it would turn the one number a
+  parent might feel proud of into a lie.
+- **A record, not a scoreboard**, said on screen every time the numbers appear.
+  Accidents are part of learning, and a parent counting them at the end of a hard day
+  should not find an app grading them.
+- The place is not asked for after an accident: where they were sitting is not the
+  point, and "Accident · on the potty" reads as a contradiction.
+
+### Fixed
+
+- **"Best run without an accident" was long enough to wrap its own value onto two
+  lines**, which reads as a broken row. Shortened, and the browser suite now checks
+  that no ledger value is wrapped mid-phrase by an over-long label — a whole class of
+  layout fault rather than this one instance.
+
+
 ### Added — solids and the nine major allergens
 
 - **A solids log**: what you offered, how much actually went in, and which of the

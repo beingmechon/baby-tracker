@@ -14,8 +14,11 @@ import {
   type AgeDescription,
 } from '@/domain/time'
 import type {
+  ActivityKind,
   Allergen,
   FoodAcceptance,
+  PottyPlace,
+  PottyResult,
   MeasureKind,
   MeasureSystem,
   SymptomImpression,
@@ -351,6 +354,40 @@ const ALLERGEN_NAMES: Record<Allergen, MessageKey> = {
 
 export function allergenName(t: Translator, allergen: Allergen): string {
   return t.t(ALLERGEN_NAMES[allergen])
+}
+
+const ACTIVITY_NAMES: Record<ActivityKind, MessageKey> = {
+  tummy: 'activity.tummy',
+  bath: 'activity.bath',
+  walk: 'activity.walk',
+  play: 'activity.play',
+  reading: 'activity.reading',
+  other: 'activity.other',
+}
+
+export function activityName(t: Translator, kind: ActivityKind): string {
+  return t.t(ACTIVITY_NAMES[kind])
+}
+
+const POTTY_RESULT_NAMES: Record<PottyResult, MessageKey> = {
+  pee: 'potty.result.pee',
+  poo: 'potty.result.poo',
+  both: 'potty.result.both',
+  nothing: 'potty.result.nothing',
+  accident: 'potty.result.accident',
+}
+
+export function pottyResultName(t: Translator, result: PottyResult): string {
+  return t.t(POTTY_RESULT_NAMES[result])
+}
+
+const POTTY_PLACE_NAMES: Record<PottyPlace, MessageKey> = {
+  potty: 'potty.place.potty',
+  toilet: 'potty.place.toilet',
+}
+
+export function pottyPlaceName(t: Translator, place: PottyPlace): string {
+  return t.t(POTTY_PLACE_NAMES[place])
 }
 
 export function temperatureUnit(system: MeasureSystem): 'c' | 'f' {

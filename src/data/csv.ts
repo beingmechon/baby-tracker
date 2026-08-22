@@ -207,6 +207,34 @@ function rowFor(event: BabyEvent, babyName: string): string[] {
         // is a word in the note rather than a flag in a column nobody reads.
         joinNotes(event.reaction ? 'reaction noted' : '', note),
       ]
+    case 'activity':
+      return [
+        ...base,
+        'activity',
+        event.kind,
+        event.durationMs > 0 ? minutes(event.durationMs) : '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
+    case 'potty':
+      return [
+        ...base,
+        'potty',
+        `${event.result} (${event.place})`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        note,
+      ]
     case 'visit': {
       const asked = event.questions.filter((question) => question.asked).length
       return [

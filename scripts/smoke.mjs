@@ -1112,6 +1112,101 @@ try {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 
+  console.log('\n▸ Activities and potty')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByLabel('Daily tummy-time goal (minutes)').fill('30')
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+  await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+  await page.getByRole('button', { name: 'Log an activity' }).waitFor()
+  check(
+    'the tummy-time goal counts down from the parent’s own number',
+    /30m to go/.test(await page.locator('.activity-goal').innerText()),
+  )
+  check(
+    'and says the number is theirs, not the app’s advice',
+    /not the app/.test(await page.locator('.page').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await sheet.getByRole('button', { name: 'Tummy time' }).click()
+  await sheet.getByLabel('How long? (minutes)').fill('12')
+  await sheet.getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.locator('.activity-headline').waitFor()
+  check(
+    `tummy time adds up (${await page.locator('.activity-headline').innerText()})`,
+    /12m/.test(await page.locator('.activity-headline').innerText()),
+  )
+  check(
+    'and the goal reports what is left',
+    /18m to go/.test(await page.locator('.activity-goal').innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await sheet.getByRole('button', { name: 'Bath' }).click()
+  await sheet.getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  check(
+    'an untimed activity is counted without inventing a duration',
+    await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.handover-fact')]
+      const bath = rows.find((row) => /Bath/.test(row.textContent ?? ''))
+      return bath !== undefined && !/\dm|\dh/.test(bath.querySelector('dd')?.textContent ?? '')
+    }),
+  )
+
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await sheet.getByRole('button', { name: 'Wee' }).click()
+  check(
+    'the place is offered for a success',
+    await sheet.getByRole('button', { name: 'Toilet' }).isVisible(),
+  )
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  check(
+    'a success is counted',
+    /1 success/.test(await page.locator('.handover-facts').last().innerText()),
+  )
+
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await sheet.getByRole('button', { name: 'Accident' }).click()
+  check(
+    'but not for an accident, where "on the potty" would be a contradiction',
+    (await sheet.getByRole('button', { name: 'Toilet' }).count()) === 0,
+  )
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  const pottyFacts = await page.locator('.handover-facts').last().innerText()
+  check(
+    `an accident is counted separately (${pottyFacts.replace(/\n/g, ' · ')})`,
+    /1 accident/.test(pottyFacts),
+  )
+  check(
+    'and today no longer counts as a clean run',
+    /No full day yet/.test(pottyFacts),
+  )
+  check(
+    'the screen says the numbers are not a verdict',
+    /not a scoreboard/.test(await page.locator('.page').innerText()),
+  )
+  // A label long enough to push its value onto two lines reads as a broken row.
+  check(
+    'no ledger value is wrapped mid-phrase by an over-long label',
+    await page.evaluate(() =>
+      [...document.querySelectorAll('.handover-fact dd')].every((value) => {
+        const style = getComputedStyle(value)
+        const lineHeight = Number.parseFloat(style.lineHeight) || 20
+        return value.getBoundingClientRect().height < lineHeight * 1.6
+      }),
+    ),
+  )
+  await settle(page)
+  await page.screenshot({ path: join(SHOTS, 'activity.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   console.log('\n▸ Solids and allergens')
   await page.getByRole('button', { name: 'Log a food' }).first().click()
   await page.getByRole('button', { name: 'The nine major allergens' }).waitFor().catch(() => {})

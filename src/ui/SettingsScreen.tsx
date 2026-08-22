@@ -439,6 +439,30 @@ export function SettingsScreen({
               />
             </div>
             <p className="field-note">{t.t('settings.wakeGuidanceNote')}</p>
+
+            <div className="field">
+              <label className="field-label" htmlFor="tummy-goal">
+                {t.t('activity.tummyGoal')}
+              </label>
+              <input
+                id="tummy-goal"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={240}
+                value={settings.tummyGoalMinutes === 0 ? '' : settings.tummyGoalMinutes}
+                onChange={(e) => {
+                  // Empty means no goal rather than zero-as-a-target, and anything
+                  // unparseable falls back to no goal instead of NaN minutes.
+                  const parsed = Number.parseInt(e.target.value, 10)
+                  onChange({
+                    tummyGoalMinutes:
+                      Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 240) : 0,
+                  })
+                }}
+              />
+              <p className="field-note">{t.t('activity.tummyGoalNote')}</p>
+            </div>
           </div>
         </section>
 

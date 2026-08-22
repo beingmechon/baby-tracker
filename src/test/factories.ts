@@ -7,10 +7,15 @@ import type {
   MeasureKind,
   MedicationEvent,
   NursingEvent,
+  ActivityEvent,
+  ActivityKind,
   Allergen,
   DoctorVisitEvent,
   FoodAcceptance,
   FoodEvent,
+  PottyEvent,
+  PottyPlace,
+  PottyResult,
   SymptomEvent,
   SymptomImpression,
   VisitQuestion,
@@ -236,6 +241,40 @@ export function food(
     acceptance,
     allergens,
     reaction,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function activity(
+  startedAt: Timestamp,
+  kind: ActivityKind,
+  durationMs = 0,
+): ActivityEvent {
+  return {
+    id: nextId('activity'),
+    babyId: BABY_ID,
+    type: 'activity',
+    startedAt,
+    kind,
+    durationMs,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+  }
+}
+
+export function potty(
+  startedAt: Timestamp,
+  result: PottyResult,
+  place: PottyPlace = 'potty',
+): PottyEvent {
+  return {
+    id: nextId('potty'),
+    babyId: BABY_ID,
+    type: 'potty',
+    startedAt,
+    result,
+    place,
     createdAt: startedAt,
     updatedAt: startedAt,
   }

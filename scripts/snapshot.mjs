@@ -169,6 +169,20 @@ try {
   await page.getByRole('button', { name: /Start sleep/ }).waitFor()
   await page.waitForTimeout(2400)
 
+  // An activity and a potty trip, so that screen has totals rather than empties.
+  await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+  await page.getByRole('button', { name: 'Log an activity' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Tummy time' }).click()
+  await page.locator('.sheet').getByLabel('How long? (minutes)').fill('12')
+  await page.locator('.sheet').getByRole('button', { name: 'Save activity' }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Log a potty trip' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Wee' }).click()
+  await page.locator('.sheet').getByRole('button', { name: 'Save', exact: true }).click()
+  await page.locator('.sheet').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
   // A food with an allergen tag, so the solids screen has a populated ledger.
   await page.getByRole('button', { name: 'Log a food' }).first().click()
   await page.getByRole('button', { name: 'Log a food' }).click()
@@ -242,6 +256,12 @@ try {
     await page.getByRole('button', { name: 'The day, round the clock' }).click()
     await page.locator('.wheel').waitFor()
     writeFileSync(join(OUT, `patterns-${theme}.html`), await serialize(page))
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('button', { name: /Start sleep/ }).waitFor()
+
+    await page.getByRole('button', { name: 'Activities and potty' }).first().click()
+    await page.locator('.activity-headline').waitFor()
+    writeFileSync(join(OUT, `activity-${theme}.html`), await serialize(page))
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('button', { name: /Start sleep/ }).waitFor()
 

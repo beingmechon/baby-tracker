@@ -230,3 +230,14 @@ export function FoodIcon({ size = 22, className }: IconProps) {
     </svg>
   )
 }
+
+export function ActivityIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg {...svgProps(size)} className={className}>
+      <circle cx="12" cy="6" r="2.5" />
+      <path d="M12 8.5v6" />
+      <path d="M7.5 11h9" />
+      <path d="M9.5 20.5 12 14.5l2.5 6" />
+    </svg>
+  )
+}
